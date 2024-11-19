@@ -1,0 +1,52 @@
+services:
+
+  mysqldb:
+    image: mysql:latest
+    container_name: mysqldb
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: example_app
+      MYSQL_USER: example_user
+      MYSQL_PASSWORD: example_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/www/:/var/www/:ro
+
+  dnsService:
+    image: pschiffe/pdns-mysql
+    container_name: dnsService
+    hostname: pdns.localhost.com
+    ports:
+      - "10000:53/tcp"
+      - "10000:53/udp"
+      - "8081:8081"
+    depends_on:
+      - mysqldb
+    environment:
+      - TZ=America/Denver
+      - PDNS_gmysql_host=mysqldb
+      - PDNS_gmysql_port=3306
+      - PDNS_gmysql_user=pdns
+      - PDNS_gmysql_password=pdns
+      - PDNS_gmysql_dbname=pdns
+      - PDNS_master=yes
+      - PDNS_api=yes
+      - PDNS_api_key=secret
+      - PDNS_webserver=yes
+      - PDNS_webserver_address=0.0.0.0
+      - PDNS_webserver_allow_from=172.0.0.0/8,127.0.0.0/8,192.0.0.0/8,10.0.0.0/8
+      - PDNS_webserver_password=nothing
+      - PDNS_version_string=anonymous
+      - PDNS_default_ttl=1500
+      - PDNS_allow_axfr_ips=172.0.0.0/8,127.0.0.0/8,192.0.0.0/8,10.0.0.0/8
+      - PDNS_allow_dnsupdate_from=172.0.0.0/8,127.0.0.0/8,192.0.0.0/8,10.0.0.0/8
+      - PDNS_only_notify=0.0.0.0

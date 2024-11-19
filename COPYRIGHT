@@ -1,0 +1,22 @@
+COPYRIGHT AND LICENSE INFORMATION
+=================================
+
+Copyright (c) 2024, Digicert, Inc.
+All rights reserved.
+
+This library is licensed under the MIT License (MIT) - see the LICENSE file for details.
+
+Contributors
+------------
+Digicert Engineering Team
+
+Third-Party Libraries
+---------------------
+This project may include third-party libraries, each licensed under their respective terms. Please refer to the LICENSE or NOTICE file for more information on third-party licenses.
+
+Attribution
+-----------
+If using this library in an open-source or proprietary project, attribution to Digicert, Inc., is appreciated, but not required.
+
+For more information, please visit:
+https://github.com/digicert/domain-control-validation
