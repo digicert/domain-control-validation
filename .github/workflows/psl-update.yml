@@ -1,0 +1,75 @@
+name: Periodic PSL Update
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # Run at midnight on the first of every month
+  workflow_dispatch:
+
+jobs:
+  update_psl:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+          settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+      - name: Download PSL
+        run: |
+          curl -o ./library/src/main/resources/public_suffix_list.dat https://publicsuffix.org/list/public_suffix_list.dat
+
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if git diff --exit-code ./library/src/main/resources/public_suffix_list.dat; then
+            echo "No changes in PSL data."
+            echo "changes_detected=false" >> $GITHUB_ENV
+          else
+            echo "Changes detected in PSL data."
+            echo "changes_detected=true" >> $GITHUB_ENV
+          fi
+
+      - name: Push Changes to Branch
+        if: ${{ env.changes_detected == 'true' }}
+        run: |
+          git config --global user.email "${{ secrets.GIT_USERNAME }}@digicert.com"
+          git config --global user.name "${{ secrets.GIT_USERNAME }}"
+          git add ./library/src/main/resources/public_suffix_list.dat
+          git commit -m "Update PSL"
+          git push origin HEAD:psl-update
+
+      - name: Create Pull Request
+        if: ${{ env.changes_detected == 'true' }}
+        uses: peter-evans/create-pull-request@v3
+        with:
+            branch: psl-update
+            title: "Update PSL"
+            body: "This PR updates the PSL to the latest version."
+            base: master
+
+
+  slack_notification:
+    needs: [update_psl]
+    if: always()
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Run Slack Notification
+        uses: rohammosalli/slack-action@master
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.PKI_SLACK_TOKEN }}
+          SLACK_CHANNEL: "dvm-alerts"
+          GITHUB_TOKEN: ${{ secrets.GIT_ACCESS_TOKEN }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          RUN_ID: ${{ github.run_id }}
+          SEND_SUCCESS_MESSAGE: "false"
