@@ -1,0 +1,133 @@
+name: release
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+          settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          servers: >
+            [
+              {
+                "id": "nexus",
+                "username": "${{ secrets.DEV_REPO_USERNAME }}",
+                "password": "${{ secrets.DEV_REPO_PASSWORD }}"
+              }
+            ]
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
+      - name: Determine New Version
+        id: new_version
+        run: |
+          # Fetch all tags to ensure they are available
+          git fetch --tags
+
+          # Get the latest tag
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1` || echo "v0.0.0")
+
+          echo "Latest tag: $latest_tag"
+
+          # Remove 'v' prefix and split into components
+          latest_version=${latest_tag#"v"}
+          IFS='.' read -r major minor patch_prerelease <<< "${latest_version}"
+
+          # Separate patch and prerelease if any
+          if [[ "$patch_prerelease" == *"-"* ]]; then
+            IFS='-' read -r patch prerelease <<< "$patch_prerelease"
+          else
+            patch="$patch_prerelease"
+            prerelease=""
+          fi
+
+          echo "Current version: $latest_version"
+          echo "Major: $major, Minor: $minor, Patch: $patch, Prerelease: $prerelease"
+
+          # Determine the new version
+          if [[ "$prerelease" == beta.* ]]; then
+            # Latest tag is a beta tag, increment beta version
+            beta_version=${prerelease#beta.}
+            beta_version=$((beta_version + 1))
+            new_version="${major}.${minor}.${patch}-beta.${beta_version}"
+          else
+            # Latest tag is not a beta tag, start beta.1
+            beta_version=1
+            new_version="${major}.${minor}.${patch}-beta.${beta_version}"
+          fi
+
+          echo "New version: $new_version"
+
+          # Set outputs
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag_name=v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{ secrets.GIT_USERNAME }}@digicert.com"
+          git config --global user.name "${{ secrets.GIT_USERNAME }}"
+
+      - name: Update Version in pom.xml
+        run: |
+          ./mvnw versions:set -DnewVersion=${{ steps.new_version.outputs.new_version }} -DgenerateBackupPoms=false
+
+      - name: Build with Maven
+        run: ./mvnw clean install
+
+      - name: Generate Javadocs
+        run: ./mvnw javadoc:javadoc
+
+      - name: Create Tag
+        run: |
+          git tag -a v${{ steps.new_version.outputs.new_version }} -m "Tagging v${{ steps.new_version.outputs.new_version }}"
+          git push origin v${{ steps.new_version.outputs.new_version }}
+
+      - name: Publish to Nexus
+        run: |
+          ./mvnw -pl library javadoc:jar
+          ./mvnw --batch-mode clean deploy -P deploy-to-internal-nexus
+
+  slack_notification:
+    needs: [deploy]
+    if: always()
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Slack Notification
+        uses: rohammosalli/slack-action@master
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.PKI_SLACK_TOKEN }}
+          SLACK_CHANNEL: "dvm-alerts"
+          GITHUB_TOKEN: ${{ secrets.GIT_ACCESS_TOKEN }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          RUN_ID: ${{ github.run_id }}
+          SEND_SUCCESS_MESSAGE: "false"

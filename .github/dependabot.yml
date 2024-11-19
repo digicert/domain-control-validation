@@ -1,0 +1,12 @@
+version: 2
+updates:
+
+  # For Maven (Java) dependencies
+  - package-ecosystem: "maven"
+    directory: "/" # Location of pom.xml
+    schedule:
+      interval: "daily" # Frequency of update checks
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
