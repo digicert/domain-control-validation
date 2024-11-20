@@ -116,8 +116,11 @@ jobs:
 
       - name: Configure GPG
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import
-          echo "${{ secrets.GPG_PUBLIC_KEY }}" | gpg --import
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --yes --import
+          echo "$GPG_PUBLIC_KEY" | gpg --batch --yes --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
 
       - name: Publish to Maven Central Beta
         run: |
