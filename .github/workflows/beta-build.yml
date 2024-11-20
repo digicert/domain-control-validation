@@ -31,6 +31,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-22.04
+    needs: [build]
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -116,5 +117,6 @@ jobs:
       - name: Publish to Maven Central Beta
         run: |
           mvn -pl library javadoc:jar
-          mvn --batch-mode clean deploy -P deploy-to-maven-central-beta -DskipTests
+          mvn --batch-mode clean install -DskipTests
+          mvn --batch-mode deploy -P deploy-to-maven-central-beta -DskipTests
 
