@@ -40,7 +40,7 @@
     <profiles>
         <!--  Profile for deploying to maven central-->
         <profile>
-            <id>deploy-to-maven-central</id>
+            <id>deploy-to-maven-central-beta</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
