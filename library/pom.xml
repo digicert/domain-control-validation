@@ -272,7 +272,7 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <passphrase>${gpg.GPG_PASSPHRASE}</passphrase>
+                            <passphrase>${gpg.passphrase}</passphrase>
                         </configuration>
                     </plugin>
 

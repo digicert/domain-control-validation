@@ -27,7 +27,7 @@ jobs:
 
       - name: Run MVN Verify
         run: |
-          mvn -P coverage -B verify --file pom.xml
+          mvn -P coverage -B verify
 
   deploy:
     runs-on: ubuntu-22.04
@@ -114,8 +114,13 @@ jobs:
           git tag -a v${{ steps.new_version.outputs.new_version }} -m "Tagging v${{ steps.new_version.outputs.new_version }}"
           git push origin v${{ steps.new_version.outputs.new_version }}
 
+      - name: Configure GPG
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import
+          echo "${{ secrets.GPG_PUBLIC_KEY }}" | gpg --import
+
       - name: Publish to Maven Central Beta
         run: |
           mvn -pl library javadoc:jar
-          mvn -pl library deploy -P deploy-to-maven-central-beta -DskipTests --batch-mode 
+          mvn -pl library deploy -P deploy-to-maven-central-beta -DskipTests -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} --batch-mode
 
