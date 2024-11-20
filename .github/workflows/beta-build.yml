@@ -116,12 +116,9 @@ jobs:
 
       - name: Configure GPG
         run: |
-          echo "$GPG_PUBLIC_KEY"
-          echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --yes --import
-          echo "$GPG_PUBLIC_KEY" | base64 --decode | gpg --batch --yes --import
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          echo "${{ secrets.GPG_PUBLIC_KEY }}"  | gpg --batch --yes --import
+          echo "${{ secrets.GPG_PASSPHRASE }}"  | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --edit-key ${{ secrets.GPG_KEY_ID }} trust quit
 
       - name: Publish to Maven Central Beta
         run: |
