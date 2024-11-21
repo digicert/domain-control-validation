@@ -114,12 +114,22 @@ jobs:
           git tag -a v${{ steps.new_version.outputs.new_version }} -m "Tagging v${{ steps.new_version.outputs.new_version }}"
           git push origin v${{ steps.new_version.outputs.new_version }}
 
-      - name: List GPG Keys
-        run: gpg --list-secret-keys --keyid-format LONG
-
       - name: Configure GPG
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+      
+      # Setup the ossrh server credentials in settings.xml
+      - name: Configure Server Credentials for Maven Central
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          servers: >
+            [
+              {
+                "id": "ossrh",
+                "username": "${{ secrets.MVN_CENTRAL_USERNAME }}",
+                "password": "${{ secrets.MVN_CENTRAL_PASSWORD }}"
+              }
+            ]
 
       - name: Publish to Maven Central Beta
         run: |
