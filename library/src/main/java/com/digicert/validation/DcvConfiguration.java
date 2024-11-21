@@ -69,35 +69,35 @@ public class DcvConfiguration {
     private int randomValueValidityPeriod = 29;
 
     /** The timeout in milliseconds for connecting to a server while performing file authentication. */
-    private int fileAuthConnectTimeout = 2000;
+    private int fileValidationConnectTimeout = 2000;
 
     /** The timeout in milliseconds for reading data from a server while performing file authentication. */
-    private int fileAuthReadTimeout = 5000;
+    private int fileValidationReadTimeout = 5000;
 
     /** The maximum length of the body for file authentication responses. */
-    private int fileAuthMaxBodyLength = 5000;
+    private int fileValidationMaxBodyLength = 5000;
 
     /** The socket timeout in milliseconds for connecting to a server while performing file authentication. */
-    private int fileAuthSocketTimeout = 2000;
+    private int fileValidationSocketTimeout = 2000;
 
     /** The maximum number of redirects allowed while performing file authentication. */
-    private int fileAuthMaxRedirects = 5;
+    private int fileValidationMaxRedirects = 5;
 
     /**
      * This flag indicates that the library will try both HTTP and HTTPS
      * when performing file authentication requests.
      */
-    private Boolean fileAuthCheckHttps = false;
+    private Boolean fileValidationCheckHttps = false;
 
     /**
      * The default file authentication filename.
      * <p>
      * This value represents the default file name used for "Agreed-Upon Change to Website v2" validation.
      */
-    private String fileAuthFilename = "fileauth.txt";
+    private String fileValidationFilename = "fileauth.txt";
 
     /** The user agent to be used for file authentication requests. */
-    private String fileAuthUserAgent = "DCV-Library/1.0";
+    private String fileValidationUserAgent = "DCV-Library/1.0";
 
     /**
      * The random value validator used to determine if a given response contains the random value.
@@ -242,15 +242,15 @@ public class DcvConfiguration {
          * <p>
          * Default value is 2000 milliseconds.
          *
-         * @param fileAuthConnectTimeout the file authentication connect timeout in milliseconds
+         * @param fileValidationConnectTimeout the file authentication connect timeout in milliseconds
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthConnectTimeout is negative
+         * @throws IllegalArgumentException if fileValidationConnectTimeout is negative
          */
-        public DcvConfigurationBuilder fileAuthConnectTimeout(int fileAuthConnectTimeout) {
-            if (fileAuthConnectTimeout < 0) {
-                throw new IllegalArgumentException("fileAuthConnectTimeout cannot be negative");
+        public DcvConfigurationBuilder fileValidationConnectTimeout(int fileValidationConnectTimeout) {
+            if (fileValidationConnectTimeout < 0) {
+                throw new IllegalArgumentException("fileValidationConnectTimeout cannot be negative");
             }
-            dcvConfiguration.setFileAuthConnectTimeout(fileAuthConnectTimeout);
+            dcvConfiguration.setFileValidationConnectTimeout(fileValidationConnectTimeout);
             return this;
         }
 
@@ -259,15 +259,15 @@ public class DcvConfiguration {
          * <p>
          * Default value is 5000 milliseconds.
          *
-         * @param fileAuthReadTimeout the file authentication read timeout in milliseconds
+         * @param fileValidationReadTimeout the file authentication read timeout in milliseconds
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthReadTimeout is negative
+         * @throws IllegalArgumentException if fileValidationReadTimeout is negative
          */
-        public DcvConfigurationBuilder fileAuthReadTimeout(int fileAuthReadTimeout) {
-            if (fileAuthReadTimeout < 0) {
-                throw new IllegalArgumentException("fileAuthReadTimeout cannot be negative");
+        public DcvConfigurationBuilder fileValidationReadTimeout(int fileValidationReadTimeout) {
+            if (fileValidationReadTimeout < 0) {
+                throw new IllegalArgumentException("fileValidationReadTimeout cannot be negative");
             }
-            dcvConfiguration.setFileAuthReadTimeout(fileAuthReadTimeout);
+            dcvConfiguration.setFileValidationReadTimeout(fileValidationReadTimeout);
             return this;
         }
 
@@ -276,15 +276,15 @@ public class DcvConfiguration {
          * <p>
          * Default value is 5000 bytes.
          *
-         * @param fileAuthMaxBodyLength the file authentication max body length
+         * @param fileValidationMaxBodyLength the file authentication max body length
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthMaxBodyLength is not greater than 0
+         * @throws IllegalArgumentException if fileValidationMaxBodyLength is not greater than 0
          */
-        public DcvConfigurationBuilder fileAuthMaxBodyLength(int fileAuthMaxBodyLength) {
-            if (fileAuthMaxBodyLength <= 0) {
-                throw new IllegalArgumentException("fileAuthMaxBodyLength must be greater than 0");
+        public DcvConfigurationBuilder fileValidationMaxBodyLength(int fileValidationMaxBodyLength) {
+            if (fileValidationMaxBodyLength <= 0) {
+                throw new IllegalArgumentException("fileValidationMaxBodyLength must be greater than 0");
             }
-            dcvConfiguration.setFileAuthMaxBodyLength(fileAuthMaxBodyLength);
+            dcvConfiguration.setFileValidationMaxBodyLength(fileValidationMaxBodyLength);
             return this;
         }
 
@@ -293,15 +293,15 @@ public class DcvConfiguration {
          * <p>
          * Default value is 2000 milliseconds.
          *
-         * @param fileAuthSocketTimeout the file authentication socket timeout in milliseconds
+         * @param fileValidationSocketTimeout the file authentication socket timeout in milliseconds
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthSocketTimeout is negative
+         * @throws IllegalArgumentException if fileValidationSocketTimeout is negative
          */
-        public DcvConfigurationBuilder fileAuthSocketTimeout(int fileAuthSocketTimeout) {
-            if (fileAuthSocketTimeout < 0) {
-                throw new IllegalArgumentException("fileAuthSocketTimeout cannot be negative");
+        public DcvConfigurationBuilder fileValidationSocketTimeout(int fileValidationSocketTimeout) {
+            if (fileValidationSocketTimeout < 0) {
+                throw new IllegalArgumentException("fileValidationSocketTimeout cannot be negative");
             }
-            dcvConfiguration.setFileAuthSocketTimeout(fileAuthSocketTimeout);
+            dcvConfiguration.setFileValidationSocketTimeout(fileValidationSocketTimeout);
             return this;
         }
 
@@ -310,15 +310,15 @@ public class DcvConfiguration {
          * <p>
          * Default value is 5.
          *
-         * @param fileAuthMaxRedirects the file authentication max redirects
+         * @param fileValidationMaxRedirects the file authentication max redirects
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthMaxRedirects is negative
+         * @throws IllegalArgumentException if fileValidationMaxRedirects is negative
          */
-        public DcvConfigurationBuilder fileAuthMaxRedirects(int fileAuthMaxRedirects) {
-            if (fileAuthMaxRedirects < 0) {
-                throw new IllegalArgumentException("fileAuthMaxRedirects cannot be negative");
+        public DcvConfigurationBuilder fileValidationMaxRedirects(int fileValidationMaxRedirects) {
+            if (fileValidationMaxRedirects < 0) {
+                throw new IllegalArgumentException("fileValidationMaxRedirects cannot be negative");
             }
-            dcvConfiguration.setFileAuthMaxRedirects(fileAuthMaxRedirects);
+            dcvConfiguration.setFileValidationMaxRedirects(fileValidationMaxRedirects);
             return this;
         }
 
@@ -327,11 +327,11 @@ public class DcvConfiguration {
          * <p>
          * Default value is false.
          *
-         * @param fileAuthCheckHttps the file authentication check HTTPS flag
+         * @param fileValidationCheckHttps the file authentication check HTTPS flag
          * @return the builder instance
          */
-        public DcvConfigurationBuilder fileAuthCheckHttps(Boolean fileAuthCheckHttps) {
-            dcvConfiguration.setFileAuthCheckHttps(fileAuthCheckHttps);
+        public DcvConfigurationBuilder fileValidationCheckHttps(Boolean fileValidationCheckHttps) {
+            dcvConfiguration.setFileValidationCheckHttps(fileValidationCheckHttps);
             return this;
         }
 
@@ -342,13 +342,13 @@ public class DcvConfiguration {
          * validation method. If validation requests do not specify a file name, this is the file name that will be
          * used.
          *
-         * @param fileAuthFileName the file authentication file name
+         * @param fileValidationFileName the file authentication file name
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthFileName is null, empty, contains invalid characters, or exceeds the maximum length
+         * @throws IllegalArgumentException if fileValidationFileName is null, empty, contains invalid characters, or exceeds the maximum length
          */
-        public DcvConfigurationBuilder fileAuthFileName(String fileAuthFileName) throws IllegalArgumentException {
-            FilenameUtils.validateFilename(fileAuthFileName);
-            dcvConfiguration.setFileAuthFilename(fileAuthFileName);
+        public DcvConfigurationBuilder fileValidationFileName(String fileValidationFileName) throws IllegalArgumentException {
+            FilenameUtils.validateFilename(fileValidationFileName);
+            dcvConfiguration.setFileValidationFilename(fileValidationFileName);
             return this;
         }
 
@@ -361,15 +361,15 @@ public class DcvConfiguration {
          * <p>
          * Default value is "DCV-Library/1.0".
          *
-         * @param fileAuthUserAgent the file authentication user agent
+         * @param fileValidationUserAgent the file authentication user agent
          * @return the builder instance
-         * @throws IllegalArgumentException if fileAuthUserAgent is null or empty
+         * @throws IllegalArgumentException if fileValidationUserAgent is null or empty
          */
-        public DcvConfigurationBuilder fileAuthUserAgent(String fileAuthUserAgent) {
-            if (fileAuthUserAgent == null || fileAuthUserAgent.isEmpty()) {
-                throw new IllegalArgumentException("fileAuthUserAgent cannot be null or empty");
+        public DcvConfigurationBuilder fileValidationUserAgent(String fileValidationUserAgent) {
+            if (fileValidationUserAgent == null || fileValidationUserAgent.isEmpty()) {
+                throw new IllegalArgumentException("fileValidationUserAgent cannot be null or empty");
             }
-            dcvConfiguration.setFileAuthUserAgent(fileAuthUserAgent);
+            dcvConfiguration.setFileValidationUserAgent(fileValidationUserAgent);
             return this;
         }
 

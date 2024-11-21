@@ -1,6 +1,7 @@
 package com.digicert.validation.exceptions;
 
 import com.digicert.validation.enums.DcvError;
+import com.digicert.validation.methods.file.FileValidator;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -16,7 +17,7 @@ import java.util.Set;
  *
  * @see com.digicert.validation.methods.dns.DnsValidator
  * @see com.digicert.validation.methods.email.EmailValidator
- * @see com.digicert.validation.methods.fileauth.FileAuthValidator
+ * @see FileValidator
  */
 @Getter
 @ToString

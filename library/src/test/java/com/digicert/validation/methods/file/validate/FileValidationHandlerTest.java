@@ -1,9 +1,9 @@
-package com.digicert.validation.methods.fileauth.validate;
+package com.digicert.validation.methods.file.validate;
 
 import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.fileauth.FileAuthClient;
-import com.digicert.validation.client.fileauth.FileAuthClientResponse;
+import com.digicert.validation.client.file.FileClient;
+import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.secrets.RandomValueValidator;
@@ -22,10 +22,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class FileAuthValidationHandlerTest {
+class FileValidationHandlerTest {
 
-    private FileAuthValidationHandler fileAuthValidationHandler;
-    private FileAuthClient fileAuthClient;
+    private FileValidationHandler fileValidationHandler;
+    private FileClient fileClient;
     private RandomValueValidator randomValueValidator;
     private TokenValidator tokenValidator;
 
@@ -35,25 +35,25 @@ class FileAuthValidationHandlerTest {
     }
 
     private void initializeMocks(DcvConfiguration dcvConfiguration) {
-        fileAuthClient = mock(FileAuthClient.class);
+        fileClient = mock(FileClient.class);
         randomValueValidator = mock(RandomValueValidator.class);
         tokenValidator = mock(TokenValidator.class);
 
         DcvContext dcvContext = mock(DcvContext.class);
-        when(dcvContext.get(FileAuthClient.class)).thenReturn(fileAuthClient);
+        when(dcvContext.get(FileClient.class)).thenReturn(fileClient);
         when(dcvContext.get(RandomValueValidator.class)).thenReturn(randomValueValidator);
         when(dcvContext.get(TokenValidator.class)).thenReturn(tokenValidator);
         when(dcvContext.getDcvConfiguration()).thenReturn(dcvConfiguration);
 
-        fileAuthValidationHandler = new FileAuthValidationHandler(dcvContext);
+        fileValidationHandler = new FileValidationHandler(dcvContext);
     }
 
     @Test
     void testGetFileUrls_noHttps() {
         // Arrange
-        FileAuthValidationRequest.FileAuthValidationRequestBuilder fileAuthValidationRequestBuilder = getRandomValueFileAuthValidationRequest();
+        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         // Act
-        List<String> fileUrls = fileAuthValidationHandler.getFileUrls(fileAuthValidationRequestBuilder.build());
+        List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
         // Assert
         assertNotNull(fileUrls);
         assertEquals(1, fileUrls.size());
@@ -63,12 +63,12 @@ class FileAuthValidationHandlerTest {
     @Test
     void testGetFileUrls_usingHttps() {
         // Arrange
-        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileAuthCheckHttps(true).build();
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(true).build();
         initializeMocks(dcvConfiguration);
 
-        FileAuthValidationRequest.FileAuthValidationRequestBuilder fileAuthValidationRequestBuilder = getRandomValueFileAuthValidationRequest();
+        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         // Act
-        List<String> fileUrls = fileAuthValidationHandler.getFileUrls(fileAuthValidationRequestBuilder.build());
+        List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
         // Assert
         assertNotNull(fileUrls);
         assertEquals(2, fileUrls.size());
@@ -79,10 +79,10 @@ class FileAuthValidationHandlerTest {
     @Test
     void testGetFileUrls_CustomFilename() {
         // Arrange
-        FileAuthValidationRequest.FileAuthValidationRequestBuilder fileAuthValidationRequestBuilder = getRandomValueFileAuthValidationRequest();
-        fileAuthValidationRequestBuilder.filename("customFilename.txt");
+        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
+        fileValidationRequestBuilder.filename("customFilename.txt");
         // Act
-        List<String> fileUrls = fileAuthValidationHandler.getFileUrls(fileAuthValidationRequestBuilder.build());
+        List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
 
         // Assert
         assertNotNull(fileUrls);
@@ -93,12 +93,12 @@ class FileAuthValidationHandlerTest {
     @Test
     void testValidate_ValidResponse() {
         // Arrange
-        FileAuthValidationRequest.FileAuthValidationRequestBuilder fileAuthValidationRequestBuilder = getRandomValueFileAuthValidationRequest();
-        when(fileAuthClient.executeRequest(anyString())).thenReturn(new FileAuthClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt", "randomValue", 200));
+        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
+        when(fileClient.executeRequest(anyString())).thenReturn(new FileClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt", "randomValue", 200));
         ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.of("randomValue"), null);
         when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
 
-        FileAuthValidationResponse response = fileAuthValidationHandler.validate(fileAuthValidationRequestBuilder.build());
+        FileValidationResponse response = fileValidationHandler.validate(fileValidationRequestBuilder.build());
         // Assert
         assertNotNull(response);
         assertTrue(response.isValid());
@@ -111,16 +111,16 @@ class FileAuthValidationHandlerTest {
     @Test
     void testValidate_InvalidResponse_ExceptionFromClient() {
         // Arrange
-        FileAuthValidationRequest.FileAuthValidationRequestBuilder fileAuthValidationRequestBuilder = getRandomValueFileAuthValidationRequest();
-        when(fileAuthClient.executeRequest(anyString())).thenReturn(
-                new FileAuthClientResponse(
+        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
+        when(fileClient.executeRequest(anyString())).thenReturn(
+                new FileClientResponse(
                         "http://example.com/.well-known/pki-validation/fileauth.txt",
                         null,
                         200,
                         new IOException("Intentional Exception"),
                         DcvError.FILE_AUTH_CLIENT_ERROR));
 
-        FileAuthValidationResponse response = fileAuthValidationHandler.validate(fileAuthValidationRequestBuilder.build());
+        FileValidationResponse response = fileValidationHandler.validate(fileValidationRequestBuilder.build());
         // Assert
         assertNotNull(response);
         assertFalse(response.isValid());
@@ -135,12 +135,12 @@ class FileAuthValidationHandlerTest {
     @Test
     void testValidate_InvalidResponse_InvalidStatusCode() {
         // Arrange
-        FileAuthValidationRequest request = getRandomValueFileAuthValidationRequest().build();
-        when(fileAuthClient.executeRequest(anyString())).thenReturn(new FileAuthClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
+        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        when(fileClient.executeRequest(anyString())).thenReturn(new FileClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
                 "invalidValue", 400));
 
         // Act
-        FileAuthValidationResponse response = fileAuthValidationHandler.validate(request);
+        FileValidationResponse response = fileValidationHandler.validate(request);
 
         // Assert
         assertNotNull(response);
@@ -156,12 +156,12 @@ class FileAuthValidationHandlerTest {
     @Test
     void testValidate_InvalidResponse_EmptyFileContent() {
         // Arrange
-        FileAuthValidationRequest request = getRandomValueFileAuthValidationRequest().build();
-        when(fileAuthClient.executeRequest(anyString())).thenReturn(new FileAuthClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
+        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        when(fileClient.executeRequest(anyString())).thenReturn(new FileClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
                 "", 200));
 
         // Act
-        FileAuthValidationResponse response = fileAuthValidationHandler.validate(request);
+        FileValidationResponse response = fileValidationHandler.validate(request);
 
         // Assert
         assertNotNull(response);
@@ -178,15 +178,15 @@ class FileAuthValidationHandlerTest {
     @Test
     void testValidate_TokenValidatorErrors() {
         // Arrange
-        FileAuthValidationRequest request = getRandomValueFileAuthValidationRequest().build();
-        when(fileAuthClient.executeRequest(anyString())).thenReturn(new FileAuthClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
+        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        when(fileClient.executeRequest(anyString())).thenReturn(new FileClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
                 "file content", 200));
 
         ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.TOKEN_ERROR_EMPTY_TXT_BODY));
         when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
 
         // Act
-        FileAuthValidationResponse response = fileAuthValidationHandler.validate(request);
+        FileValidationResponse response = fileValidationHandler.validate(request);
 
         // Assert
         assertNotNull(response);
@@ -199,15 +199,15 @@ class FileAuthValidationHandlerTest {
         assertNull(response.validToken());
     }
 
-    private FileAuthValidationRequest.FileAuthValidationRequestBuilder getRandomValueFileAuthValidationRequest() {
-        return FileAuthValidationRequest.builder()
+    private FileValidationRequest.FileValidationRequestBuilder getRandomValueFileValidationRequest() {
+        return FileValidationRequest.builder()
             .domain("example.com")
             .randomValue("randomValue").challengeType(ChallengeType.RANDOM_VALUE)
             .challengeType(ChallengeType.RANDOM_VALUE);
     }
 
-    private FileAuthValidationRequest getTokenFileAuthValidationRequest() {
-        return FileAuthValidationRequest.builder()
+    private FileValidationRequest getTokenFileValidationRequest() {
+        return FileValidationRequest.builder()
                 .domain("example.com")
                 .randomValue("randomValue")
                 .challengeType(ChallengeType.REQUEST_TOKEN)

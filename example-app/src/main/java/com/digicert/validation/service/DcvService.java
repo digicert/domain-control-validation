@@ -3,6 +3,8 @@ package com.digicert.validation.service;
 import java.util.List;
 import java.util.Objects;
 
+import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
+import com.digicert.validation.methods.file.validate.FileValidationRequest;
 import org.springframework.stereotype.Component;
 
 import com.digicert.validation.DcvManager;
@@ -29,9 +31,7 @@ import com.digicert.validation.methods.email.prepare.EmailPreparation;
 import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
 import com.digicert.validation.methods.email.prepare.EmailSource;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
-import com.digicert.validation.methods.fileauth.prepare.FileAuthPreparationRequest;
-import com.digicert.validation.methods.fileauth.prepare.FileAuthPreparationResponse;
-import com.digicert.validation.methods.fileauth.validate.FileAuthValidationRequest;
+import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
 import com.digicert.validation.repository.AccountsRepository;
 import com.digicert.validation.repository.DomainsRepository;
 import com.digicert.validation.repository.entity.AccountsEntity;
@@ -121,7 +121,7 @@ public class DcvService {
         return saveValidationState(domainEntity, prepare.validationState());
     }
 
-    private DomainEntity saveFileValidationState(DcvRequest request, FileAuthPreparationResponse prepare) throws DcvBaseException {
+    private DomainEntity saveFileValidationState(DcvRequest request, FilePreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
         DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity);
         domainEntity.setDomainRandomValues(List.of(randomValue));
@@ -179,12 +179,12 @@ public class DcvService {
     }
 
     private DomainEntity submitFileDomain(DcvRequest dcvRequest) throws DcvBaseException {
-        FileAuthPreparationRequest dnsPreparation = new FileAuthPreparationRequest(dcvRequest.domain(), dcvRequest.filename(),
+        FilePreparationRequest dnsPreparation = new FilePreparationRequest(dcvRequest.domain(), dcvRequest.filename(),
                 mapToChallengeType(dcvRequest.dcvRequestType()));
-        FileAuthPreparationResponse prepare;
+        FilePreparationResponse prepare;
 
         try {
-            prepare = dcvManager.getFileAuthValidator().prepare(dnsPreparation);
+            prepare = dcvManager.getFileValidator().prepare(dnsPreparation);
         } catch (DcvException e) {
             throw new ValidationFailedException("Error preparing file validation");
         }
@@ -287,7 +287,7 @@ public class DcvService {
     private void validateFileDomain(Long accountId, ValidationState validationState, ValidateRequest validateRequest)
             throws DcvBaseException {
 
-        FileAuthValidationRequest.FileAuthValidationRequestBuilder requestBuilder = FileAuthValidationRequest.builder()
+        FileValidationRequest.FileValidationRequestBuilder requestBuilder = FileValidationRequest.builder()
                 .domain(validateRequest.domain)
                 .randomValue(validateRequest.randomValue)
                 .filename(validateRequest.filename)
@@ -301,7 +301,7 @@ public class DcvService {
         }
 
         try {
-            dcvManager.getFileAuthValidator().validate(requestBuilder.build());
+            dcvManager.getFileValidator().validate(requestBuilder.build());
         } catch (DcvException e) {
             throw new ValidationFailedException(e.getMessage());
         }

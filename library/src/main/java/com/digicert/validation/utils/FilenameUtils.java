@@ -23,22 +23,22 @@ public class FilenameUtils {
      * Validates a filename to ensure it contains only allowed characters
      * and does not exceed a maximum length.
      *
-     * @param fileAuthFileName the filename to validate
+     * @param fileName the filename to validate
      * @throws IllegalArgumentException if the filename is null, empty, contains
      *                                  invalid characters, or exceeds the maximum length
      */
-    public static void validateFilename(String fileAuthFileName) throws IllegalArgumentException {
-        if (fileAuthFileName == null || fileAuthFileName.isEmpty()) {
-            throw new IllegalArgumentException("fileAuthFileName cannot be null or empty");
+    public static void validateFilename(String fileName) throws IllegalArgumentException {
+        if (fileName == null || fileName.isEmpty()) {
+            throw new IllegalArgumentException("fileName cannot be null or empty");
         }
-        if (!FILENAME_CHAR_PATTERN.matcher(fileAuthFileName).matches()) {
-            throw new IllegalArgumentException("fileAuthFileName contains invalid characters");
+        if (!FILENAME_CHAR_PATTERN.matcher(fileName).matches()) {
+            throw new IllegalArgumentException("fileName contains invalid characters");
         }
 
         // Validate file name length
         int maxLength = 64;
-        if (fileAuthFileName.length() > maxLength) {
-            throw new IllegalArgumentException("fileAuthFileName exceeds maximum length of " + maxLength);
+        if (fileName.length() > maxLength) {
+            throw new IllegalArgumentException("fileName exceeds maximum length of " + maxLength);
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.digicert.validation.client.fileauth;
+package com.digicert.validation.client.file;
 
 import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
@@ -30,10 +30,10 @@ import static org.mockserver.model.HttpResponse.response;
 
 
 @Slf4j
-public class FileAuthClientTest {
+public class FileClientTest {
 
     private static ClientAndServer mockServer;
-    private FileAuthClient fileAuthClient;
+    private FileClient fileClient;
     private static final String TOKEN_PATH = "/.well-known/pki-validation/";
     private CloseableHttpClient httpClientSpy;
     private CustomDnsResolver mockCustomDnsResolver;
@@ -54,7 +54,7 @@ public class FileAuthClientTest {
         mockServer.reset();
 
         DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
-                .fileAuthUserAgent("testUserAgent")
+                .fileValidationUserAgent("testUserAgent")
                 .dnsServers(List.of("localhost"))
                 .build();
         DcvContext dcvContext = spy(new DcvContext(dcvConfiguration));
@@ -65,7 +65,7 @@ public class FileAuthClientTest {
         when(dcvContext.get(CustomDnsResolver.class)).thenReturn(mockCustomDnsResolver);
         doCallRealMethod().when(dcvContext).get(any());
 
-        fileAuthClient = new FileAuthClient(dcvContext) {
+        fileClient = new FileClient(dcvContext) {
             @Override
             CloseableHttpClient createHttpClient() {
                 httpClientSpy = spy(super.createHttpClient());
@@ -75,7 +75,7 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_Success() throws IOException {
+    void testFileClient_Success() throws IOException {
         String expectedResponse = "Success";
         mockServer.when(
                 request()
@@ -89,7 +89,7 @@ public class FileAuthClientTest {
         );
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(fileUrl, actualResponse.getFileUrl());
@@ -103,7 +103,7 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_2xxStatusCode() {
+    void testFileClient_2xxStatusCode() {
         String expectedResponse = "Created";
         mockServer.when(
                 request()
@@ -117,7 +117,7 @@ public class FileAuthClientTest {
         );
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(expectedResponse, actualResponse.getFileContent());
@@ -125,10 +125,10 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_ResponseSizeLimit() {
+    void testFileClient_ResponseSizeLimit() {
         DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
                 .dnsServers(List.of("123.45.67.89", "8.8.8.8"))
-                .fileAuthMaxBodyLength(10)
+                .fileValidationMaxBodyLength(10)
                 .build();
 
         mockServer.when(
@@ -139,29 +139,29 @@ public class FileAuthClientTest {
                 response()
                         .withContentType(MediaType.TEXT_PLAIN)
                         // Respond with a large body that exceeds the response size limit
-                        .withBody("a".repeat(config.getFileAuthMaxBodyLength() * 2))
+                        .withBody("a".repeat(config.getFileValidationMaxBodyLength() * 2))
         );
 
-        fileAuthClient = new FileAuthClient(new DcvContext(config));
+        fileClient = new FileClient(new DcvContext(config));
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNull(actualResponse.getException());
         assertNull(actualResponse.getDcvError());
         assertEquals(200, actualResponse.getStatusCode());
-        assertEquals(config.getFileAuthMaxBodyLength(), actualResponse.getFileContent().length());
+        assertEquals(config.getFileValidationMaxBodyLength(), actualResponse.getFileContent().length());
     }
 
     @Test
-    void testFileAuthClient_withCustomDnsResolver() {
+    void testFileClient_withCustomDnsResolver() {
         String domain = "my-cool-host.com";
         DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
                 .dnsServers(List.of("123.45.67.89", "8.8.8.8"))
                 .build();
 
         DcvContext dcvContext = new DcvContext(dcvConfiguration);
-        fileAuthClient = new FileAuthClient(dcvContext) {
+        fileClient = new FileClient(dcvContext) {
             @Override
             CustomDnsResolver getCustomDnsResolver() {
                 return mockCustomDnsResolver;
@@ -181,7 +181,7 @@ public class FileAuthClientTest {
         );
 
         String fileUrl = "http://" + domain + ":" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(expectedResponse, actualResponse.getFileContent());
@@ -189,7 +189,7 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_Failure() {
+    void testFileClient_Failure() {
         mockServer.when(
                 request()
                         .withMethod("GET")
@@ -201,7 +201,7 @@ public class FileAuthClientTest {
         );
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "nonexistent.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(404, actualResponse.getStatusCode());
@@ -209,10 +209,10 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_Timeout() {
+    void testFileClient_Timeout() {
         DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
                 .dnsServers(List.of("123.45.67.89", "8.8.8.8"))
-                .fileAuthReadTimeout(5)
+                .fileValidationReadTimeout(5)
                 .build();
 
         mockServer.when(
@@ -222,7 +222,7 @@ public class FileAuthClientTest {
         ).respond(
                 httpRequest -> {
                     try {
-                        Thread.sleep(config.getFileAuthConnectTimeout() * 2L);
+                        Thread.sleep(config.getFileValidationConnectTimeout() * 2L);
                     } catch (InterruptedException e) {
                         log.info("Thread interrupted", e);
                     }
@@ -233,10 +233,10 @@ public class FileAuthClientTest {
                 }
         );
 
-        fileAuthClient = new FileAuthClient(new DcvContext(config));
+        fileClient = new FileClient(new DcvContext(config));
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "timeout.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(0, actualResponse.getStatusCode());
@@ -245,7 +245,7 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_ThrowException() {
+    void testFileClient_ThrowException() {
         // throw exception when endpoint is called
         mockServer.when(
                 request()
@@ -254,7 +254,7 @@ public class FileAuthClientTest {
         ).error(new HttpError());
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "timeout.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(0, actualResponse.getStatusCode());
@@ -265,14 +265,14 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_withCustomDnsResolver_SecondServer_FirstServerEmptyValue() {
+    void testFileClient_withCustomDnsResolver_SecondServer_FirstServerEmptyValue() {
         String domain = "my-cool-host.com";
             DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
                 .dnsServers(List.of("", "8.8.8.8"))
                 .build();
 
         DcvContext dcvContext = new DcvContext(dcvConfiguration);
-        fileAuthClient = new FileAuthClient(dcvContext) {
+        fileClient = new FileClient(dcvContext) {
             @Override
             CustomDnsResolver getCustomDnsResolver() {
                 return mockCustomDnsResolver;
@@ -292,7 +292,7 @@ public class FileAuthClientTest {
         );
 
         String fileUrl = "http://" + domain +  ":" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(expectedResponse, actualResponse.getFileContent());
@@ -300,7 +300,7 @@ public class FileAuthClientTest {
     }
 
     @Test
-    void testFileAuthClient_cicularRedirects_disallowed() {
+    void testFileClient_cicularRedirects_disallowed() {
         mockServer.when(
                 request()
                         .withMethod("GET")
@@ -321,7 +321,7 @@ public class FileAuthClientTest {
         );
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "redirect1.txt";
-        FileAuthClientResponse actualResponse = fileAuthClient.executeRequest(fileUrl);
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
         assertEquals(0, actualResponse.getStatusCode());

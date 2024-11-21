@@ -1,4 +1,4 @@
-package com.digicert.validation.methods.fileauth.validate;
+package com.digicert.validation.methods.file.validate;
 
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.ChallengeType;
@@ -21,10 +21,10 @@ import java.util.Set;
  * @param errors           The errors found during the validation process (null if no errors).
  */
 @Builder
-public record FileAuthValidationResponse(boolean isValid,
-                                         String domain,
-                                         String fileUrl,
-                                         ChallengeType challengeType,
-                                         String validRandomValue,
-                                         String validToken,
-                                         Set<DcvError> errors) { }
+public record FileValidationResponse(boolean isValid,
+                                     String domain,
+                                     String fileUrl,
+                                     ChallengeType challengeType,
+                                     String validRandomValue,
+                                     String validToken,
+                                     Set<DcvError> errors) { }

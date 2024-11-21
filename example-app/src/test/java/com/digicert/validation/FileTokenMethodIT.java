@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-class FileAuthTokenMethodIT {
+class FileTokenMethodIT {
 
     @Autowired
     private ExampleAppClient exampleAppClient;
@@ -34,7 +34,7 @@ class FileAuthTokenMethodIT {
     private final CSRGenerator csrGenerator = new CSRGenerator();
 
     @Test
-    void verifyFileAuthToken_happyDayFlow() throws Exception {
+    void verifyFileToken_happyDayFlow() throws Exception {
         String domainName = DomainUtils.getRandomDomainName(2, "com");
 
         String tokenKey = "token-key";
@@ -67,7 +67,7 @@ class FileAuthTokenMethodIT {
     }
 
     @Test
-    void verifyFileAuthToken_happyDayFlow_customFilename() throws Exception {
+    void verifyFileToken_happyDayFlow_customFilename() throws Exception {
         String domainName = DomainUtils.getRandomDomainName(2, "com");
 
         String tokenKey = "token-key";

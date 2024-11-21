@@ -31,7 +31,7 @@ class DcvManagerTest {
         assertNotNull(dcvManager);
         assertNotNull(dcvManager.getDnsValidator());
         assertNotNull(dcvManager.getEmailValidator());
-        assertNotNull(dcvManager.getFileAuthValidator());
+        assertNotNull(dcvManager.getFileValidator());
     }
 
     @Test

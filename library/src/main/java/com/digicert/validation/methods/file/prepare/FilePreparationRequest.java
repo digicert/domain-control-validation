@@ -1,4 +1,4 @@
-package com.digicert.validation.methods.fileauth.prepare;
+package com.digicert.validation.methods.file.prepare;
 
 import com.digicert.validation.enums.ChallengeType;
 
@@ -7,7 +7,7 @@ import com.digicert.validation.enums.ChallengeType;
  * <p>
  * This class encapsulates the details required to prepare for file authentication. File authentication is a method used to
  * verify the ownership or control of a domain by placing a specific file at a predetermined location on the domain's web server.
- * The FileAuthPreparationRequest class includes the domain for which the authentication is being prepared and the type of secret
+ * The FilePreparationRequest class includes the domain for which the authentication is being prepared and the type of secret
  * used for validation. The secret type can vary, providing flexibility in the validation process.
  *
  * @param domain the domain for which the file authentication preparation is requested
@@ -28,12 +28,12 @@ import com.digicert.validation.enums.ChallengeType;
  *                   uniqueness and security of the validation process. The choice of secret type can affect the complexity and
  *                   security of the authentication.
  */
-public record FileAuthPreparationRequest(String domain, String filename, ChallengeType challengeType) {
+public record FilePreparationRequest(String domain, String filename, ChallengeType challengeType) {
 
     /**
-     * Constructs a new FileAuthPreparationRequest with the specified domain and a default challenge type of RANDOM_VALUE.
+     * Constructs a new FilePreparationRequest with the specified domain and a default challenge type of RANDOM_VALUE.
      * <p>
-     * This constructor initializes a new instance of FileAuthPreparationRequest using the provided domain name and sets the
+     * This constructor initializes a new instance of FilePreparationRequest using the provided domain name and sets the
      * secret type to RANDOM_VALUE by default. This is useful for scenarios where a random value is sufficient for the validation
      * process, simplifying the creation of the request by not requiring the caller to specify the secret type explicitly.
      *
@@ -42,7 +42,7 @@ public record FileAuthPreparationRequest(String domain, String filename, Challen
      *               This parameter specifies the domain name that will be used in the file authentication process. It must be a
      *               valid domain name, ensuring that the request is correctly targeted.
      */
-    public FileAuthPreparationRequest(String domain) {
+    public FilePreparationRequest(String domain) {
         this(domain, null, ChallengeType.RANDOM_VALUE);
     }
 }

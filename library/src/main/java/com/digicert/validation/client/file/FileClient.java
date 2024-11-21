@@ -1,4 +1,4 @@
-package com.digicert.validation.client.fileauth;
+package com.digicert.validation.client.file;
 
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
@@ -32,7 +32,7 @@ import java.security.NoSuchAlgorithmException;
  * It uses Apache HttpClient for making HTTP requests.
  */
 @Slf4j
-public class FileAuthClient implements Closeable {
+public class FileClient implements Closeable {
 
     /** The HTTP client used to make requests. */
     private CloseableHttpClient httpClient;
@@ -61,13 +61,13 @@ public class FileAuthClient implements Closeable {
     private final DcvContext dcvContext;
 
     /**
-     * Constructs a new FileAuthClient with the specified configuration.
+     * Constructs a new FileClient with the specified configuration.
      *
      * @param dcvContext context where we can find the needed dependencies and configuration
      */
-    public FileAuthClient(DcvContext dcvContext) {
-        this.userAgent = dcvContext.getDcvConfiguration().getFileAuthUserAgent();
-        this.maxBodyLength = dcvContext.getDcvConfiguration().getFileAuthMaxBodyLength();
+    public FileClient(DcvContext dcvContext) {
+        this.userAgent = dcvContext.getDcvConfiguration().getFileValidationUserAgent();
+        this.maxBodyLength = dcvContext.getDcvConfiguration().getFileValidationMaxBodyLength();
         this.dcvContext = dcvContext;
     }
 
@@ -75,13 +75,13 @@ public class FileAuthClient implements Closeable {
      * Executes an HTTP GET request to the specified file URL.
      * <p>
      * If an exception occurs during the request or response processing, it is logged, and the appropriate error
-     * information is set in the `FileAuthClientResponse`.
+     * information is set in the `FileClientResponse`.
      *
      * @param fileUrl The URL of the file to request.
-     * @return A FileAuthClientResponse containing either the response data or an exception if the request failed.
+     * @return A FileClientResponse containing either the response data or an exception if the request failed.
      */
-    public FileAuthClientResponse executeRequest(String fileUrl) {
-        FileAuthClientResponse clientResponse = new FileAuthClientResponse(fileUrl);
+    public FileClientResponse executeRequest(String fileUrl) {
+        FileClientResponse clientResponse = new FileClientResponse(fileUrl);
         try {
             HttpGet request = new HttpGet(fileUrl);
             request.addHeader("User-Agent", userAgent);
@@ -134,9 +134,9 @@ public class FileAuthClient implements Closeable {
         return RequestConfig.custom()
                 .setRedirectsEnabled(true) // Enable redirects
                 .setCircularRedirectsAllowed(false)
-                .setMaxRedirects(dcvContext.getDcvConfiguration().getFileAuthMaxRedirects())
-                .setConnectionRequestTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileAuthConnectTimeout()))
-                .setResponseTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileAuthReadTimeout()))
+                .setMaxRedirects(dcvContext.getDcvConfiguration().getFileValidationMaxRedirects())
+                .setConnectionRequestTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileValidationConnectTimeout()))
+                .setResponseTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileValidationReadTimeout()))
                 .setAuthenticationEnabled(false)
                 .setCircularRedirectsAllowed(false)
                 .build();
@@ -163,7 +163,7 @@ public class FileAuthClient implements Closeable {
      */
     private SocketConfig getSocketConfig() {
         return SocketConfig.custom()
-                .setSoTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileAuthSocketTimeout()))
+                .setSoTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileValidationSocketTimeout()))
                 .build();
     }
 
@@ -174,8 +174,8 @@ public class FileAuthClient implements Closeable {
      */
     private ConnectionConfig getConnectionConfig() {
         return ConnectionConfig.custom()
-                .setConnectTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileAuthConnectTimeout()))
-                .setSocketTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileAuthSocketTimeout()))
+                .setConnectTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileValidationConnectTimeout()))
+                .setSocketTimeout(Timeout.ofMilliseconds(dcvContext.getDcvConfiguration().getFileValidationSocketTimeout()))
                 .build();
     }
 

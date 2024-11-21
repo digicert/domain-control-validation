@@ -31,7 +31,7 @@ class FileMethodIT {
     private final Long defaultAccountId = 1234L;
 
     @Test
-    void verifyFileAuth_happyDayFlow() throws IOException {
+    void verifyFileValidation_happyDayFlow() throws IOException {
         DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_AUTH);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
@@ -50,7 +50,7 @@ class FileMethodIT {
     }
 
     @Test
-    void verifyFileAuth_happyDayFlow_CustomFilename() throws IOException {
+    void verifyFileValidation_happyDayFlow_CustomFilename() throws IOException {
         DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), "customfilename", defaultAccountId, DcvRequestType.FILE_AUTH);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
@@ -69,7 +69,7 @@ class FileMethodIT {
     }
 
     @Test
-    void verifyFileAuth_useDifferentValueAsFileName() throws IOException {
+    void verifyFileValidation_useDifferentValueAsFileName() throws IOException {
         String fileName = "some-file.txt";
 
         DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_AUTH);
@@ -90,7 +90,7 @@ class FileMethodIT {
     }
 
     @Test
-    void verifyFileAuth_useDefaultFilename() throws IOException {
+    void verifyFileValidation_useDefaultFilename() throws IOException {
         DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_AUTH);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 

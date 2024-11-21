@@ -1,5 +1,6 @@
 package com.digicert.validation.enums;
 
+import com.digicert.validation.methods.file.FileValidator;
 import lombok.Getter;
 
 /**
@@ -29,7 +30,7 @@ import lombok.Getter;
  *
  * @see com.digicert.validation.methods.dns.DnsValidator
  * @see com.digicert.validation.methods.email.EmailValidator
- * @see com.digicert.validation.methods.fileauth.FileAuthValidator
+ * @see FileValidator
  */
 @Getter
 public enum DcvMethod {
