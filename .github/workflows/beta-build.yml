@@ -116,12 +116,10 @@ jobs:
 
       - name: List GPG Keys
         run: gpg --list-secret-keys --keyid-format LONG
-        
+
       - name: Configure GPG
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
-          echo "${{ secrets.GPG_PUBLIC_KEY }}"  | gpg --batch --yes --import
-          echo "${{ secrets.GPG_PASSPHRASE }}"  | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --edit-key ${{ secrets.GPG_KEY_ID }} trust quit
 
       - name: Publish to Maven Central Beta
         run: |
