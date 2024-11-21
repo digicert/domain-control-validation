@@ -6,7 +6,7 @@
 
     <groupId>com.digicert.validation</groupId>
     <artifactId>domain-control-validation-parent</artifactId>
-    <version>1.0.0-beta</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <licenses>
