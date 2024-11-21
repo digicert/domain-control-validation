@@ -131,6 +131,9 @@ jobs:
               }
             ]
 
+      - name: Verify Maven Settings
+        run: cat ~/.m2/settings.xml
+
       - name: Publish to Maven Central Beta
         run: |
           mvn -pl library javadoc:jar
