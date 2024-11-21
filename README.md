@@ -59,7 +59,7 @@ First, add the domain-control-validation library as a dependency in your pom.xml
 <dependency>
     <groupId>com.digicert.validation</groupId>
     <artifactId>domain-control-validation-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
 
