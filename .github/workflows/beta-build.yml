@@ -127,7 +127,7 @@ jobs:
               {
                 "id": "ossrh",
                 "username": "${{ secrets.MVN_CENTRAL_USERNAME }}",
-                "password": "${{ secrets.MVN_CENTRAL_PASSWORD }}"
+                "password": "${{ secrets.MVN_CENTRAL_USER_TOKEN }}"
               }
             ]
 
