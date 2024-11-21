@@ -80,26 +80,26 @@ class DcvConfigurationTest {
     @Test
     void testFileValidationNull() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new DcvConfiguration.DcvConfigurationBuilder().fileValidationFileName(null).build());
-        assertEquals("fileValidationFileName cannot be null or empty", exception.getMessage());
+        assertEquals("fileName cannot be null or empty", exception.getMessage());
     }
 
     @Test
     void testFileValidationEmpty() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new DcvConfiguration.DcvConfigurationBuilder().fileValidationFileName("").build());
-        assertEquals("fileValidationFileName cannot be null or empty", exception.getMessage());
+        assertEquals("fileName cannot be null or empty", exception.getMessage());
     }
 
     @Test
     void testFileValidationInvalidCharacters() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new DcvConfiguration.DcvConfigurationBuilder().fileValidationFileName("invalid*name.txt").build());
-        assertEquals("fileValidationFileName contains invalid characters", exception.getMessage());
+        assertEquals("fileName contains invalid characters", exception.getMessage());
     }
 
     @Test
     void testFileValidationTooLong() {
         String longFileName = "a".repeat(65);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new DcvConfiguration.DcvConfigurationBuilder().fileValidationFileName(longFileName).build());
-        assertEquals("fileValidationFileName exceeds maximum length of 64", exception.getMessage());
+        assertEquals("fileName exceeds maximum length of 64", exception.getMessage());
     }
 
     @Test
