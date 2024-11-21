@@ -1,7 +1,7 @@
-package com.digicert.validation.secrets;
+package com.digicert.validation.challenges;
 
 /**
- * Interface for validating tokens.
+ * Interface for validating request tokens.
  * <p>
  * This interface defines the contract for token validation within the application. Implementations of this interface
  * are responsible for providing the logic to validate tokens based on a given key, value, and text body.

@@ -7,7 +7,7 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
-import com.digicert.validation.secrets.RequestTokenUtils;
+import com.digicert.validation.challenges.RequestTokenUtils;
 import com.digicert.validation.utils.CSRGenerator;
 import com.digicert.validation.utils.DomainUtils;
 import org.junit.jupiter.api.Test;

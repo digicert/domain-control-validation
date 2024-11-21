@@ -1,19 +1,18 @@
 package com.digicert.validation.methods.file.validate;
 
-import java.util.*;
-
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.ChallengeValidationResponse;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.client.file.FileClient;
+import com.digicert.validation.client.file.FileClientResponse;
+import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.LogEvents;
-import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.secrets.ChallengeValidationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import com.digicert.validation.client.file.FileClient;
-import com.digicert.validation.client.file.FileClientResponse;
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
+import java.util.*;
 
 /**
  * Handles the validation of file-based domain control validation (DCV) requests.

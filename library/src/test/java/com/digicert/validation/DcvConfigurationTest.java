@@ -1,7 +1,7 @@
 package com.digicert.validation;
 
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.TokenValidator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

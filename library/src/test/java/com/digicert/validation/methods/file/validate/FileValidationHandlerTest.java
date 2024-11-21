@@ -6,9 +6,9 @@ import com.digicert.validation.client.file.FileClient;
 import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
-import com.digicert.validation.secrets.ChallengeValidationResponse;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.ChallengeValidationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

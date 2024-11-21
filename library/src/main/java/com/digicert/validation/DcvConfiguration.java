@@ -5,10 +5,10 @@ import com.digicert.validation.methods.email.prepare.provider.WhoisEmailProvider
 import com.digicert.validation.psl.PslDataProvider;
 import com.digicert.validation.random.BasicRandomValueGenerator;
 import com.digicert.validation.random.RandomValueGenerator;
-import com.digicert.validation.secrets.BasicRandomValueValidator;
-import com.digicert.validation.secrets.BasicTokenValidator;
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
+import com.digicert.validation.challenges.BasicRandomValueValidator;
+import com.digicert.validation.challenges.BasicTokenValidator;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.TokenValidator;
 import com.digicert.validation.utils.NoopPslOverrideSupplier;
 import com.digicert.validation.utils.DomainNameUtils;
 import com.digicert.validation.utils.FilenameUtils;

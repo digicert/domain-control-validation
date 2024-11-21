@@ -1,4 +1,4 @@
-package com.digicert.validation.secrets;
+package com.digicert.validation.challenges;
 
 import com.digicert.validation.enums.DcvError;
 import org.bouncycastle.operator.OperatorCreationException;

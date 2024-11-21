@@ -1,4 +1,4 @@
-package com.digicert.validation.secrets;
+package com.digicert.validation.challenges;
 
 /**
  * Interface for validating random values.
