@@ -14,10 +14,6 @@
     <artifactId>domain-control-validation</artifactId>
     <url>https://github.com/digicert/domain-control-validation</url>
 
-    <properties>
-        <autoReleaseAfterClose>false</autoReleaseAfterClose>
-    </properties>
-
     <licenses>
         <license>
             <name>MIT License</name>
@@ -41,6 +37,8 @@
     </scm>
 
     <properties>
+        <autoReleaseAfterClose>false</autoReleaseAfterClose>
+
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
