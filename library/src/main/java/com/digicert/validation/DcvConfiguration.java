@@ -6,9 +6,9 @@ import com.digicert.validation.psl.PslDataProvider;
 import com.digicert.validation.random.BasicRandomValueGenerator;
 import com.digicert.validation.random.RandomValueGenerator;
 import com.digicert.validation.challenges.BasicRandomValueValidator;
-import com.digicert.validation.challenges.BasicTokenValidator;
+import com.digicert.validation.challenges.BasicRequestTokenValidator;
 import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.utils.NoopPslOverrideSupplier;
 import com.digicert.validation.utils.DomainNameUtils;
 import com.digicert.validation.utils.FilenameUtils;
@@ -115,7 +115,7 @@ public class DcvConfiguration {
      * a hash of the hashing value using the hashing key as the key for the hash and the timestamp as a salt.
      * It can be overridden to handle a different request token format.
      */
-    private TokenValidator tokenValidator = new BasicTokenValidator();
+    private RequestTokenValidator requestTokenValidator = new BasicRequestTokenValidator();
 
     /** The generator used to create random values for use in the DCV process. */
     private RandomValueGenerator randomValueGenerator = new BasicRandomValueGenerator();
@@ -420,15 +420,15 @@ public class DcvConfiguration {
          * implementation handles DigiCert's request token format, which is a timestamp followed by a hash of the
          * hashing value using the hashing key as the key for the hash and the timestamp as a salt.
          *
-         * @param tokenValidator the custom token value validator
+         * @param requestTokenValidator the custom token value validator
          * @return the builder instance
          * @throws IllegalArgumentException if tokenValidator is null
          */
-        public DcvConfigurationBuilder tokenValidator(TokenValidator tokenValidator) {
-            if (tokenValidator == null) {
+        public DcvConfigurationBuilder tokenValidator(RequestTokenValidator requestTokenValidator) {
+            if (requestTokenValidator == null) {
                 throw new IllegalArgumentException("tokenValidator cannot be null");
             }
-            dcvConfiguration.setTokenValidator(tokenValidator);
+            dcvConfiguration.setRequestTokenValidator(requestTokenValidator);
             return this;
         }
 

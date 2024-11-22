@@ -19,17 +19,17 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BasicTokenValidatorTest {
+class BasicRequestTokenValidatorTest {
 
     private static final RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
     private static final String DEFAULT_TOKEN_KEY = "someToken";
     private static final String DEFAULT_TOKEN_VALUE = "some-token-value";
 
-    private BasicTokenValidator basicTokenValueSecretValidator;
+    private BasicRequestTokenValidator basicTokenValueSecretValidator;
 
     @BeforeEach
     void setUp() {
-        basicTokenValueSecretValidator = new BasicTokenValidator();
+        basicTokenValueSecretValidator = new BasicRequestTokenValidator();
     }
 
     @Test

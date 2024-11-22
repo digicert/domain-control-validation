@@ -7,7 +7,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.challenges.ChallengeValidationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.xbill.DNS.CAARecord;
@@ -31,7 +31,7 @@ public class DnsValidationHandler {
     final RandomValueValidator randomValueValidator;
 
     /** Validator for token secrets. */
-    final TokenValidator tokenValidator;
+    final RequestTokenValidator requestTokenValidator;
 
     /** The DNS client used to fetch DNS data. */
     final DnsClient dnsClient;
@@ -43,7 +43,7 @@ public class DnsValidationHandler {
      */
     public DnsValidationHandler(DcvContext dcvContext) {
         this.randomValueValidator = dcvContext.get(RandomValueValidator.class);
-        this.tokenValidator = dcvContext.get(TokenValidator.class);
+        this.requestTokenValidator = dcvContext.get(RequestTokenValidator.class);
         this.dnsClient = dcvContext.get(DnsClient.class);
 
         this.dnsDomainLabel = dcvContext.getDcvConfiguration().getDnsDomainLabel();
@@ -112,7 +112,7 @@ public class DnsValidationHandler {
      */
     private ChallengeValidationResponse validateRequestToken(List<String> recordValues, DnsValidationRequest request) {
         return recordValues.stream()
-                .map(recordValue -> tokenValidator.validate(request.getTokenKey(), request.getTokenValue(), recordValue))
+                .map(recordValue -> requestTokenValidator.validate(request.getTokenKey(), request.getTokenValue(), recordValue))
                 .findFirst()
                 .orElse(new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.TOKEN_ERROR_NOT_FOUND)));
     }

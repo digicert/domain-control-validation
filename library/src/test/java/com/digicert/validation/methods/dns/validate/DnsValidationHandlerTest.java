@@ -6,9 +6,9 @@ import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.challenges.BasicRandomValueValidator;
-import com.digicert.validation.challenges.BasicTokenValidator;
+import com.digicert.validation.challenges.BasicRequestTokenValidator;
 import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class DnsValidationHandlerTest {
 
         DcvContext dcvContext = mock(DcvContext.class, RETURNS_DEEP_STUBS);
         when(dcvContext.get(RandomValueValidator.class)).thenReturn(new BasicRandomValueValidator());
-        when(dcvContext.get(TokenValidator.class)).thenReturn(new BasicTokenValidator());
+        when(dcvContext.get(RequestTokenValidator.class)).thenReturn(new BasicRequestTokenValidator());
         when(dcvContext.get(DnsClient.class)).thenReturn(dnsClient);
         when(dcvContext.getDcvConfiguration().getDnsDomainLabel()).thenReturn("_testLabel");
 

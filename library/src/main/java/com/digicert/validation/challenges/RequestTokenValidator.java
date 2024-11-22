@@ -6,7 +6,7 @@ package com.digicert.validation.challenges;
  * This interface defines the contract for token validation within the application. Implementations of this interface
  * are responsible for providing the logic to validate tokens based on a given key, value, and text body.
  */
-public interface TokenValidator {
+public interface RequestTokenValidator {
 
     /**
      * Validates the provided token using the given key, value, and text body.

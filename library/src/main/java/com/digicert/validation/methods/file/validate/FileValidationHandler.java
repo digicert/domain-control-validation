@@ -3,7 +3,7 @@ package com.digicert.validation.methods.file.validate;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.challenges.ChallengeValidationResponse;
 import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.client.file.FileClient;
 import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.ChallengeType;
@@ -38,7 +38,7 @@ public class FileValidationHandler {
     private final RandomValueValidator randomValueValidator;
 
     /** The token validator. */
-    private final TokenValidator tokenValidator;
+    private final RequestTokenValidator requestTokenValidator;
 
     /** The path to the token. */
     private static final String TOKEN_PATH = "/.well-known/pki-validation/";
@@ -61,7 +61,7 @@ public class FileValidationHandler {
     public FileValidationHandler(DcvContext dcvContext) {
         fileClient = dcvContext.get(FileClient.class);
         randomValueValidator = dcvContext.get(RandomValueValidator.class);
-        tokenValidator = dcvContext.get(TokenValidator.class);
+        requestTokenValidator = dcvContext.get(RequestTokenValidator.class);
 
         defaultFileValidationFilename = dcvContext.getDcvConfiguration().getFileValidationFilename();
         fileValidationCheckHttps = dcvContext.getDcvConfiguration().getFileValidationCheckHttps();
@@ -136,7 +136,7 @@ public class FileValidationHandler {
     private ChallengeValidationResponse getValidSecret(FileValidationRequest fileValidationRequest, String fileContent) {
         return switch (fileValidationRequest.getChallengeType()) {
             case RANDOM_VALUE -> randomValueValidator.validate(fileValidationRequest.getRandomValue(), fileContent);
-            case REQUEST_TOKEN -> tokenValidator.validate(fileValidationRequest.getTokenKey(), fileValidationRequest.getTokenValue(), fileContent);
+            case REQUEST_TOKEN -> requestTokenValidator.validate(fileValidationRequest.getTokenKey(), fileValidationRequest.getTokenValue(), fileContent);
         };
     }
 

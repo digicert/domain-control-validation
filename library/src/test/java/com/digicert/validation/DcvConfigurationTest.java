@@ -1,7 +1,7 @@
 package com.digicert.validation;
 
 import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -138,12 +138,12 @@ class DcvConfigurationTest {
 
     @Test
     void testTokenValueSecretValidator() {
-        TokenValidator mockTokenValidator = mock(TokenValidator.class);
+        RequestTokenValidator mockValidator = mock(RequestTokenValidator.class);
         DcvConfiguration.DcvConfigurationBuilder builder = new DcvConfiguration.DcvConfigurationBuilder();
 
-        builder.tokenValidator(mockTokenValidator);
+        builder.tokenValidator(mockValidator);
         DcvConfiguration config = builder.build();
 
-        assertEquals(mockTokenValidator, config.getTokenValidator());
+        assertEquals(mockValidator, config.getRequestTokenValidator());
     }
 }

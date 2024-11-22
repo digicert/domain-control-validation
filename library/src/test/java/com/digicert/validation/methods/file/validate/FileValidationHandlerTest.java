@@ -7,7 +7,7 @@ import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.TokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.challenges.ChallengeValidationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ class FileValidationHandlerTest {
     private FileValidationHandler fileValidationHandler;
     private FileClient fileClient;
     private RandomValueValidator randomValueValidator;
-    private TokenValidator tokenValidator;
+    private RequestTokenValidator requestTokenValidator;
 
     @BeforeEach
     void setUp() {
@@ -37,12 +37,12 @@ class FileValidationHandlerTest {
     private void initializeMocks(DcvConfiguration dcvConfiguration) {
         fileClient = mock(FileClient.class);
         randomValueValidator = mock(RandomValueValidator.class);
-        tokenValidator = mock(TokenValidator.class);
+        requestTokenValidator = mock(RequestTokenValidator.class);
 
         DcvContext dcvContext = mock(DcvContext.class);
         when(dcvContext.get(FileClient.class)).thenReturn(fileClient);
         when(dcvContext.get(RandomValueValidator.class)).thenReturn(randomValueValidator);
-        when(dcvContext.get(TokenValidator.class)).thenReturn(tokenValidator);
+        when(dcvContext.get(RequestTokenValidator.class)).thenReturn(requestTokenValidator);
         when(dcvContext.getDcvConfiguration()).thenReturn(dcvConfiguration);
 
         fileValidationHandler = new FileValidationHandler(dcvContext);

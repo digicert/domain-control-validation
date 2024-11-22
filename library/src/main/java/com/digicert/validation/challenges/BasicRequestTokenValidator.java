@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A basic implementation of the {@link TokenValidator} interface.
+ * A basic implementation of the {@link RequestTokenValidator} interface.
  * This validator checks if a given token is present in the provided text body
  * and validates its timestamp and format.
  * <p>
@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * is required for security purposes, such as validating digital certificates
  * or other secure tokens.
  */
-public class BasicTokenValidator implements TokenValidator {
+public class BasicRequestTokenValidator implements RequestTokenValidator {
 
     /**
      * The format used for the timestamp in the token.
@@ -68,7 +68,7 @@ public class BasicTokenValidator implements TokenValidator {
      * necessary components for token validation. It ensures that the validator
      * is ready to be used immediately after instantiation.
      */
-    public BasicTokenValidator() {
+    public BasicRequestTokenValidator() {
         // Default constructor
     }
 
