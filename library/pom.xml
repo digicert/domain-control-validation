@@ -14,6 +14,10 @@
     <artifactId>domain-control-validation</artifactId>
     <url>https://github.com/digicert/domain-control-validation</url>
 
+    <properties>
+        <autoReleaseAfterClose>false</autoReleaseAfterClose>
+    </properties>
+
     <licenses>
         <license>
             <name>MIT License</name>
@@ -286,7 +290,7 @@
                             <serverId>central</serverId>
                             <!-- This will require manual promotion until we change this to false.-->
                             <!-- This is useful for testing since the artifacts will be staged and not released.-->
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <autoReleaseAfterClose>${autoReleaseAfterClose}</autoReleaseAfterClose>
                         </configuration>
                     </plugin>
                 </plugins>

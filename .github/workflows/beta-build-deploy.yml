@@ -1,4 +1,4 @@
-name: release
+name: Beta Build and Deploy
 on:
   push:
     branches:
@@ -131,8 +131,8 @@ jobs:
               }
             ]
 
-      - name: Publish to Maven Central Beta
+      - name: Deploy to Maven Central (no publish)
         run: |
           mvn -pl library javadoc:jar
-          mvn -pl library deploy -P deploy-to-maven-central-beta -DskipTests -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} -X --batch-mode
+          mvn -pl library deploy -P deploy-to-maven-central-beta -DskipTests -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} --batch-mode
 
