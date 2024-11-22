@@ -118,14 +118,14 @@ jobs:
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
       
-      # Setup the ossrh server credentials in settings.xml
+      # Setup the central server credentials in settings.xml
       - name: Configure Server Credentials for Maven Central
         uses: whelk-io/maven-settings-xml-action@v20
         with:
           servers: >
             [
               {
-                "id": "ossrh",
+                "id": "central",
                 "username": "${{ secrets.MVN_CENTRAL_USERNAME }}",
                 "password": "${{ secrets.MVN_CENTRAL_USER_TOKEN }}"
               }
