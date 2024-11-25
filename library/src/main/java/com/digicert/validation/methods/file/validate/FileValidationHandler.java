@@ -1,4 +1,4 @@
-package com.digicert.validation.methods.fileauth.validate;
+package com.digicert.validation.methods.file.validate;
 
 import java.util.*;
 
@@ -10,8 +10,8 @@ import com.digicert.validation.secrets.ChallengeValidationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import com.digicert.validation.client.fileauth.FileAuthClient;
-import com.digicert.validation.client.fileauth.FileAuthClientResponse;
+import com.digicert.validation.client.file.FileClient;
+import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.secrets.RandomValueValidator;
 import com.digicert.validation.secrets.TokenValidator;
 
@@ -24,10 +24,10 @@ import com.digicert.validation.secrets.TokenValidator;
  * the requests, and retrieve the required file URLs.
  */
 @Slf4j
-public class FileAuthValidationHandler {
+public class FileValidationHandler {
 
     /** The file authentication client. */
-    private FileAuthClient fileAuthClient;
+    private FileClient fileClient;
 
     /**
      * The random value validator.
@@ -45,27 +45,27 @@ public class FileAuthValidationHandler {
     private static final String TOKEN_PATH = "/.well-known/pki-validation/";
 
     /** The default file authentication filename. */
-    private final String defaultFileAuthFilename;
+    private final String defaultFileValidationFilename;
 
     /** The flag to check if the file authentication request should be made over HTTPS. */
-    private final boolean fileAuthCheckHttps;
+    private final boolean fileValidationCheckHttps;
 
     /**
-     * Constructs a new FileAuthValidationHandler with the specified configuration.
+     * Constructs a new FileValidationHandler with the specified configuration.
      * <p>
-     * This constructor initializes the FileAuthValidationHandler with the necessary dependencies and configuration
+     * This constructor initializes the FileValidationHandler with the necessary dependencies and configuration
      * settings. It retrieves the required clients and validators from the provided DcvContext and sets up the default
      * file authentication filename.
      *
      * @param dcvContext context where we can find the needed dependencies / configuration
      */
-    public FileAuthValidationHandler(DcvContext dcvContext) {
-        fileAuthClient = dcvContext.get(FileAuthClient.class);
+    public FileValidationHandler(DcvContext dcvContext) {
+        fileClient = dcvContext.get(FileClient.class);
         randomValueValidator = dcvContext.get(RandomValueValidator.class);
         tokenValidator = dcvContext.get(TokenValidator.class);
 
-        defaultFileAuthFilename = dcvContext.getDcvConfiguration().getFileAuthFilename();
-        fileAuthCheckHttps = dcvContext.getDcvConfiguration().getFileAuthCheckHttps();
+        defaultFileValidationFilename = dcvContext.getDcvConfiguration().getFileValidationFilename();
+        fileValidationCheckHttps = dcvContext.getDcvConfiguration().getFileValidationCheckHttps();
     }
 
     /**
@@ -79,29 +79,29 @@ public class FileAuthValidationHandler {
      * @param validationRequest the file authentication validation request
      * @return the file authentication validation response
      */
-    public FileAuthValidationResponse validate(FileAuthValidationRequest validationRequest) {
+    public FileValidationResponse validate(FileValidationRequest validationRequest) {
         List<String> fileUrls = getFileUrls(validationRequest);
         ChallengeType challengeType = validationRequest.getChallengeType();
         Set<DcvError> errors = new HashSet<>();
 
         for (String fileUrl : fileUrls) {
-            FileAuthClientResponse fileAuthClientResponse = fileAuthClient.executeRequest(fileUrl);
+            FileClientResponse fileClientResponse = fileClient.executeRequest(fileUrl);
 
             // Check and find errors in the file authentication response
-            Optional<DcvError> responseError =  getErrorsFromFileAuthResponse(fileAuthClientResponse);
+            Optional<DcvError> responseError =  getErrorsFromFileClientResponse(fileClientResponse);
             if (responseError.isPresent()) {
                 errors.add(responseError.get());
                 continue;
             }
 
             // Check and find errors in the token validation response
-            ChallengeValidationResponse challengeValidationResponse = getValidSecret(validationRequest, fileAuthClientResponse.getFileContent());
+            ChallengeValidationResponse challengeValidationResponse = getValidSecret(validationRequest, fileClientResponse.getFileContent());
             if (challengeValidationResponse.token().isEmpty() && !challengeValidationResponse.errors().isEmpty()) {
                 errors.addAll(challengeValidationResponse.errors());
                 continue;
             }
 
-            FileAuthValidationResponse.FileAuthValidationResponseBuilder responseBuilder = FileAuthValidationResponse.builder()
+            FileValidationResponse.FileValidationResponseBuilder responseBuilder = FileValidationResponse.builder()
                     .isValid(challengeValidationResponse.token().isPresent())
                     .domain(validationRequest.getDomain())
                     .fileUrl(fileUrl)
@@ -112,13 +112,13 @@ public class FileAuthValidationHandler {
                 case REQUEST_TOKEN -> responseBuilder.validToken(challengeValidationResponse.token().orElse(null));
             }
 
-            FileAuthValidationResponse response = responseBuilder.build();
+            FileValidationResponse response = responseBuilder.build();
             if (response.isValid()) {
                 return response;
             }
         }
 
-        return FileAuthValidationResponse.builder()
+        return FileValidationResponse.builder()
                 .isValid(false)
                 .domain(validationRequest.getDomain())
                 .fileUrl(fileUrls.getFirst())
@@ -130,49 +130,49 @@ public class FileAuthValidationHandler {
     /**
      * Retrieves the valid secret or null if the validation fails.
      *
-     * @param fileAuthValidationRequest the file authentication validation request
+     * @param fileValidationRequest the file authentication validation request
      * @param fileContent the content of the file where the secret can be found
      * @return TokenValidatorResponse with a valid secret or null with populated errors if the validation fails.
      */
-    private ChallengeValidationResponse getValidSecret(FileAuthValidationRequest fileAuthValidationRequest, String fileContent) {
-        return switch (fileAuthValidationRequest.getChallengeType()) {
-            case RANDOM_VALUE -> randomValueValidator.validate(fileAuthValidationRequest.getRandomValue(), fileContent);
-            case REQUEST_TOKEN -> tokenValidator.validate(fileAuthValidationRequest.getTokenKey(), fileAuthValidationRequest.getTokenValue(), fileContent);
+    private ChallengeValidationResponse getValidSecret(FileValidationRequest fileValidationRequest, String fileContent) {
+        return switch (fileValidationRequest.getChallengeType()) {
+            case RANDOM_VALUE -> randomValueValidator.validate(fileValidationRequest.getRandomValue(), fileContent);
+            case REQUEST_TOKEN -> tokenValidator.validate(fileValidationRequest.getTokenKey(), fileValidationRequest.getTokenValue(), fileContent);
         };
     }
 
     /**
      * Checks if the file authentication response is valid.
      *
-     * @param fileAuthClientResponse the file authentication client response
+     * @param fileClientResponse the file authentication client response
      * @return empty list if valid, otherwise a list of errors
      */
-    private Optional<DcvError> getErrorsFromFileAuthResponse(FileAuthClientResponse fileAuthClientResponse) {
+    private Optional<DcvError> getErrorsFromFileClientResponse(FileClientResponse fileClientResponse) {
 
-        if (fileAuthClientResponse.getException() != null) {
+        if (fileClientResponse.getException() != null) {
             log.info("event_id={} error={} exception_message={}",
                     LogEvents.FILE_AUTH_BAD_RESPONSE,
-                    fileAuthClientResponse.getDcvError(),
-                    fileAuthClientResponse.getException().getMessage());
-            return Optional.of(fileAuthClientResponse.getDcvError());
+                    fileClientResponse.getDcvError(),
+                    fileClientResponse.getException().getMessage());
+            return Optional.of(fileClientResponse.getDcvError());
         }
 
         // Although the BRs allow for any 2xx level response, the expectation is that the response will be 200.
         // https://tools.ietf.org/html/rfc7231#section-6.3.1
-        if (fileAuthClientResponse.getStatusCode() != 200) {
+        if (fileClientResponse.getStatusCode() != 200) {
             log.info("event_id={} error={} status_code={}",
                     LogEvents.FILE_AUTH_BAD_RESPONSE,
                     DcvError.FILE_AUTH_INVALID_STATUS_CODE,
-                    fileAuthClientResponse.getStatusCode());
+                    fileClientResponse.getStatusCode());
 
             return Optional.of(DcvError.FILE_AUTH_INVALID_STATUS_CODE);
         }
 
-        if (StringUtils.isEmpty(fileAuthClientResponse.getFileContent())) {
+        if (StringUtils.isEmpty(fileClientResponse.getFileContent())) {
             log.info("event_id={} error={} status_code={}",
                     LogEvents.FILE_AUTH_BAD_RESPONSE,
                     DcvError.FILE_AUTH_EMPTY_RESPONSE,
-                    fileAuthClientResponse.getStatusCode());
+                    fileClientResponse.getStatusCode());
 
             return Optional.of(DcvError.FILE_AUTH_EMPTY_RESPONSE);
         }
@@ -188,17 +188,17 @@ public class FileAuthValidationHandler {
      * default file authentication filename is used. The method returns a list of URLs with both HTTP and HTTPS
      * protocols, ensuring that the validation process can handle different types of requests.
      *
-     * @param fileAuthValidationRequest the file authentication validation request
+     * @param fileValidationRequest the file authentication validation request
      * @return the list of file URLs
      */
-    public List<String> getFileUrls(FileAuthValidationRequest fileAuthValidationRequest) {
+    public List<String> getFileUrls(FileValidationRequest fileValidationRequest) {
         String domainPath;
-        if (StringUtils.isNotBlank(fileAuthValidationRequest.getFilename())) {
-            domainPath = fileAuthValidationRequest.getDomain() + TOKEN_PATH + fileAuthValidationRequest.getFilename();
+        if (StringUtils.isNotBlank(fileValidationRequest.getFilename())) {
+            domainPath = fileValidationRequest.getDomain() + TOKEN_PATH + fileValidationRequest.getFilename();
         } else {
-            domainPath = fileAuthValidationRequest.getDomain() + TOKEN_PATH + defaultFileAuthFilename;
+            domainPath = fileValidationRequest.getDomain() + TOKEN_PATH + defaultFileValidationFilename;
         }
-        if (fileAuthCheckHttps) {
+        if (fileValidationCheckHttps) {
             return List.of("http://" + domainPath, "https://" + domainPath);
         }
         else {

@@ -1,4 +1,4 @@
-package com.digicert.validation.methods.fileauth;
+package com.digicert.validation.methods.file;
 
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.common.DomainValidationEvidence;
@@ -10,11 +10,11 @@ import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.exceptions.DcvException;
 import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
-import com.digicert.validation.methods.fileauth.prepare.FileAuthPreparationRequest;
-import com.digicert.validation.methods.fileauth.prepare.FileAuthPreparationResponse;
-import com.digicert.validation.methods.fileauth.validate.FileAuthValidationHandler;
-import com.digicert.validation.methods.fileauth.validate.FileAuthValidationRequest;
-import com.digicert.validation.methods.fileauth.validate.FileAuthValidationResponse;
+import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
+import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
+import com.digicert.validation.methods.file.validate.FileValidationHandler;
+import com.digicert.validation.methods.file.validate.FileValidationRequest;
+import com.digicert.validation.methods.file.validate.FileValidationResponse;
 import com.digicert.validation.random.RandomValueGenerator;
 import com.digicert.validation.random.RandomValueVerifier;
 import com.digicert.validation.utils.DomainNameUtils;
@@ -26,13 +26,13 @@ import org.apache.commons.lang3.StringUtils;
 import java.time.Instant;
 
 /**
- * FileAuthValidator is a class that provides methods to prepare and validate files for domain validation.
+ * FileValidator is a class that provides methods to prepare and validate files for domain validation.
  * <p>
  * This class implements Validation for {@link DcvMethod#BR_3_2_2_4_18} method. It is responsible for handling the preparation and validation
  * processes required for file-based domain control validation (DCV).
  */
 @Slf4j
-public class FileAuthValidator {
+public class FileValidator {
 
     /**
      * Utility class for generating random values
@@ -61,7 +61,7 @@ public class FileAuthValidator {
      * <p>
      * This handler is responsible for executing the file-based domain validation process.
      */
-    private final FileAuthValidationHandler fileAuthValidationHandler;
+    private final FileValidationHandler fileValidationHandler;
 
     /**
      * File location based on the BR specifications
@@ -79,18 +79,18 @@ public class FileAuthValidator {
     private final String defaultFilename;
 
     /**
-     * Constructor for FileAuthValidator
+     * Constructor for FileValidator
      * <p>
-     * Initializes the FileAuthValidator with the necessary dependencies and configurations provided by the {@link DcvContext}.
+     * Initializes the FileValidator with the necessary dependencies and configurations provided by the {@link DcvContext}.
      *
      * @param dcvContext context where we can find the needed dependencies / configuration
      */
-    public FileAuthValidator(DcvContext dcvContext) {
+    public FileValidator(DcvContext dcvContext) {
         this.randomValueGenerator = dcvContext.get(RandomValueGenerator.class);
         this.randomValueVerifier = dcvContext.get(RandomValueVerifier.class);
         this.domainNameUtils = dcvContext.get(DomainNameUtils.class);
-        this.fileAuthValidationHandler = dcvContext.get(FileAuthValidationHandler.class);
-        this.defaultFilename = dcvContext.getDcvConfiguration().getFileAuthFilename();
+        this.fileValidationHandler = dcvContext.get(FileValidationHandler.class);
+        this.defaultFilename = dcvContext.getDcvConfiguration().getFileValidationFilename();
     }
 
     /**
@@ -99,16 +99,16 @@ public class FileAuthValidator {
      * This method prepares for file domain validation by generating a random value if the secret type is {@link ChallengeType#RANDOM_VALUE}.
      * It verifies the preparation request and constructs a response containing the necessary information for the validation process.
      *
-     * @param preparationRequest {@link FileAuthPreparationRequest} object containing the domain and secret type
-     * @return {@link FileAuthPreparationResponse} object containing the random value and domain
+     * @param preparationRequest {@link FilePreparationRequest} object containing the domain and secret type
+     * @return {@link FilePreparationResponse} object containing the random value and domain
      * @throws DcvException if the request is invalid. {@link InputException} when missing required fields.
      */
-    public FileAuthPreparationResponse prepare(FileAuthPreparationRequest preparationRequest) throws DcvException {
-        log.debug("fileAuthPreparation={}", preparationRequest);
-        verifyFileAuthPreparation(preparationRequest);
+    public FilePreparationResponse prepare(FilePreparationRequest preparationRequest) throws DcvException {
+        log.debug("filePreparation={}", preparationRequest);
+        verifyFilePreparation(preparationRequest);
 
         // Create and return the preparation response
-        FileAuthPreparationResponse.FileAuthPreparationResponseBuilder responseBuilder = FileAuthPreparationResponse.builder()
+        FilePreparationResponse.FilePreparationResponseBuilder responseBuilder = FilePreparationResponse.builder()
                 .domain(preparationRequest.domain())
                 .challengeType(preparationRequest.challengeType())
                 .fileLocation(getFileUrl(preparationRequest.domain(), preparationRequest.filename()))
@@ -118,7 +118,7 @@ public class FileAuthValidator {
             responseBuilder.randomValue(randomValueGenerator.generateRandomString());
         }
 
-        log.debug("fileAuthPreparationResponse={}", responseBuilder);
+        log.debug("filePreparationResponse={}", responseBuilder);
         return responseBuilder.build();
     }
 
@@ -129,31 +129,31 @@ public class FileAuthValidator {
      * of the domain, secret type, random value, and validation state. If the validation is successful, it returns a {@link DomainValidationEvidence}
      * object containing the validation evidence. If the validation fails, it throws a {@link ValidationException} with the encountered errors.
      *
-     * @param validationRequest {@link FileAuthValidationRequest} object containing the domain, secret type, random value and validation state
+     * @param validationRequest {@link FileValidationRequest} object containing the domain, secret type, random value and validation state
      * @return {@link DomainValidationEvidence} object containing the domain validation evidence
      * @throws ValidationException if the File Validation fails.
-     * @throws InputException if the input parameters are invalid. See #verifyFileAuthValidationRequest
+     * @throws InputException if the input parameters are invalid. See #verifyFileValidationRequest
      */
-    public DomainValidationEvidence validate(FileAuthValidationRequest validationRequest) throws DcvException {
-        log.debug("fileAuthValidationRequest={}", validationRequest);
+    public DomainValidationEvidence validate(FileValidationRequest validationRequest) throws DcvException {
+        log.debug("fileValidationRequest={}", validationRequest);
 
-        verifyFileAuthValidationRequest(validationRequest);
+        verifyFileValidationRequest(validationRequest);
 
-        FileAuthValidationResponse fileAuthResponse = fileAuthValidationHandler.validate(validationRequest);
+        FileValidationResponse fileValidationResponse = fileValidationHandler.validate(validationRequest);
 
-        if (fileAuthResponse.isValid()) {
+        if (fileValidationResponse.isValid()) {
             log.info("event_id={} domain={}", LogEvents.FILE_AUTH_VALIDATED, validationRequest.getDomain());
-            return createDomainValidationEvidence(validationRequest, fileAuthResponse);
+            return createDomainValidationEvidence(validationRequest, fileValidationResponse);
         } else {
-            log.info("event_id={} domain={} file_auth_validation_response={}", LogEvents.FILE_AUTH_VALIDATION_FAILED, validationRequest.getDomain(), fileAuthResponse);
-            throw new ValidationException(fileAuthResponse.errors());
+            log.info("event_id={} domain={} file_auth_validation_response={}", LogEvents.FILE_AUTH_VALIDATION_FAILED, validationRequest.getDomain(), fileValidationResponse);
+            throw new ValidationException(fileValidationResponse.errors());
         }
     }
 
     /**
      * Create the Domain Validation Evidence from the File Auth Validation Response
      * <p>
-     * This method creates a {@link DomainValidationEvidence} object from the provided {@link FileAuthValidationRequest} and {@link FileAuthValidationResponse}.
+     * This method creates a {@link DomainValidationEvidence} object from the provided {@link FileValidationRequest} and {@link FileValidationResponse}.
      * It extracts the necessary information from the response and constructs the validation evidence, including the domain, DCV method, validation date,
      * file URL, random value, and found token.
      *
@@ -161,7 +161,7 @@ public class FileAuthValidator {
      * @param response The File Auth Validation Response
      * @return The Domain Validation Evidence
      */
-    DomainValidationEvidence createDomainValidationEvidence(FileAuthValidationRequest request, FileAuthValidationResponse response) {
+    DomainValidationEvidence createDomainValidationEvidence(FileValidationRequest request, FileValidationResponse response) {
         return DomainValidationEvidence.builder()
                 .domain(response.domain())
                 .dcvMethod(request.getValidationState().dcvMethod())
@@ -173,30 +173,30 @@ public class FileAuthValidator {
     }
 
     /**
-     * Performs validation on the values in {@link FileAuthValidationRequest}.
+     * Performs validation on the values in {@link FileValidationRequest}.
      * <p>
-     * This method validates the values in the provided {@link FileAuthValidationRequest}. It checks the domain, validation state,
+     * This method validates the values in the provided {@link FileValidationRequest}. It checks the domain, validation state,
      * and secret type, ensuring that all required fields are present and valid. For random values, it verifies the entropy and expiration.
      * For request tokens, it checks the presence of the token key and value.
      *
-     * @param fileAuthValidationRequest The validation verification request
+     * @param fileValidationRequest The validation verification request
      * @throws DcvException If entropy level is insufficient. If the random value has expired.
      */
-    void verifyFileAuthValidationRequest(FileAuthValidationRequest fileAuthValidationRequest) throws DcvException {
+    void verifyFileValidationRequest(FileValidationRequest fileValidationRequest) throws DcvException {
 
-        domainNameUtils.validateDomainName(fileAuthValidationRequest.getDomain());
-        StateValidationUtils.verifyValidationState(fileAuthValidationRequest.getValidationState(), DcvMethod.BR_3_2_2_4_18);
+        domainNameUtils.validateDomainName(fileValidationRequest.getDomain());
+        StateValidationUtils.verifyValidationState(fileValidationRequest.getValidationState(), DcvMethod.BR_3_2_2_4_18);
 
-        switch (fileAuthValidationRequest.getChallengeType()) {
+        switch (fileValidationRequest.getChallengeType()) {
             case RANDOM_VALUE -> {
-                Instant instant = fileAuthValidationRequest.getValidationState().prepareTime();
-                randomValueVerifier.verifyRandomValue(fileAuthValidationRequest.getRandomValue(), instant);
+                Instant instant = fileValidationRequest.getValidationState().prepareTime();
+                randomValueVerifier.verifyRandomValue(fileValidationRequest.getRandomValue(), instant);
             }
             case REQUEST_TOKEN -> {
-                if(fileAuthValidationRequest.getTokenKey() == null) {
+                if(fileValidationRequest.getTokenKey() == null) {
                     throw new InputException(DcvError.TOKEN_KEY_REQUIRED);
                 }
-                if (fileAuthValidationRequest.getTokenValue() == null) {
+                if (fileValidationRequest.getTokenValue() == null) {
                     throw new InputException(DcvError.TOKEN_VALUE_REQUIRED);
                 }
             }
@@ -206,24 +206,24 @@ public class FileAuthValidator {
     /**
      * Verify the File Auth Preparation Request
      * <p>
-     * This method verifies the provided {@link FileAuthPreparationRequest} to ensure that all required fields are present and valid.
+     * This method verifies the provided {@link FilePreparationRequest} to ensure that all required fields are present and valid.
      * It checks the domain name and secret type, ensuring that the domain name is correctly formatted and does not contain wildcards.
      *
-     * @param fileAuthPreparationRequest The File Auth Preparation Request
+     * @param filePreparationRequest The File Auth Preparation Request
      * @throws DcvException if the request is invalid. {@link InputException} when missing required fields.
      */
-    private void verifyFileAuthPreparation(FileAuthPreparationRequest fileAuthPreparationRequest) throws DcvException, IllegalArgumentException {
-        domainNameUtils.validateDomainName(fileAuthPreparationRequest.domain());
+    private void verifyFilePreparation(FilePreparationRequest filePreparationRequest) throws DcvException, IllegalArgumentException {
+        domainNameUtils.validateDomainName(filePreparationRequest.domain());
 
-        if (fileAuthPreparationRequest.challengeType() == null) {
+        if (filePreparationRequest.challengeType() == null) {
             throw new InputException(DcvError.SECRET_TYPE_REQUIRED);
         }
 
-        if (fileAuthPreparationRequest.filename() != null) {
-            FilenameUtils.validateFilename(fileAuthPreparationRequest.filename());
+        if (filePreparationRequest.filename() != null) {
+            FilenameUtils.validateFilename(filePreparationRequest.filename());
         }
 
-        if (fileAuthPreparationRequest.domain().startsWith("*.")) {
+        if (filePreparationRequest.domain().startsWith("*.")) {
             throw new InputException(DcvError.DOMAIN_INVALID_WILDCARD_NOT_ALLOWED);
         }
     }

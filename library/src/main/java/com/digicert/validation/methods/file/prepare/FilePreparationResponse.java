@@ -1,4 +1,4 @@
-package com.digicert.validation.methods.fileauth.prepare;
+package com.digicert.validation.methods.file.prepare;
 
 import com.digicert.validation.common.ValidationState;
 import com.digicert.validation.enums.ChallengeType;
@@ -16,7 +16,7 @@ import lombok.ToString;
 @Builder
 @Getter
 @ToString
-public class FileAuthPreparationResponse {
+public class FilePreparationResponse {
 
     /**
      * The domain for which the file authentication is being prepared.
@@ -52,7 +52,7 @@ public class FileAuthPreparationResponse {
      * @param fileLocation    The location of the file to be placed on the server.
      * @param validationState The validation state of the preparation response.
      */
-    private FileAuthPreparationResponse(String domain, ChallengeType challengeType, String randomValue, String fileLocation, ValidationState validationState) {
+    private FilePreparationResponse(String domain, ChallengeType challengeType, String randomValue, String fileLocation, ValidationState validationState) {
         this.domain = domain;
         this.challengeType = challengeType;
         this.randomValue = randomValue;

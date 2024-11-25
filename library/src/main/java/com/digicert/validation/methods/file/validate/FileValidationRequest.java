@@ -1,4 +1,4 @@
-package com.digicert.validation.methods.fileauth.validate;
+package com.digicert.validation.methods.file.validate;
 
 import com.digicert.validation.common.ValidationState;
 import com.digicert.validation.enums.ChallengeType;
@@ -15,7 +15,7 @@ import lombok.ToString;
 @Getter
 @Builder
 @ToString
-public class FileAuthValidationRequest {
+public class FileValidationRequest {
     /**
      * The domain for which the file authentication is being requested.
      */
@@ -56,7 +56,7 @@ public class FileAuthValidationRequest {
 
     /**
      * Private constructor to prevent instantiation without using the builder.
-     * Constructs a new FileAuthValidationRequest with the specified parameters.
+     * Constructs a new FileValidationRequest with the specified parameters.
      *
      * @param domain          The domain for which the file authentication is being requested.
      * @param filename        The filename to be used for file authentication.
@@ -66,7 +66,7 @@ public class FileAuthValidationRequest {
      * @param tokenValue      The token value to be used for file authentication.
      * @param validationState The validation state of the file authentication request.
      */
-    private FileAuthValidationRequest(String domain, String filename, ChallengeType challengeType, String randomValue, String tokenKey, String tokenValue, ValidationState validationState) {
+    private FileValidationRequest(String domain, String filename, ChallengeType challengeType, String randomValue, String tokenKey, String tokenValue, ValidationState validationState) {
         this.domain = domain;
         this.filename = filename;
         this.challengeType = challengeType;

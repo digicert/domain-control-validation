@@ -1,4 +1,4 @@
-package com.digicert.validation.client.fileauth;
+package com.digicert.validation.client.file;
 
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.client.dns.DnsClient;

@@ -3,7 +3,7 @@ package com.digicert.validation;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.methods.dns.DnsValidator;
 import com.digicert.validation.methods.email.EmailValidator;
-import com.digicert.validation.methods.fileauth.FileAuthValidator;
+import com.digicert.validation.methods.file.FileValidator;
 import lombok.Getter;
 
 /**
@@ -51,7 +51,7 @@ public class DcvManager {
      * <p>
      * Handles 3.2.2.4.18 Agreed-Upon Change to Website v2
      */
-    private final FileAuthValidator fileAuthValidator;
+    private final FileValidator fileValidator;
 
     /**
      * The DNS client used for DNS queries. Exposed to allow for use outside the library.
@@ -68,7 +68,7 @@ public class DcvManager {
 
         this.dnsValidator = dcvContext.get(DnsValidator.class);
         this.emailValidator = dcvContext.get(EmailValidator.class);
-        this.fileAuthValidator = dcvContext.get(FileAuthValidator.class);
+        this.fileValidator = dcvContext.get(FileValidator.class);
         this.dnsClient = dcvContext.get(DnsClient.class);
     }
 

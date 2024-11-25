@@ -1,4 +1,4 @@
-package com.digicert.validation.client.fileauth;
+package com.digicert.validation.client.file;
 
 import java.net.URI;
 import java.util.List;

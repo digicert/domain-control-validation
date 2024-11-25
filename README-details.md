@@ -20,7 +20,7 @@ Below is a simplified diagram illustrating the workflow of the DCV process:
 ```plaintext
  +----------------------+       +----------------------+      
  | Preparation Request  | ----> | Preparation Response |
- | (DNS/Email/FileAuth) |       |                      |      
+ | (DNS/Email/File)     |       |                      |      
  +----------------------+       +----------------------+      
 
 ----> Allow for user to place random value / token in appropriate location
@@ -62,11 +62,11 @@ Depending on the type of validation you are looking to do, you will need to retr
 ```java
 import com.digicert.domaincontrolvalidation.DnsValidator;
 import com.digicert.domaincontrolvalidation.EmailValidator;
-import com.digicert.domaincontrolvalidation.FileAuthValidator;
+import com.digicert.domaincontrolvalidation.FileValidator;
 
 DnsValidator dnsValidator = dcvManager.getDnsValidator();
 EmailValidator emailValidator = dcvManager.getEmailValidator();
-FileAuthValidator fileAuthValidator = dcvManager.getFileAuthValidator();
+FileValidator fileValidator = dcvManager.getFileValidator();
 ```
 
 ### Use of the DnsValidator
@@ -103,17 +103,17 @@ DomainValidationEvidence evidence = dnsValidator.validate(dnsValidationRequest);
 The 'validate' method will return a 'DomainValidationEvidence' object with the results of the DCV process. You can use this object to determine if the DCV process was successful.
 
 ## Detailed Request and Response Objects
-### File Authorization - BR 3.2.2.4.18
-#### FileAuthPreparationRequest
-The `FileAuthPreparationRequest` is used to prepare the file authentication validation process
+### BR 3.2.2.4.18 - Agreed-Upon Change to Website (File Change) 
+#### FilePreparationRequest
+The `FilePreparationRequest` is used to prepare the file authentication validation process
 
 | Field           | Type             | Description                                 |
 |-----------------|------------------|---------------------------------------------|
 | domain          | String           | The domain name to validate.                |
 | challengeType   | ChallengeType    | The secret type to use for the DCV process. |
 
-#### FileAuthPreparationResponse
-The `FileAuthPreparationResponse` object is returned by the `FileAuthValidator` after the `prepare` method is called. This preparation response object contains the necessary information to validate the DCV process, as well as the following fields:
+#### FilePreparationResponse
+The `FilePreparationResponse` object is returned by the `FileValidator` after the `prepare` method is called. This preparation response object contains the necessary information to validate the DCV process, as well as the following fields:
 
 | Field           | Type            | Description                               |
 |-----------------|-----------------|-------------------------------------------|
@@ -126,62 +126,63 @@ NOTE: The validationState object returned here will be used in the subsequent va
 
 ##### Example
 ```java
-FileAuthPreparationRequest fileAuthPreparationRequest = new FileAuthPreparationRequest("example.com", ChallengeType.RANDOM_VALUE);
-FileAuthPreparationResponse response = fileAuthValidator.prepare(fileAuthPreparationRequest);
+FilePreparationRequest filePreparationRequest = new FilePreparationRequest("example.com", ChallengeType.RANDOM_VALUE);
+FilePreparationResponse response = fileValidator.prepare(filePreparationRequest);
 ```
 
-#### FileAuthValidation Request
-The `FileAuthValidationRequest` object is likewise used to provide the necessary information to the `FileAuthValidator` to perform the DCV process, and contains the following fields:
+#### FileValidation Request
+The `FileValidationRequest` object is likewise used to provide the necessary information to the `FileValidator` to perform the DCV process, and contains the following fields:
 
-| Field           | Type               | Description                                 |
-|-----------------|--------------------|---------------------------------------------|
-| domain          | String             | The domain name to validate.                |
-| randomValue     | String             | A random value used for validation.         |
-| filename        | String	           | The filename used for validation.           |
-| tokenValue      | String             | A token value used for validation.          |
-| challengeType   | ChallengeType      | The secret type to use for the DCV process. |
-| validationState | ValidationState    | The state of the validation process.        |
+| Field           | Type                | Description                                 |
+|-----------------|---------------------|---------------------------------------------|
+| domain          | String              | The domain name to validate.                |
+| randomValue     | String              | A random value used for validation.         |
+| filename        | String	             | The filename used for validation.           |
+| tokenKey        | String              | A token key used for validation.            |
+| tokenValue      | String              | A token value used for validation.          |
+| challengeType   | ChallengeType       | The secret type to use for the DCV process. |
+| validationState | ValidationState     | The state of the validation process.        |
 
 NOTES: 
 - Either randomValue or tokenValue should be provided based on the challengeType
 - Filename can be null if the default filename (found in the configuration) will be used
 - The validationState object used here is what was returned on the preparation response
 
-#### FileAuthValidation Response
+#### FileValidation Response
 ##### DomainValidationEvidence
-The `DomainValidationEvidence` object is returned by the `FileAuthValidator` after the `validate` method is called. 
+The `DomainValidationEvidence` object is returned by the `FileValidator` after the `validate` method is called. 
 This validation response object contains the result of the DCV process, as well as the following fields:
 
 ##### DomainValidationEvidence Fields (used in each validation method, but not all fields are used in each method):
 
-| Field          | Type      | Description                                                                        |
-|----------------|-----------|------------------------------------------------------------------------------------|
-| domain         | String    | The domain name that was validated. Used in FileAuth, DNS, Email validation.       |
-| dcvMethod      | DcvMethod | The URL of the file used for validation. Used in FileAuth, DNS, Email validation.  |
-| BrVersion      | String    | Version of baseline requirements. Used for each method.                            |
-| validationDate | Instant   | The date of validation. Used in Email and DNS validation.                          |
-| emailAddress   | String    | The email address used for validation. Used in FileAuth and Email validation.      |
-| fileUrl        | String    | The URL of the file used for validation. Used in FileAuth validation.              |
-| dnsType        | DnsType   | The DNS record type used for validation. Used in DNS validation.                   |
-| dnsServer      | String    | The DNS server used for validation. Used in DNS validation.                        |
-| dnsRecordName  | String    | The DNS record name used for validation. Used in DNS validation.                   |
-| foundToken     | String    | The token found in the file. Used in FileAuth and DNS validation.                  |
-| randomValue    | String    | The random value used for validation. Used in FileAuth, DNS, and Email validation. |
+| Field          | Type      | Description                                                                     |
+|----------------|-----------|---------------------------------------------------------------------------------|
+| domain         | String    | The domain name that was validated. Used in File, DNS, Email validation.        |
+| dcvMethod      | DcvMethod | The URL of the file used for validation. Used in File, DNS, Email validation.   |
+| BrVersion      | String    | Version of baseline requirements. Used for each method.                         |
+| validationDate | Instant   | The date of validation. Used in Email and DNS validation.                       |
+| emailAddress   | String    | The email address used for validation. Used in File and Email validation.       |
+| fileUrl        | String    | The URL of the file used for validation. Used in File validation.               |
+| dnsType        | DnsType   | The DNS record type used for validation. Used in DNS validation.                |
+| dnsServer      | String    | The DNS server used for validation. Used in DNS validation.                     |
+| dnsRecordName  | String    | The DNS record name used for validation. Used in DNS validation.                |
+| foundToken     | String    | The token found in the file. Used in File and DNS validation.                   |
+| randomValue    | String    | The random value used for validation. Used in File, DNS, and Email validation.  |
 
 
-#### Example of the File Auth validation request / response
+#### Example of the File Validation request / response
 ```java
-FileAuthValidationRequest fileAuthValidationRequest = FileAuthValidationRequest.builder()
+FileValidationRequest fileValidationRequest = FileValidationRequest.builder()
         .domain(prepare.getDomain())
         .randomValue(prepare.getRandomValue())
         .challengeType(ChallengeType.RANDOM_VALUE)
         .validationState(prepare.getValidationState())
         .build();
 
-DomainValidationEvidence evidence = fileAuthValidator.validate(request);
+DomainValidationEvidence evidence = fileValidator.validate(request);
 ```
 
-### DNS Change - BR: 3.2.2.4.7
+### BR 3.2.2.4.7 - DNS Change
 #### DnsPreparation Request and Response
 The `DnsPreparationRequest` object is used to prepare the DNS validation process. This request object is built using the `DnsPreparationRequest.Builder` class, and contains the following fields:
 
@@ -242,7 +243,7 @@ DnsValidationResponse response = dnsValidationHandler.validate(request);
 ```
 
 
-### Email to Constructed Email Address - BR: 3.2.2.4.4
+### BR: 3.2.2.4.2 / 3.2.2.4.4 / 3.2.2.4.14 - Email to Domain Contact / Constructed Email / DNS TXT Contact
 #### EmailPreparationRequest - Email Preparation
 The `EmailPreparationRequest` object is used to prepare the email validation process. This request object is built using the `EmailPreparationRequest.Builder` class, and contains the following fields:
 

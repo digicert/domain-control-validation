@@ -1,4 +1,4 @@
-package com.digicert.validation.client.fileauth;
+package com.digicert.validation.client.file;
 
 import com.digicert.validation.enums.DcvError;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class FileAuthClientResponse {
+public class FileClientResponse {
     /** The URL of the file requested. */
     private String fileUrl;
 
@@ -38,24 +38,24 @@ public class FileAuthClientResponse {
     private DcvError dcvError;
 
     /**
-     * Constructs a new FileAuthClientResponse with the specified file URL.
+     * Constructs a new FileClientResponse with the specified file URL.
      * The content, status code, exception, and DCV error are set to null.
      *
      * @param fileUrl the URL of the file
      */
-    public FileAuthClientResponse(String fileUrl) {
+    public FileClientResponse(String fileUrl) {
         this.fileUrl = fileUrl;
     }
 
     /**
-     * Constructs a new FileAuthClientResponse with the specified file URL and content.
+     * Constructs a new FileClientResponse with the specified file URL and content.
      * The exception is set to null.
      *
      * @param fileUrl     the URL of the file
      * @param fileContent the content of the file
      * @param statusCode  the status code of the HTTP response
      */
-    public FileAuthClientResponse(String fileUrl, String fileContent, int statusCode) {
+    public FileClientResponse(String fileUrl, String fileContent, int statusCode) {
         this.fileUrl = fileUrl;
         this.fileContent = fileContent;
         this.statusCode = statusCode;
