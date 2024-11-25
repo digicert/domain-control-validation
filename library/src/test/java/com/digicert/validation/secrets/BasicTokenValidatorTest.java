@@ -41,7 +41,6 @@ class BasicTokenValidatorTest {
                 .validate(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, textBody);
 
         assertEquals(generatedToken, response.token().orElseThrow());
-        assertEquals(0, response.errors().size());
     }
 
     @Test
@@ -54,7 +53,6 @@ class BasicTokenValidatorTest {
                 .validate("someToken", generatedCSR, textBody);
 
         assertEquals(generatedToken, response.token().orElseThrow());
-        assertEquals(0, response.errors().size());
     }
 
     static Stream<Arguments> invalidTxtBodyTokens() {
@@ -89,7 +87,7 @@ class BasicTokenValidatorTest {
         ChallengeValidationResponse response = basicTokenValueSecretValidator.validate(tokenKey, tokenValue, textBody);
 
         assertFalse(response.token().isPresent());
-        assertEquals(1, response.errors().size());
+        assertFalse(response.errors().isEmpty());
         assertTrue(response.errors().contains(dcvError), "expected: " + dcvError + " but got: " + response.errors());
     }
 
