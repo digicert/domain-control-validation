@@ -9,7 +9,7 @@ to validate that an applicant has ownership or control over a domain. The BR doc
 can be demonstrated. This initial version of the library is available for review. 
 
 We are open-sourcing this code to improve transparency and security around Domain Control Validation. After an initial review period, 
-DigiCert deploy it into production; continuing to enhance the repo as relevant - providing ongoing transparency about our processes and best practices. 
+DigiCert will deploy it into production, continuing to enhance the repo as relevant, while providing ongoing transparency about our processes and best practices. 
 
 We hope that others also will find this valuable for their DCV efforts. 
 

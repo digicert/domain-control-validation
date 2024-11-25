@@ -194,12 +194,12 @@ The `DnsPreparationRequest` object is used to prepare the DNS validation process
 
 The `DnsPreparationResponse` object is returned by the `DnsValidator` after the `prepare` method is called. This preparation response object contains the necessary information to validate the DCV process, as well as the following fields:
 
-| Field           | Type    | Description                                                |
-|-----------------|---------|------------------------------------------------------------|
-| dnsType         | DnsType | The DNS record type to use for the DCV process.            |
-| domain          | String  | The domain name to validate.                               |
-| allowedFqdns    | String  | Allowed domains and sub-domains based on requested domain. |
-| validationState | String  | The validation state of the DCV process.                   |
+| Field           | Type            | Description                                                |
+|-----------------|-----------------|------------------------------------------------------------|
+| dnsType         | DnsType         | The DNS record type to use for the DCV process.            |
+| domain          | String          | The domain name to validate.                               |
+| allowedFqdns    | List<String>    | Allowed domains and sub-domains based on requested domain. |
+| validationState | ValidationState | The validation state of the DCV process.                   |
 
 NOTE: The validationState object returned here will be used in the subsequent validation request
 
