@@ -6,7 +6,12 @@ Domain Control Validation
 This library represents DigiCert's domain control validation (DCV) process. This is to satisfy the requirements specified in the
 [CAB Forum baseline requirements](https://github.com/cabforum/servercert/blob/main/docs/BR.md#3224-validation-of-domain-authorization-or-control)
 to validate that an applicant has ownership or control over a domain. The BR documents multiple methods by which such control
-can be demonstrated.
+can be demonstrated. This initial version of the library is available for review. 
+
+We are open-sourcing this code to improve transparency and security around Domain Control Validation. After an initial review period, 
+DigiCert deploy it into production; continuing to enhance the repo as relevant - providing ongoing transparency about our processes and best practices. 
+
+We hope that others also will find this valuable for their DCV efforts. 
 
 For each method, this library has a preparation step and a validation step. The preparation step supplies information that is
 necessary for setting up the DCV, including generating a value that can be used as the required random value. The validation
