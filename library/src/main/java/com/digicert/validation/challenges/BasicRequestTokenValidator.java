@@ -42,7 +42,7 @@ public class BasicRequestTokenValidator implements RequestTokenValidator {
     private static final long MAX_TIMESTAMP_DAYS = 30;
 
     /** A utility class for generating request tokens. */
-    private final RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
+    private final BasicRequestTokenUtils basicRequestTokenUtils = new BasicRequestTokenUtils();
 
     /** The constructor for a BasicTokenValidator. It does not need any parameters. */
     public BasicRequestTokenValidator() {
@@ -71,10 +71,6 @@ public class BasicRequestTokenValidator implements RequestTokenValidator {
         if (!errors.isEmpty()) {
             return new ChallengeValidationResponse(Optional.empty(), errors);
         }
-
-        BasicRequestTokenData basicRequestTokenData = (BasicRequestTokenData) requestTokenData;
-        String hashingKey = basicRequestTokenData.hashingKey();
-        String hashingValue = basicRequestTokenData.hashingValue();
 
         Set<Integer> indices = getPotentialRequestTokenIndices(textBody);
         if (indices.isEmpty()) {
@@ -117,7 +113,7 @@ public class BasicRequestTokenValidator implements RequestTokenValidator {
             }
 
             // Generate what the token for the given timestamp should be
-            Optional<String> generatedToken = requestTokenUtils.generateRequestToken(hashingKey, hashingValue, requestTime);
+            Optional<String> generatedToken = basicRequestTokenUtils.generateRequestToken((BasicRequestTokenData)requestTokenData, requestTime);
             if (generatedToken.isEmpty()) {
                 errors.add(DcvError.REQUEST_TOKEN_CANNOT_GENERATE_HASH);
                 continue;

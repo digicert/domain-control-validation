@@ -1,5 +1,6 @@
 package com.digicert.validation;
 
+import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.client.ExampleAppClient;
 import com.digicert.validation.client.PdnsClient;
 import com.digicert.validation.controller.resource.request.DcvRequest;
@@ -7,7 +8,7 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
-import com.digicert.validation.challenges.RequestTokenUtils;
+import com.digicert.validation.challenges.BasicRequestTokenUtils;
 import com.digicert.validation.utils.CSRGenerator;
 import com.digicert.validation.utils.DomainUtils;
 import org.junit.jupiter.api.Test;
@@ -36,17 +37,17 @@ class DnsTokenValueMethodIT {
     void verifyDnsTokenTxt_HappyPath() throws Exception {
         String domainName = DomainUtils.getRandomDomainName(2, "com");
 
-        String tokenKey = "token-key";
+        String hashingKey = "token-key";
         // Set the token key for the account
-        exampleAppClient.submitAccountTokenKey(defaultAccountId, tokenKey);
+        exampleAppClient.submitAccountTokenKey(defaultAccountId, hashingKey);
 
-        String tokenValue = csrGenerator.generateCSR(domainName);
+        String hashingValue = csrGenerator.generateCSR(domainName);
         ZonedDateTime zonedDateTime = Instant.now().atZone(ZoneId.of("UTC"));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String formattedDate = zonedDateTime.format(formatter);
 
-        RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
-        String dnsTxtTokenValue = requestTokenUtils.generateRequestToken(tokenKey, tokenValue, formattedDate).orElseThrow();
+        BasicRequestTokenUtils basicRequestTokenUtils = new BasicRequestTokenUtils();
+        String dnsTxtTokenValue = basicRequestTokenUtils.generateRequestToken(new BasicRequestTokenData(hashingKey, hashingValue), formattedDate).orElseThrow();
 
         DcvRequest dcvRequest = createDcvRequest(domainName);
         DomainResource createdDomain = submitDnsDomain(dcvRequest);
@@ -56,7 +57,7 @@ class DnsTokenValueMethodIT {
         pdnsClient.addRandomValueToRecord(domainName, dnsTxtTokenValue, PdnsClient.PdnsRecordType.TXT);
 
         // Validate the domain
-        ValidateRequest validateRequest = getValidateRequest(dcvRequest.domain(), tokenValue);
+        ValidateRequest validateRequest = getValidateRequest(dcvRequest.domain(), hashingValue);
         exampleAppClient.validateDomain(validateRequest, createdDomain.getId());
 
         // Get and assert that the domain is now valid

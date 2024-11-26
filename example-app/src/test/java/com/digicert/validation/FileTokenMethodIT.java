@@ -1,5 +1,6 @@
 package com.digicert.validation;
 
+import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.client.ExampleAppClient;
 import com.digicert.validation.client.PdnsClient;
 import com.digicert.validation.controller.resource.request.DcvRequest;
@@ -7,7 +8,7 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
-import com.digicert.validation.challenges.RequestTokenUtils;
+import com.digicert.validation.challenges.BasicRequestTokenUtils;
 import com.digicert.validation.utils.CSRGenerator;
 import com.digicert.validation.utils.DomainUtils;
 import com.digicert.validation.utils.FileUtils;
@@ -37,17 +38,17 @@ class FileTokenMethodIT {
     void verifyFileToken_happyDayFlow() throws Exception {
         String domainName = DomainUtils.getRandomDomainName(2, "com");
 
-        String tokenKey = "token-key";
+        String hashingKey = "token-key";
         // Set the token key for the account
-        exampleAppClient.submitAccountTokenKey(defaultAccountId, tokenKey);
+        exampleAppClient.submitAccountTokenKey(defaultAccountId, hashingKey);
 
-        String tokenValue = csrGenerator.generateCSR(domainName);
+        String hashingValue = csrGenerator.generateCSR(domainName);
         ZonedDateTime zonedDateTime = Instant.now().atZone(ZoneId.of("UTC"));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String formattedDate = zonedDateTime.format(formatter);
 
-        RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
-        String dnsTxtTokenValue = requestTokenUtils.generateRequestToken(tokenKey, tokenValue, formattedDate).orElseThrow();
+        BasicRequestTokenUtils basicRequestTokenUtils = new BasicRequestTokenUtils();
+        String dnsTxtTokenValue = basicRequestTokenUtils.generateRequestToken(new BasicRequestTokenData(hashingKey, hashingValue), formattedDate).orElseThrow();
 
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(domainName);
@@ -59,7 +60,7 @@ class FileTokenMethodIT {
 
         assertCreatedDomain(dcvRequest, createdDomain);
 
-        exampleAppClient.validateDomain(createValidateRequest(createdDomain, "fileauth.txt", tokenValue), createdDomain.getId());
+        exampleAppClient.validateDomain(createValidateRequest(createdDomain, "fileauth.txt", hashingValue), createdDomain.getId());
 
         // Get and assert that the domain is now valid
         DomainResource verifiedDomain = exampleAppClient.getDomainResource(createdDomain.getId());
@@ -70,17 +71,17 @@ class FileTokenMethodIT {
     void verifyFileToken_happyDayFlow_customFilename() throws Exception {
         String domainName = DomainUtils.getRandomDomainName(2, "com");
 
-        String tokenKey = "token-key";
+        String hashingKey = "token-key";
         // Set the token key for the account
-        exampleAppClient.submitAccountTokenKey(defaultAccountId, tokenKey);
+        exampleAppClient.submitAccountTokenKey(defaultAccountId, hashingKey);
 
-        String tokenValue = csrGenerator.generateCSR(domainName);
+        String hashingValue = csrGenerator.generateCSR(domainName);
         ZonedDateTime zonedDateTime = Instant.now().atZone(ZoneId.of("UTC"));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String formattedDate = zonedDateTime.format(formatter);
 
-        RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
-        String dnsTxtTokenValue = requestTokenUtils.generateRequestToken(tokenKey, tokenValue, formattedDate).orElseThrow();
+        BasicRequestTokenUtils basicRequestTokenUtils = new BasicRequestTokenUtils();
+        String dnsTxtTokenValue = basicRequestTokenUtils.generateRequestToken(new BasicRequestTokenData(hashingKey, hashingValue), formattedDate).orElseThrow();
 
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(domainName);
@@ -92,7 +93,7 @@ class FileTokenMethodIT {
 
         assertCreatedDomain(dcvRequest, createdDomain);
 
-        exampleAppClient.validateDomain(createValidateRequest(createdDomain, "customlocation.txt", tokenValue), createdDomain.getId());
+        exampleAppClient.validateDomain(createValidateRequest(createdDomain, "customlocation.txt", hashingValue), createdDomain.getId());
 
         // Get and assert that the domain is now valid
         DomainResource verifiedDomain = exampleAppClient.getDomainResource(createdDomain.getId());

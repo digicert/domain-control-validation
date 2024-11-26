@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BasicRequestTokenValidatorTest {
 
-    private static final RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
+    private static final BasicRequestTokenUtils requestTokenUtils = new BasicRequestTokenUtils();
     private static final String DEFAULT_TOKEN_KEY = "someToken";
     private static final String DEFAULT_TOKEN_VALUE = "some-token-value";
 
@@ -60,10 +60,10 @@ class BasicRequestTokenValidatorTest {
         String oldToken = generateTokenValue(getZonedDateTimeNow().minusDays(31), DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE).orElseThrow();
 
         String formattedDate = getZonedDateTimeNow().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-        String tokenTooShort = requestTokenUtils.generateRequestToken(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, formattedDate).orElseThrow();
+        String tokenTooShort = requestTokenUtils.generateRequestToken(new BasicRequestTokenData(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE), formattedDate).orElseThrow();
 
         formattedDate = getZonedDateTimeNow().format(DateTimeFormatter.ofPattern("yyyy"));
-        String invalidDate = requestTokenUtils.generateRequestToken(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, formattedDate + "1234567890").orElseThrow();
+        String invalidDate = requestTokenUtils.generateRequestToken(new BasicRequestTokenData(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE), formattedDate + "1234567890").orElseThrow();
 
         return Stream.of(
                 Arguments.of("", "some-token-value", futureToken, DcvError.INVALID_REQUEST_TOKEN_DATA),
@@ -91,9 +91,9 @@ class BasicRequestTokenValidatorTest {
         assertTrue(response.errors().contains(dcvError), "expected: " + dcvError + " but got: " + response.errors());
     }
 
-    private static Optional<String> generateTokenValue(ZonedDateTime dateTime, String tokenKey, String tokenValue) {
+    private static Optional<String> generateTokenValue(ZonedDateTime dateTime, String hashingKey, String hashingValue) {
         String formattedDate = dateTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        return requestTokenUtils.generateRequestToken(tokenKey, tokenValue, formattedDate);
+        return requestTokenUtils.generateRequestToken(new BasicRequestTokenData(hashingKey, hashingValue), formattedDate);
     }
 
     public static ZonedDateTime getZonedDateTimeNow() {

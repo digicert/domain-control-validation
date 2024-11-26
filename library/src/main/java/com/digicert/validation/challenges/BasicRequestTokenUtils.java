@@ -20,7 +20,7 @@ import java.util.Optional;
  * The class leverages the BouncyCastle library cryptographic algorithms to generate secure tokens.
  */
 @Slf4j
-public class RequestTokenUtils {
+public class BasicRequestTokenUtils {
 
     /** The character used to pad the request token to ensure it meets the minimum length requirement. */
     private static final String REQUEST_TOKEN_PAD_CHAR = "0";
@@ -40,7 +40,7 @@ public class RequestTokenUtils {
     private final String securityProvider;
 
     /** Constructor that initializes the security provider. */
-    public RequestTokenUtils() {
+    public BasicRequestTokenUtils() {
         try {
             Provider provider = new BouncyCastleProvider();
             Security.addProvider(provider);
@@ -56,14 +56,13 @@ public class RequestTokenUtils {
      * <p>
      * This method generates a secure request token and ensures it meets length requirements.
      *
-     * @param hashingKey the key used for generating the request token
-     * @param hasingValue the value used for generating the request token
+     * @param basicRequestTokenData the object containing the hashing key and value used for generating the request token
      * @param salt the salt used for generating the request token
      * @return an `Optional` containing the generated token, or an empty `Optional` if generation fails
      */
-    public Optional<String> generateRequestToken(String hashingKey, String hasingValue, String salt) {
-        validateInputs(hashingKey, hasingValue, salt);
-        Optional<String> base36Hash = generateHash(hashingKey, hasingValue, salt);
+    public Optional<String> generateRequestToken(BasicRequestTokenData basicRequestTokenData, String salt) {
+        validateInputs(basicRequestTokenData, salt);
+        Optional<String> base36Hash = generateHash(basicRequestTokenData.hashingKey(), basicRequestTokenData.hashingValue(), salt);
         // Pad the token with "0" characters up to the minimum token length
         return base36Hash
                 .map(calculatedHash -> salt + padStart(calculatedHash));
@@ -105,18 +104,18 @@ public class RequestTokenUtils {
      * @return the padded string
      */
     private static String padStart(String originalString) {
-        if (originalString.length() >= RequestTokenUtils.REQUEST_TOKEN_MIN_LENGTH) {
+        if (originalString.length() >= BasicRequestTokenUtils.REQUEST_TOKEN_MIN_LENGTH) {
             return originalString;
         }
-        return RequestTokenUtils.REQUEST_TOKEN_PAD_CHAR.repeat(RequestTokenUtils.REQUEST_TOKEN_MIN_LENGTH - originalString.length())
+        return BasicRequestTokenUtils.REQUEST_TOKEN_PAD_CHAR.repeat(BasicRequestTokenUtils.REQUEST_TOKEN_MIN_LENGTH - originalString.length())
                 + originalString;
     }
 
-    private void validateInputs(String hashingKey, String hashingValue, String salt) {
-        if (StringUtils.isEmpty(hashingKey)) { // check that hashingKey is not null or empty
+    private void validateInputs(BasicRequestTokenData basicRequestTokenData, String salt) {
+        if (StringUtils.isEmpty(basicRequestTokenData.hashingKey())) { // check that hashingKey is not null or empty
             throw new IllegalArgumentException("hashingKey cannot be null or empty");
         }
-        if (StringUtils.isEmpty(hashingValue)) { // check that hashingValue is not null or empty
+        if (StringUtils.isEmpty(basicRequestTokenData.hashingValue())) { // check that hashingValue is not null or empty
             throw new IllegalArgumentException("hashingValue cannot be null or empty");
         }
         if (StringUtils.isEmpty(salt)) { // check that salt is not null or empty
