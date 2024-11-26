@@ -57,7 +57,7 @@ public class FileValidator {
     private final DomainNameUtils domainNameUtils;
 
     /**
-     * Handler for File Auth Validation
+     * Handler for File Validation
      * <p>
      * This handler is responsible for executing the file-based domain validation process.
      */
@@ -72,7 +72,7 @@ public class FileValidator {
     private final static String FILE_LOCATION = "http://%s/.well-known/pki-validation/%s";
 
     /**
-     * Default filename for the file authentication
+     * Default filename for the file validation
      * <p>
      *     If no filename is specified in the request, the default filename specified in the dcvConfiguration will be used.
      */
@@ -123,7 +123,7 @@ public class FileValidator {
     }
 
     /**
-     * Perform File Auth validation
+     * Perform File Validation
      * <p>
      * This method performs the file-based domain validation by verifying the provided validation request. It checks the validity
      * of the domain, secret type, random value, and validation state. If the validation is successful, it returns a {@link DomainValidationEvidence}
@@ -142,23 +142,23 @@ public class FileValidator {
         FileValidationResponse fileValidationResponse = fileValidationHandler.validate(validationRequest);
 
         if (fileValidationResponse.isValid()) {
-            log.info("event_id={} domain={}", LogEvents.FILE_AUTH_VALIDATED, validationRequest.getDomain());
+            log.info("event_id={} domain={}", LogEvents.FILE_VALIDATION_SUCCESSFUL, validationRequest.getDomain());
             return createDomainValidationEvidence(validationRequest, fileValidationResponse);
         } else {
-            log.info("event_id={} domain={} file_auth_validation_response={}", LogEvents.FILE_AUTH_VALIDATION_FAILED, validationRequest.getDomain(), fileValidationResponse);
+            log.info("event_id={} domain={} file_validation_response={}", LogEvents.FILE_VALIDATION_FAILED, validationRequest.getDomain(), fileValidationResponse);
             throw new ValidationException(fileValidationResponse.errors());
         }
     }
 
     /**
-     * Create the Domain Validation Evidence from the File Auth Validation Response
+     * Create the Domain Validation Evidence from the File Validation Response
      * <p>
      * This method creates a {@link DomainValidationEvidence} object from the provided {@link FileValidationRequest} and {@link FileValidationResponse}.
      * It extracts the necessary information from the response and constructs the validation evidence, including the domain, DCV method, validation date,
      * file URL, random value, and found token.
      *
-     * @param request The File Auth Validation Request
-     * @param response The File Auth Validation Response
+     * @param request The File Validation Request
+     * @param response The File Validation Response
      * @return The Domain Validation Evidence
      */
     DomainValidationEvidence createDomainValidationEvidence(FileValidationRequest request, FileValidationResponse response) {
@@ -204,12 +204,12 @@ public class FileValidator {
     }
 
     /**
-     * Verify the File Auth Preparation Request
+     * Verify the File Preparation Request
      * <p>
      * This method verifies the provided {@link FilePreparationRequest} to ensure that all required fields are present and valid.
      * It checks the domain name and secret type, ensuring that the domain name is correctly formatted and does not contain wildcards.
      *
-     * @param filePreparationRequest The File Auth Preparation Request
+     * @param filePreparationRequest The File Preparation Request
      * @throws DcvException if the request is invalid. {@link InputException} when missing required fields.
      */
     private void verifyFilePreparation(FilePreparationRequest filePreparationRequest) throws DcvException, IllegalArgumentException {
@@ -233,7 +233,7 @@ public class FileValidator {
      * <p>
      * This method updates the required URL with the appropriate domain name and filename.
      *
-     * @param domainName The domain name for which the file authentication is being prepared
+     * @param domainName The domain name for which the file validation is being prepared
      * @param fileName The name of the file to be used in the URL
      * @return The URL where the file will be placed
      */

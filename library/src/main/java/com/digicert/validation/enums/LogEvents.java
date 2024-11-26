@@ -7,16 +7,16 @@ public enum LogEvents {
     /** Log event indicating a redirect was attempted but the host information was missing. */
     BAD_REDIRECT_NO_HOST,
 
-    /** Log event indicating an invalid URL was found during a file auth redirect. */
+    /** Log event indicating an invalid URL was found during a file validation redirect. */
     BAD_REDIRECT_URL,
 
     /**
-     * Log event indicating an incorrect port was used during a file auth redirect.
+     * Log event indicating an incorrect port was used during a file validation redirect.
      * Only ports 80 and 443 are allowed.
      */
     BAD_REDIRECT_PORT,
 
-    /** Log event indicating there an unknown error that occurred during a file auth redirect attempt. */
+    /** Log event indicating there an unknown error that occurred during a file validation redirect attempt. */
     REDIRECT_ERROR,
 
     /** Log event indicating that the system failed to generate a hash value. */
@@ -41,19 +41,19 @@ public enum LogEvents {
     DNS_SERVERS_NOT_CONFIGURED,
 
     /** Log event indicating that a response was received */
-    FILE_AUTH_RESPONSE,
+    FILE_VALIDATION_RESPONSE,
 
     /** Log event indicating that the response was not parseable or otherwise does not meet with validation requirements. */
-    FILE_AUTH_BAD_RESPONSE,
+    FILE_VALIDATION_BAD_RESPONSE,
 
     /** Log event indicating that a connection error occurred with the client. */
-    FILE_AUTH_CLIENT_ERROR,
+    FILE_VALIDATION_CLIENT_ERROR,
 
     /** Log event indicating that the file validation cannot be completed. */
-    FILE_AUTH_VALIDATION_FAILED,
+    FILE_VALIDATION_FAILED,
 
     /** Log event indicating that control over the FQDN was successfully proven. */
-    FILE_AUTH_VALIDATED,
+    FILE_VALIDATION_SUCCESSFUL,
 
     /** Log event indicating that the domain is invalid due to its length. (Max 255 characters) */
     INVALID_DOMAIN_LENGTH,

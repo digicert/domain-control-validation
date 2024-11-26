@@ -17,40 +17,40 @@ import lombok.ToString;
 @ToString
 public class FileValidationRequest {
     /**
-     * The domain for which the file authentication is being requested.
+     * The domain for which the file validation is being requested.
      */
     private final String domain;
 
     /**
-     * Optional: The filename to be used for file authentication.
+     * Optional: The filename to be used for file validation.
      */
     private final String filename;
 
     /**
-     * The type of challenge used for file authentication.
+     * The type of challenge used for file validation.
      */
     private final ChallengeType challengeType;
 
     /**
-     * The random value to be used for file authentication.
+     * The random value to be used for file validation.
      * Only used for RANDOM_VALUE secret type.
      */
     private final String randomValue;
 
     /**
-     * The token key to be used for file authentication.
+     * The token key to be used for file validation.
      * Only used for REQUEST_TOKEN secret type.
      */
     private final String tokenKey;
 
     /**
-     * The token value to be used for file authentication.
+     * The token value to be used for file validation.
      * Only used for REQUEST_TOKEN secret type.
      */
     private final String tokenValue;
 
     /**
-     * The validation state of the file authentication request.
+     * The validation state of the file validation request.
      */
     private final ValidationState validationState;
 
@@ -58,13 +58,13 @@ public class FileValidationRequest {
      * Private constructor to prevent instantiation without using the builder.
      * Constructs a new FileValidationRequest with the specified parameters.
      *
-     * @param domain          The domain for which the file authentication is being requested.
-     * @param filename        The filename to be used for file authentication.
-     * @param challengeType      The type of secret used for file authentication.
-     * @param randomValue     The random value to be used for file authentication.
-     * @param tokenKey        The token key to be used for file authentication.
-     * @param tokenValue      The token value to be used for file authentication.
-     * @param validationState The validation state of the file authentication request.
+     * @param domain          The domain for which the file validation is being requested.
+     * @param filename        The filename to be used for file validation.
+     * @param challengeType      The type of secret used for file validation.
+     * @param randomValue     The random value to be used for file validation.
+     * @param tokenKey        The token key to be used for file validation.
+     * @param tokenValue      The token value to be used for file validation.
+     * @param validationState The validation state of the file validation request.
      */
     private FileValidationRequest(String domain, String filename, ChallengeType challengeType, String randomValue, String tokenKey, String tokenValue, ValidationState validationState) {
         this.domain = domain;

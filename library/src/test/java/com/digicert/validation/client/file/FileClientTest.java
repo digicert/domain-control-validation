@@ -261,7 +261,7 @@ public class FileClientTest {
         assertNull(actualResponse.getFileContent());
         assertNotNull(actualResponse.getException());
         assertInstanceOf(SocketTimeoutException.class, actualResponse.getException());
-        assertEquals(DcvError.FILE_AUTH_CLIENT_ERROR, actualResponse.getDcvError());
+        assertEquals(DcvError.FILE_VALIDATION_CLIENT_ERROR, actualResponse.getDcvError());
     }
 
     @Test

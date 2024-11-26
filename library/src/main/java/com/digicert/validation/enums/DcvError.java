@@ -21,21 +21,21 @@ public enum DcvError {
      * Error indicating that the secret type is required.
      * This error occurs when the secret type is missing in the request. The secret type is crucial
      * for the validation process as it defines the method of secret verification. This is specific
-     * for the DNS and File authentication types.
+     * for the DNS and File Validation types.
      */
     SECRET_TYPE_REQUIRED,
 
     /**
      * Error indicating that the token key is required.
      * This error occurs when the token key is not provided in the request. The token key is a critical
-     * component used to authenticate the request for token specific DCV methods (DNS_TXT_TOKEN, FILE_AUTH_TOKEN).
+     * component used to authenticate the request for token specific DCV methods (DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN).
      */
     TOKEN_KEY_REQUIRED,
 
     /**
      * Error indicating that the token value is required.
      * This error occurs when the token key is not provided in the request. The token value is a critical
-     * component used to authenticate the request for token specific DCV methods (DNS_TXT_TOKEN, FILE_AUTH_TOKEN).
+     * component used to authenticate the request for token specific DCV methods (DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN).
      */
     TOKEN_VALUE_REQUIRED,
 
@@ -108,9 +108,9 @@ public enum DcvError {
 
     /**
      * Error indicating that wildcard domains are not allowed.
-     * This error occurs when a wildcard domain is provided on a file authentication request,
+     * This error occurs when a wildcard domain is provided on a file validation request,
      * which is not permitted in this context. Wildcard domains are used to represent multiple subdomains,
-     * but they are not allowed for file authentication validation purposes.
+     * but they are not allowed for file validation purposes.
      */
     DOMAIN_INVALID_WILDCARD_NOT_ALLOWED,
 
@@ -123,35 +123,35 @@ public enum DcvError {
     DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX,
 
     /**
-     * Error indicating that the file authentication response is empty.
-     * This error occurs when the response from the file authentication process is empty. An empty
+     * Error indicating that the file validation response is empty.
+     * This error occurs when the response from the file validation process is empty. An empty
      * response means that the system did not receive the expected data, leading to a validation
      * failure.
      */
-    FILE_AUTH_EMPTY_RESPONSE,
+    FILE_VALIDATION_EMPTY_RESPONSE,
 
     /**
-     * Error indicating a client error during file authentication.
-     * This error occurs when there is a client-side error during the file authentication process.
+     * Error indicating a client error during file validation.
+     * This error occurs when there is a client-side error during the file validation process.
      * Client errors can include issues such as network problems or incorrect request formatting,
      * which prevent the authentication from succeeding.
      */
-    FILE_AUTH_CLIENT_ERROR,
+    FILE_VALIDATION_CLIENT_ERROR,
 
     /**
-     * Error indicating that the file authentication content is invalid.
-     * This error occurs when the content of the file authentication response is invalid. Invalid
+     * Error indicating that the file validation content is invalid.
+     * This error occurs when the content of the file validation response is invalid. Invalid
      * content means that the data received does not match the expected format or values, leading
      * to a validation failure.
      */
-    FILE_AUTH_INVALID_CONTENT,
+    FILE_VALIDATION_INVALID_CONTENT,
 
     /**
-     * Error indicating that the file authentication status code is not as expected.
+     * Error indicating that the file validation status code is not as expected.
      * The status code indicates the result of the authentication request, and an unexpected code
      * suggests a problem with the response.
      */
-    FILE_AUTH_INVALID_STATUS_CODE,
+    FILE_VALIDATION_INVALID_STATUS_CODE,
 
     /**
      * Error indicating that the token was not found.

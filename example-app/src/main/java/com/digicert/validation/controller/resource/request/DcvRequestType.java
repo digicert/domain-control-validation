@@ -7,6 +7,6 @@ public enum DcvRequestType {
     DNS_TXT,
     DNS_CNAME,
     DNS_TXT_TOKEN,
-    FILE_AUTH,
-    FILE_AUTH_TOKEN
+    FILE_VALIDATION,
+    FILE_VALIDATION_TOKEN
 }

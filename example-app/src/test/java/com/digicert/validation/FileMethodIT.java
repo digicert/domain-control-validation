@@ -32,7 +32,7 @@ class FileMethodIT {
 
     @Test
     void verifyFileValidation_happyDayFlow() throws IOException {
-        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_AUTH);
+        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_VALIDATION);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
         assertCreatedDomain(createdDomain, dcvRequest);
@@ -51,7 +51,7 @@ class FileMethodIT {
 
     @Test
     void verifyFileValidation_happyDayFlow_CustomFilename() throws IOException {
-        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), "customfilename", defaultAccountId, DcvRequestType.FILE_AUTH);
+        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), "customfilename", defaultAccountId, DcvRequestType.FILE_VALIDATION);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
         assertCreatedDomain(createdDomain, dcvRequest);
@@ -72,7 +72,7 @@ class FileMethodIT {
     void verifyFileValidation_useDifferentValueAsFileName() throws IOException {
         String fileName = "some-file.txt";
 
-        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_AUTH);
+        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_VALIDATION);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
         assertCreatedDomain(createdDomain, dcvRequest);
@@ -91,7 +91,7 @@ class FileMethodIT {
 
     @Test
     void verifyFileValidation_useDefaultFilename() throws IOException {
-        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_AUTH);
+        DcvRequest dcvRequest = new DcvRequest(DomainUtils.getRandomDomainName(2, "com"), defaultAccountId, DcvRequestType.FILE_VALIDATION);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
         assertCreatedDomain(createdDomain, dcvRequest);
@@ -124,7 +124,7 @@ class FileMethodIT {
 
     private static ValidateRequest createValidateRequest(DomainResource createdDomain, String file) {
         return ValidateRequest.builder()
-                .dcvRequestType(DcvRequestType.FILE_AUTH)
+                .dcvRequestType(DcvRequestType.FILE_VALIDATION)
                 .filename(file)
                 .randomValue(createdDomain.getRandomValueDetails().getFirst().getRandomValue())
                 .domain(createdDomain.getDomainName())

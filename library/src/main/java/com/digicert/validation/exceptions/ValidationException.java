@@ -12,7 +12,7 @@ import java.util.Set;
  * <p>
  * The `ValidationException` class is a custom exception that is thrown when a validation process fails.
  * It extends the `DcvException` class, inheriting its properties and methods. This exception is specifically
- * designed to handle validation errors that occur during the validation of DNS, email, or file authentication
+ * designed to handle validation errors that occur during the validation of DNS, email, or file validation
  * methods.
  *
  * @see com.digicert.validation.methods.dns.DnsValidator

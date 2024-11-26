@@ -14,7 +14,7 @@ Below is a simplified diagram illustrating the workflow of the DCV process:
 
 1. **Preparation Request**: Submit a preparation request to prepare for validation
 2. **Preparation Response**: Receive a preparation response with details for validation
-3. **Validation Request**: Submit a validation request (DNS, Email, or File Auth)
+3. **Validation Request**: Submit a validation request (DNS, Email, or File Validation)
 4. **Validation Response**: Perform the validation and receive the validation response
 
 ```plaintext
@@ -57,7 +57,7 @@ DcvManager dcvManager = DcvManager().Builder()
     .build();
 ```
 
-Depending on the type of validation you are looking to do, you will need to retrieve the appropriate validator from the 'DcvManager' instance. For example, to perform DNS validation, you will need to retrieve the DNS validator. To perform email validation, you will need to retrieve the email validator. Or to perform file authentication validation, you will need to retrieve the file authentication validator.
+Depending on the type of validation you are looking to do, you will need to retrieve the appropriate validator from the 'DcvManager' instance. For example, to perform DNS validation, you will need to retrieve the DNS validator. To perform email validation, you will need to retrieve the email validator. Or to perform file validation, you will need to retrieve the file validation validator.
 
 ```java
 import com.digicert.domaincontrolvalidation.DnsValidator;
@@ -105,7 +105,7 @@ The 'validate' method will return a 'DomainValidationEvidence' object with the r
 ## Detailed Request and Response Objects
 ### BR 3.2.2.4.18 - Agreed-Upon Change to Website (File Change) 
 #### FilePreparationRequest
-The `FilePreparationRequest` is used to prepare the file authentication validation process
+The `FilePreparationRequest` is used to prepare the file validation process
 
 | Field           | Type             | Description                                 |
 |-----------------|------------------|---------------------------------------------|

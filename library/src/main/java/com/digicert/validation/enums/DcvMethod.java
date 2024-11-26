@@ -23,7 +23,7 @@ import lombok.Getter;
  *     <li>3.2.2.4.13 -> Email to DNS CAA Contact - Not Supported</li>
  *     <li><b>3.2.2.4.14 -> Email to DNS TXT Contact</b></li>
  *     <li>3.2.2.4.15 / 16 / 17 -> Phone Contact - Not Supported</li>
- *     <li><b>3.2.2.4.18 -> File Auth</b></li>
+ *     <li><b>3.2.2.4.18 -> File Validation</b></li>
  *     <li>3.2.2.4.19 -> ACME details - Not Supported</li>
  *     <li>3.2.2.4.20 -> TLS</li>
  *   </ul>
