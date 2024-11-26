@@ -7,7 +7,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 /**
- * Represents the response from a file authentication client.
+ * Represents the response from a file validation client.
  */
 @AllArgsConstructor
 @Getter
@@ -23,16 +23,16 @@ public class FileClientResponse {
     /** The final HTTP status code after all redirects have been processed. */
     private int statusCode;
 
-    /** The exception that occurred during the file authentication process, if any. */
+    /** The exception that occurred during the file validation process, if any. */
     private Exception exception;
 
     /**
-     * The DCV error that occurred during the file authentication process, if any.
+     * The DCV error that occurred during the file validation process, if any.
      * <p>
      * If set this field will be one of the following:
      * <ul>
-     *     <li>FILE_AUTH_CLIENT_ERROR</li>
-     *     <li>FILE_AUTH_INVALID_CONTENT</li>
+     *     <li>FILE_VALIDATION_CLIENT_ERROR</li>
+     *     <li>FILE_VALIDATION_INVALID_CONTENT</li>
      * </ul>
      */
     private DcvError dcvError;

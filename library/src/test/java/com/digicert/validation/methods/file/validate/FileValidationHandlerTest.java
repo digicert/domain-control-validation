@@ -118,7 +118,7 @@ class FileValidationHandlerTest {
                         null,
                         200,
                         new IOException("Intentional Exception"),
-                        DcvError.FILE_AUTH_CLIENT_ERROR));
+                        DcvError.FILE_VALIDATION_CLIENT_ERROR));
 
         FileValidationResponse response = fileValidationHandler.validate(fileValidationRequestBuilder.build());
         // Assert
@@ -128,7 +128,7 @@ class FileValidationHandlerTest {
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
         assertNull(response.validRandomValue());
         assertEquals(1, response.errors().size());
-        assertTrue(response.errors().contains(DcvError.FILE_AUTH_CLIENT_ERROR));
+        assertTrue(response.errors().contains(DcvError.FILE_VALIDATION_CLIENT_ERROR));
         assertNull(response.validToken());
     }
 
@@ -148,7 +148,7 @@ class FileValidationHandlerTest {
         assertEquals("example.com", response.domain());
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
         assertEquals(1, response.errors().size());
-        assertTrue(response.errors().contains(DcvError.FILE_AUTH_INVALID_STATUS_CODE));
+        assertTrue(response.errors().contains(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE));
         assertNull(response.validRandomValue());
         assertNull(response.validToken());
     }
@@ -169,7 +169,7 @@ class FileValidationHandlerTest {
         assertEquals("example.com", response.domain());
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
         assertEquals(1, response.errors().size());
-        assertTrue(response.errors().contains(DcvError.FILE_AUTH_EMPTY_RESPONSE));
+        assertTrue(response.errors().contains(DcvError.FILE_VALIDATION_EMPTY_RESPONSE));
         assertNull(response.validRandomValue());
         assertNull(response.validToken());
     }

@@ -68,35 +68,35 @@ public class DcvConfiguration {
      */
     private int randomValueValidityPeriod = 29;
 
-    /** The timeout in milliseconds for connecting to a server while performing file authentication. */
+    /** The timeout in milliseconds for connecting to a server while performing file validation. */
     private int fileValidationConnectTimeout = 2000;
 
-    /** The timeout in milliseconds for reading data from a server while performing file authentication. */
+    /** The timeout in milliseconds for reading data from a server while performing file validation. */
     private int fileValidationReadTimeout = 5000;
 
-    /** The maximum length of the body for file authentication responses. */
+    /** The maximum length of the body for file validation responses. */
     private int fileValidationMaxBodyLength = 5000;
 
-    /** The socket timeout in milliseconds for connecting to a server while performing file authentication. */
+    /** The socket timeout in milliseconds for connecting to a server while performing file validation. */
     private int fileValidationSocketTimeout = 2000;
 
-    /** The maximum number of redirects allowed while performing file authentication. */
+    /** The maximum number of redirects allowed while performing file validation. */
     private int fileValidationMaxRedirects = 5;
 
     /**
      * This flag indicates that the library will try both HTTP and HTTPS
-     * when performing file authentication requests.
+     * when performing file validation requests.
      */
     private Boolean fileValidationCheckHttps = false;
 
     /**
-     * The default file authentication filename.
+     * The default file validation filename.
      * <p>
      * This value represents the default file name used for "Agreed-Upon Change to Website v2" validation.
      */
     private String fileValidationFilename = "fileauth.txt";
 
-    /** The user agent to be used for file authentication requests. */
+    /** The user agent to be used for file validation requests. */
     private String fileValidationUserAgent = "DCV-Library/1.0";
 
     /**
@@ -238,11 +238,11 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the timeout in milliseconds for connecting to a server while performing file authentication.
+         * Set the timeout in milliseconds for connecting to a server while performing file validation.
          * <p>
          * Default value is 2000 milliseconds.
          *
-         * @param fileValidationConnectTimeout the file authentication connect timeout in milliseconds
+         * @param fileValidationConnectTimeout the file validation connect timeout in milliseconds
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationConnectTimeout is negative
          */
@@ -255,11 +255,11 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the timeout in milliseconds for reading data from a server while performing file authentication.
+         * Set the timeout in milliseconds for reading data from a server while performing file validation.
          * <p>
          * Default value is 5000 milliseconds.
          *
-         * @param fileValidationReadTimeout the file authentication read timeout in milliseconds
+         * @param fileValidationReadTimeout the file validation read timeout in milliseconds
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationReadTimeout is negative
          */
@@ -272,11 +272,11 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the maximum length of the body for file authentication responses.
+         * Set the maximum length of the body for file validation responses.
          * <p>
          * Default value is 5000 bytes.
          *
-         * @param fileValidationMaxBodyLength the file authentication max body length
+         * @param fileValidationMaxBodyLength the file validation max body length
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationMaxBodyLength is not greater than 0
          */
@@ -289,11 +289,11 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the socket timeout in milliseconds for connecting to a server while performing file authentication.
+         * Set the socket timeout in milliseconds for connecting to a server while performing file validation.
          * <p>
          * Default value is 2000 milliseconds.
          *
-         * @param fileValidationSocketTimeout the file authentication socket timeout in milliseconds
+         * @param fileValidationSocketTimeout the file validation socket timeout in milliseconds
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationSocketTimeout is negative
          */
@@ -306,11 +306,11 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the maximum number of redirects allowed while performing file authentication.
+         * Set the maximum number of redirects allowed while performing file validation.
          * <p>
          * Default value is 5.
          *
-         * @param fileValidationMaxRedirects the file authentication max redirects
+         * @param fileValidationMaxRedirects the file validation max redirects
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationMaxRedirects is negative
          */
@@ -323,11 +323,11 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the flag to indicate that the library will try both HTTP and HTTPS when performing file authentication requests.
+         * Set the flag to indicate that the library will try both HTTP and HTTPS when performing file validation requests.
          * <p>
          * Default value is false.
          *
-         * @param fileValidationCheckHttps the file authentication check HTTPS flag
+         * @param fileValidationCheckHttps the file validation check HTTPS flag
          * @return the builder instance
          */
         public DcvConfigurationBuilder fileValidationCheckHttps(Boolean fileValidationCheckHttps) {
@@ -342,7 +342,7 @@ public class DcvConfiguration {
          * validation method. If validation requests do not specify a file name, this is the file name that will be
          * used.
          *
-         * @param fileValidationFileName the file authentication file name
+         * @param fileValidationFileName the file validation file name
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationFileName is null, empty, contains invalid characters, or exceeds the maximum length
          */
@@ -353,7 +353,7 @@ public class DcvConfiguration {
         }
 
         /**
-         * Set the user agent to be used for file authentication requests.
+         * Set the user agent to be used for file validation requests.
          * <p>
          * The user agent header of a request identifies the type of client making the request. Servers can be
          * configured to reject requests from certain user agents, so customers can be instructed to make sure that
@@ -361,7 +361,7 @@ public class DcvConfiguration {
          * <p>
          * Default value is "DCV-Library/1.0".
          *
-         * @param fileValidationUserAgent the file authentication user agent
+         * @param fileValidationUserAgent the file validation user agent
          * @return the builder instance
          * @throws IllegalArgumentException if fileValidationUserAgent is null or empty
          */

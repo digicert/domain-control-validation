@@ -54,8 +54,8 @@ public class DomainValidationEvidence {
     private final String emailAddress;
 
     /**
-     * FILE AUTH: The URL of the file used for validation.
-     * Only populated when the DCV method is FILE\_AUTH (BR\_3\_2\_2\_4\_18) otherwise NULL
+     * FILE Validation: The URL of the file used for validation.
+     * Only populated when the DCV method is FILE\_VALIDATION (BR\_3\_2\_2\_4\_18) otherwise NULL
      * This field holds the URL of the file that was used to validate the domain control.
      * It is only populated if the validation method involved placing a file on the web server.
      */
@@ -85,7 +85,7 @@ public class DomainValidationEvidence {
     /**
      * TOKEN: The token found during validation.
      * Only populated when a token is used for validation otherwise NULL
-     * Only populated when the DCV method is DNS\_CHANGE or FILE\_AUTH.
+     * Only populated when the DCV method is DNS\_CHANGE or FILE\_VALIDATION.
      * This field contains the token that was found during the domain validation process.
      */
     private final String foundToken;

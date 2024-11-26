@@ -66,7 +66,7 @@ public class DcvService {
             switch (dcvRequest.dcvRequestType()) {
                 case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> createdEntity = submitDnsDomain(dcvRequest);
                 case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT -> createdEntity = submitEmailDomain(dcvRequest);
-                case FILE_AUTH, FILE_AUTH_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
+                case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
             }
         } catch(DcvException ex){
             log.info("Failed submitting domain", ex);
@@ -86,7 +86,7 @@ public class DcvService {
             case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> validateDnsDomain(accountId, validationState, validateRequest);
             case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT ->
                     validateEmailDomain(validationState, validateRequest);
-            case FILE_AUTH, FILE_AUTH_TOKEN -> validateFileDomain(accountId, validationState, validateRequest);
+            case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> validateFileDomain(accountId, validationState, validateRequest);
         }
 
         domainEntity.status = DcvRequestStatus.VALID.name();
@@ -219,7 +219,7 @@ public class DcvService {
                     throw new InvalidDcvRequestException("Supplied email, random value pair are invalid for domain");
                 }
             }
-            case DNS_TXT_TOKEN, FILE_AUTH -> {} // No random value to check
+            case DNS_TXT_TOKEN, FILE_VALIDATION -> {} // No random value to check
         }
     }
 
@@ -260,8 +260,8 @@ public class DcvService {
 
     private static ChallengeType mapToChallengeType(DcvRequestType dcvRequestType) {
         return switch (dcvRequestType) {
-            case FILE_AUTH, DNS_TXT, DNS_CNAME -> ChallengeType.RANDOM_VALUE;
-            case FILE_AUTH_TOKEN, DNS_TXT_TOKEN -> ChallengeType.REQUEST_TOKEN;
+            case FILE_VALIDATION, DNS_TXT, DNS_CNAME -> ChallengeType.RANDOM_VALUE;
+            case FILE_VALIDATION_TOKEN, DNS_TXT_TOKEN -> ChallengeType.REQUEST_TOKEN;
             default -> throw new IllegalStateException("Unexpected value: " + dcvRequestType);
         };
     }
@@ -295,8 +295,8 @@ public class DcvService {
                 .challengeType(mapToChallengeType(validateRequest.dcvRequestType))
                 .validationState(validationState);
 
-        // Set the token key if it is a FILE_AUTH_TOKEN request
-        if (validateRequest.dcvRequestType == DcvRequestType.FILE_AUTH_TOKEN) {
+        // Set the token key if it is a FILE_VALIDATION_TOKEN request
+        if (validateRequest.dcvRequestType == DcvRequestType.FILE_VALIDATION_TOKEN) {
             accountsRepository.findById(accountId).ifPresent(accountsEntity -> requestBuilder.tokenKey(accountsEntity.tokenKey));
         }
 

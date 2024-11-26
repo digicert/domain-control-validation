@@ -7,9 +7,9 @@ import lombok.Builder;
 import java.util.Set;
 
 /**
- * Represents the response of a file authentication validation process.
+ * Represents the response of a file validation process.
  * <p>
- * This record encapsulates the outcome of a file authentication validation request, including the validation success,
+ * This record encapsulates the outcome of a file validation request, including the validation success,
  * domain, file URL, secret type, and any errors encountered.
  *
  * @param isValid          Indicates whether the validation is successful.

@@ -19,14 +19,14 @@ import com.digicert.validation.secrets.TokenValidator;
  * Handles the validation of file-based domain control validation (DCV) requests.
  * <p>
  * This class is responsible for managing the validation process of file-based DCV requests. It interacts with various
- * components such as the file authentication client, random value validator, and token validator to ensure that the
+ * components such as the file validation client, random value validator, and token validator to ensure that the
  * validation process is carried out correctly. The class provides methods to set up the necessary clients, validate
  * the requests, and retrieve the required file URLs.
  */
 @Slf4j
 public class FileValidationHandler {
 
-    /** The file authentication client. */
+    /** The file validation client. */
     private FileClient fileClient;
 
     /**
@@ -44,10 +44,10 @@ public class FileValidationHandler {
     /** The path to the token. */
     private static final String TOKEN_PATH = "/.well-known/pki-validation/";
 
-    /** The default file authentication filename. */
+    /** The default file validation filename. */
     private final String defaultFileValidationFilename;
 
-    /** The flag to check if the file authentication request should be made over HTTPS. */
+    /** The flag to check if the file validation request should be made over HTTPS. */
     private final boolean fileValidationCheckHttps;
 
     /**
@@ -55,7 +55,7 @@ public class FileValidationHandler {
      * <p>
      * This constructor initializes the FileValidationHandler with the necessary dependencies and configuration
      * settings. It retrieves the required clients and validators from the provided DcvContext and sets up the default
-     * file authentication filename.
+     * file validation filename.
      *
      * @param dcvContext context where we can find the needed dependencies / configuration
      */
@@ -72,12 +72,12 @@ public class FileValidationHandler {
      * Validates the file-based domain control validation (DCV) request.
      * <p>
      * This method processes the file-based DCV request by validating the provided file URLs and checking for errors.
-     * It uses the file authentication client to execute requests and retrieve responses, which are then validated
+     * It uses the file validation client to execute requests and retrieve responses, which are then validated
      * using the random value validator and token validator. The method constructs a response based on the validation
      * results, indicating whether the validation was successful or not.
      *
-     * @param validationRequest the file authentication validation request
-     * @return the file authentication validation response
+     * @param validationRequest the file validation request
+     * @return the file validation response
      */
     public FileValidationResponse validate(FileValidationRequest validationRequest) {
         List<String> fileUrls = getFileUrls(validationRequest);
@@ -87,7 +87,7 @@ public class FileValidationHandler {
         for (String fileUrl : fileUrls) {
             FileClientResponse fileClientResponse = fileClient.executeRequest(fileUrl);
 
-            // Check and find errors in the file authentication response
+            // Check and find errors in the file validation response
             Optional<DcvError> responseError =  getErrorsFromFileClientResponse(fileClientResponse);
             if (responseError.isPresent()) {
                 errors.add(responseError.get());
@@ -130,7 +130,7 @@ public class FileValidationHandler {
     /**
      * Retrieves the valid secret or null if the validation fails.
      *
-     * @param fileValidationRequest the file authentication validation request
+     * @param fileValidationRequest the file validation request
      * @param fileContent the content of the file where the secret can be found
      * @return TokenValidatorResponse with a valid secret or null with populated errors if the validation fails.
      */
@@ -142,16 +142,16 @@ public class FileValidationHandler {
     }
 
     /**
-     * Checks if the file authentication response is valid.
+     * Checks if the file validation response is valid.
      *
-     * @param fileClientResponse the file authentication client response
+     * @param fileClientResponse the file validation client response
      * @return empty list if valid, otherwise a list of errors
      */
     private Optional<DcvError> getErrorsFromFileClientResponse(FileClientResponse fileClientResponse) {
 
         if (fileClientResponse.getException() != null) {
             log.info("event_id={} error={} exception_message={}",
-                    LogEvents.FILE_AUTH_BAD_RESPONSE,
+                    LogEvents.FILE_VALIDATION_BAD_RESPONSE,
                     fileClientResponse.getDcvError(),
                     fileClientResponse.getException().getMessage());
             return Optional.of(fileClientResponse.getDcvError());
@@ -161,20 +161,20 @@ public class FileValidationHandler {
         // https://tools.ietf.org/html/rfc7231#section-6.3.1
         if (fileClientResponse.getStatusCode() != 200) {
             log.info("event_id={} error={} status_code={}",
-                    LogEvents.FILE_AUTH_BAD_RESPONSE,
-                    DcvError.FILE_AUTH_INVALID_STATUS_CODE,
+                    LogEvents.FILE_VALIDATION_BAD_RESPONSE,
+                    DcvError.FILE_VALIDATION_INVALID_STATUS_CODE,
                     fileClientResponse.getStatusCode());
 
-            return Optional.of(DcvError.FILE_AUTH_INVALID_STATUS_CODE);
+            return Optional.of(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE);
         }
 
         if (StringUtils.isEmpty(fileClientResponse.getFileContent())) {
             log.info("event_id={} error={} status_code={}",
-                    LogEvents.FILE_AUTH_BAD_RESPONSE,
-                    DcvError.FILE_AUTH_EMPTY_RESPONSE,
+                    LogEvents.FILE_VALIDATION_BAD_RESPONSE,
+                    DcvError.FILE_VALIDATION_EMPTY_RESPONSE,
                     fileClientResponse.getStatusCode());
 
-            return Optional.of(DcvError.FILE_AUTH_EMPTY_RESPONSE);
+            return Optional.of(DcvError.FILE_VALIDATION_EMPTY_RESPONSE);
         }
 
         return Optional.empty();
@@ -185,10 +185,10 @@ public class FileValidationHandler {
      * <p>
      * This method constructs the list of file URLs that will be used in the file-based DCV request. It uses the domain
      * and filename provided in the validation request to create the URLs. If no specific filename is provided, the
-     * default file authentication filename is used. The method returns a list of URLs with both HTTP and HTTPS
+     * default file validation filename is used. The method returns a list of URLs with both HTTP and HTTPS
      * protocols, ensuring that the validation process can handle different types of requests.
      *
-     * @param fileValidationRequest the file authentication validation request
+     * @param fileValidationRequest the file validation request
      * @return the list of file URLs
      */
     public List<String> getFileUrls(FileValidationRequest fileValidationRequest) {

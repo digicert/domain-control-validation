@@ -54,7 +54,7 @@ class FileTokenMethodIT {
         // Write random value to file
         FileUtils.writeNginxStaticFileWithContent("fileauth.txt", dnsTxtTokenValue);
 
-        DcvRequest dcvRequest = new DcvRequest(domainName, defaultAccountId, DcvRequestType.FILE_AUTH_TOKEN);
+        DcvRequest dcvRequest = new DcvRequest(domainName, defaultAccountId, DcvRequestType.FILE_VALIDATION_TOKEN);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
         assertCreatedDomain(dcvRequest, createdDomain);
@@ -87,7 +87,7 @@ class FileTokenMethodIT {
         // Write random value to file
         FileUtils.writeNginxStaticFileWithContent("customlocation.txt", dnsTxtTokenValue);
 
-        DcvRequest dcvRequest = new DcvRequest(domainName, "customlocation", defaultAccountId, DcvRequestType.FILE_AUTH_TOKEN);
+        DcvRequest dcvRequest = new DcvRequest(domainName, "customlocation", defaultAccountId, DcvRequestType.FILE_VALIDATION_TOKEN);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
 
         assertCreatedDomain(dcvRequest, createdDomain);
@@ -101,7 +101,7 @@ class FileTokenMethodIT {
 
     private static ValidateRequest createValidateRequest(DomainResource createdDomain, String file, String tokenValue) {
         return ValidateRequest.builder()
-                .dcvRequestType(DcvRequestType.FILE_AUTH_TOKEN)
+                .dcvRequestType(DcvRequestType.FILE_VALIDATION_TOKEN)
                 .filename(file)
                 .tokenValue(tokenValue)
                 .randomValue(createdDomain.getRandomValueDetails().getFirst().getRandomValue())

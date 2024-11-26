@@ -7,9 +7,9 @@ import lombok.Getter;
 import lombok.ToString;
 
 /**
- * Represents the response for a file authentication preparation request.
+ * Represents the response for a file validation preparation request.
  * <p>
- * This response contains the necessary information to proceed with the file authentication validation process.
+ * This response contains the necessary information to proceed with the file validation process.
  * It includes details such as the domain for which the authentication is being prepared, the type of challenge used,
  * the random value to be placed in the file, and the validation state of the preparation response.
  */
@@ -19,7 +19,7 @@ import lombok.ToString;
 public class FilePreparationResponse {
 
     /**
-     * The domain for which the file authentication is being prepared.
+     * The domain for which the file validation is being prepared.
      */
     private final String domain;
 
@@ -46,7 +46,7 @@ public class FilePreparationResponse {
     /**
      * Private constructor to prevent instantiation without using the builder.
      *
-     * @param domain          The domain for which the file authentication is being prepared.
+     * @param domain          The domain for which the file validation is being prepared.
      * @param challengeType   The type of secret used for validation.
      * @param randomValue     The random value to be placed in the file.
      * @param fileLocation    The location of the file to be placed on the server.

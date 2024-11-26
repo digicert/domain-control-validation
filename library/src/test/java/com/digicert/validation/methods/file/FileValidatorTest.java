@@ -167,7 +167,7 @@ class FileValidatorTest {
         FileValidationRequest request = getTokenFileValidationRequest().build();
         FileValidationResponse response = getDefaultFileValidationResponse()
                 .isValid(false)
-                .errors(Set.of(DcvError.FILE_AUTH_CLIENT_ERROR))
+                .errors(Set.of(DcvError.FILE_VALIDATION_CLIENT_ERROR))
                 .build();
 
         when(fileValidationHandler.validate(request)).thenReturn(response);
@@ -176,7 +176,7 @@ class FileValidatorTest {
         ValidationException exception = assertThrows(ValidationException.class, () -> fileValidator.validate(request));
 
         // Assert
-        assertTrue(exception.getErrors().contains(DcvError.FILE_AUTH_CLIENT_ERROR));
+        assertTrue(exception.getErrors().contains(DcvError.FILE_VALIDATION_CLIENT_ERROR));
     }
 
     @Test

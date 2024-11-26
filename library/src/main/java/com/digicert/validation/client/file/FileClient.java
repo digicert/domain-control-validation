@@ -27,7 +27,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Client for handling file authentication requests.
+ * Client for handling file validation requests.
  * This client is configured with custom settings and a custom redirect strategy.
  * It uses Apache HttpClient for making HTTP requests.
  */
@@ -91,18 +91,18 @@ public class FileClient implements Closeable {
                 try {
                     clientResponse.setStatusCode(fileResponse.getCode());
                     clientResponse.setFileContent(EntityUtils.toString(fileResponse.getEntity(), maxBodyLength));
-                    log.info("event_id={} url={} status_code={} length={}", LogEvents.FILE_AUTH_RESPONSE, fileUrl, fileResponse.getCode(), clientResponse.getFileContent().length());
+                    log.info("event_id={} url={} status_code={} length={}", LogEvents.FILE_VALIDATION_RESPONSE, fileUrl, fileResponse.getCode(), clientResponse.getFileContent().length());
                 } catch (ParseException e) {
-                    log.info("event_id={} status_code={} exception_message={}", LogEvents.FILE_AUTH_BAD_RESPONSE, fileResponse.getCode(), e.getMessage());
+                    log.info("event_id={} status_code={} exception_message={}", LogEvents.FILE_VALIDATION_BAD_RESPONSE, fileResponse.getCode(), e.getMessage());
                     clientResponse.setException(e);
-                    clientResponse.setDcvError(DcvError.FILE_AUTH_INVALID_CONTENT);
+                    clientResponse.setDcvError(DcvError.FILE_VALIDATION_INVALID_CONTENT);
                 }
                 return fileResponse;
             });
         } catch (Exception e) {
-            log.info("event_id={} exception_message={}", LogEvents.FILE_AUTH_CLIENT_ERROR, e.getMessage());
+            log.info("event_id={} exception_message={}", LogEvents.FILE_VALIDATION_CLIENT_ERROR, e.getMessage());
             clientResponse.setException(e);
-            clientResponse.setDcvError(DcvError.FILE_AUTH_CLIENT_ERROR);
+            clientResponse.setDcvError(DcvError.FILE_VALIDATION_CLIENT_ERROR);
         }
         return clientResponse;
     }

@@ -8,7 +8,7 @@ import lombok.Getter;
 
 /**
  * DcvManager is responsible for managing the Domain Control Validation (DCV) process.
- * It initializes and holds references to various validators such as DNS, Email, and File Authentication validators,
+ * It initializes and holds references to various validators such as DNS, Email, and File Validation validators,
  * as well as the Dns Client.
  * <p>
  * The DcvManager class acts as a central point for coordinating the DCV process. It ensures that the appropriate
@@ -43,10 +43,10 @@ public class DcvManager {
     private final EmailValidator emailValidator;
 
     /**
-     * The File Authentication validator used for DCV.
+     * The File Validation validator used for DCV.
      * <p>
      * This validator is responsible for performing file-based domain control validation. It checks for the presence
-     * of a request token or random value in a file to verify FQDN ownership. File authentication cannot be used for
+     * of a request token or random value in a file to verify FQDN ownership. File validation cannot be used for
      * wildcard domain names.
      * <p>
      * Handles 3.2.2.4.18 Agreed-Upon Change to Website v2
