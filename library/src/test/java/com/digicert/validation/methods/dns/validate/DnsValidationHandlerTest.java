@@ -1,14 +1,11 @@
 package com.digicert.validation.methods.dns.validate;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.*;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.challenges.BasicRandomValueValidator;
-import com.digicert.validation.challenges.BasicRequestTokenValidator;
-import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.RequestTokenValidator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +80,7 @@ class DnsValidationHandlerTest {
         assertEquals("8.8.8.8", response.server());
         assertEquals("example.com", response.domain());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
-        assertTrue(StringUtils.isEmpty(response.validToken()));
+        assertTrue(StringUtils.isEmpty(response.validRequestToken()));
     }
 
     @Test
@@ -119,8 +116,7 @@ class DnsValidationHandlerTest {
     void testDnsValidationHandler_validate_requestToken() throws TextParseException {
         DnsValidationRequest request = DnsValidationRequest.builder()
                 .domain("example.com")
-                .tokenKey("tokenKey")
-                .tokenValue("tokenValue")
+                .requestTokenData(new BasicRequestTokenData("hashingKey", "hashingValue"))
                 .dnsType(DnsType.CNAME)
                 .challengeType(ChallengeType.REQUEST_TOKEN)
                 .build();

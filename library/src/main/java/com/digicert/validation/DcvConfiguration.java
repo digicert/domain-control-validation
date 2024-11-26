@@ -109,10 +109,10 @@ public class DcvConfiguration {
     private RandomValueValidator randomValueValidator = new BasicRandomValueValidator();
 
     /**
-     * The token validator used to determine if a given response contains a valid token.
+     * The request token validator used to determine if a given response contains a valid request token.
      * <p>
      * The default implementation handles DigiCert's request token format, which is a timestamp followed by
-     * a hash of the hashing value using the hashing key as the key for the hash and the timestamp as a salt.
+     * a hash of the CSR using the hashing key as the key for the hash and the timestamp as a salt.
      * It can be overridden to handle a different request token format.
      */
     private RequestTokenValidator requestTokenValidator = new BasicRequestTokenValidator();
@@ -414,19 +414,19 @@ public class DcvConfiguration {
         }
 
         /**
-         * Configure the library to use a custom token value validator.
+         * Configure the library to use a custom request token validator.
          * <p>
-         * The token validator is used to determine if a given response contains a valid token. The default
-         * implementation handles DigiCert's request token format, which is a timestamp followed by a hash of the
-         * hashing value using the hashing key as the key for the hash and the timestamp as a salt.
+         * The request token validator is used to determine if a given response contains a valid request token. The
+         * default implementation handles DigiCert's request token format, which is a timestamp followed by a hash of
+         * the CSR using the hashing key as the key for the hash and the timestamp as a salt.
          *
-         * @param requestTokenValidator the custom token value validator
+         * @param requestTokenValidator the custom request token validator
          * @return the builder instance
-         * @throws IllegalArgumentException if tokenValidator is null
+         * @throws IllegalArgumentException if requestTokenValidator is null
          */
-        public DcvConfigurationBuilder tokenValidator(RequestTokenValidator requestTokenValidator) {
+        public DcvConfigurationBuilder requestTokenValidator(RequestTokenValidator requestTokenValidator) {
             if (requestTokenValidator == null) {
-                throw new IllegalArgumentException("tokenValidator cannot be null");
+                throw new IllegalArgumentException("requestTokenValidator cannot be null");
             }
             dcvConfiguration.setRequestTokenValidator(requestTokenValidator);
             return this;

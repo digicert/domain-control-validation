@@ -25,11 +25,11 @@ class BasicRequestTokenValidatorTest {
     private static final String DEFAULT_TOKEN_KEY = "someToken";
     private static final String DEFAULT_TOKEN_VALUE = "some-token-value";
 
-    private BasicRequestTokenValidator basicTokenValueSecretValidator;
+    private BasicRequestTokenValidator basicRequestTokenValidator;
 
     @BeforeEach
     void setUp() {
-        basicTokenValueSecretValidator = new BasicRequestTokenValidator();
+        basicRequestTokenValidator = new BasicRequestTokenValidator();
     }
 
     @Test
@@ -37,10 +37,10 @@ class BasicRequestTokenValidatorTest {
         String generatedToken = generateTokenValue(getZonedDateTimeNow(), DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE).orElseThrow();
 
         String textBody = "some text body with token " + generatedToken + " in it";
-        ChallengeValidationResponse response = basicTokenValueSecretValidator
-                .validate(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, textBody);
+        ChallengeValidationResponse response = basicRequestTokenValidator
+                .validate(new BasicRequestTokenData(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE), textBody);
 
-        assertEquals(generatedToken, response.token().orElseThrow());
+        assertEquals(generatedToken, response.challengeValue().orElseThrow());
     }
 
     @Test
@@ -49,10 +49,10 @@ class BasicRequestTokenValidatorTest {
         String generatedToken = generateTokenValue(getZonedDateTimeNow(), DEFAULT_TOKEN_KEY, generatedCSR).orElseThrow();
 
         String textBody = "some text body with token " + generatedToken + " in it";
-        ChallengeValidationResponse response = basicTokenValueSecretValidator
-                .validate("someToken", generatedCSR, textBody);
+        ChallengeValidationResponse response = basicRequestTokenValidator
+                .validate(new BasicRequestTokenData("someToken", generatedCSR), textBody);
 
-        assertEquals(generatedToken, response.token().orElseThrow());
+        assertEquals(generatedToken, response.challengeValue().orElseThrow());
     }
 
     static Stream<Arguments> invalidTxtBodyTokens() {
@@ -66,14 +66,14 @@ class BasicRequestTokenValidatorTest {
         String invalidDate = requestTokenUtils.generateRequestToken(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, formattedDate + "1234567890").orElseThrow();
 
         return Stream.of(
-                Arguments.of("", "some-token-value", futureToken, DcvError.TOKEN_KEY_REQUIRED),
-                Arguments.of("someToken", "", futureToken, DcvError.TOKEN_VALUE_REQUIRED),
-                Arguments.of("someToken", "some-token-value", null, DcvError.TOKEN_ERROR_EMPTY_TXT_BODY),
-                Arguments.of("someToken", "some-token-value", "", DcvError.TOKEN_ERROR_EMPTY_TXT_BODY),
-                Arguments.of("someToken", "some-token-value", futureToken, DcvError.TOKEN_ERROR_FUTURE_DATE),
-                Arguments.of("someToken", "some-token-value", oldToken, DcvError.TOKEN_ERROR_DATE_EXPIRED),
-                Arguments.of("someToken", "some-token-value", tokenTooShort, DcvError.TOKEN_ERROR_STRING_TOO_SHORT),
-                Arguments.of("someToken", "some-token-value", invalidDate, DcvError.TOKEN_ERROR_INVALID_DATE)
+                Arguments.of("", "some-token-value", futureToken, DcvError.INVALID_REQUEST_TOKEN_DATA),
+                Arguments.of("someToken", "", futureToken, DcvError.INVALID_REQUEST_TOKEN_DATA),
+                Arguments.of("someToken", "some-token-value", null, DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY),
+                Arguments.of("someToken", "some-token-value", "", DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY),
+                Arguments.of("someToken", "some-token-value", futureToken, DcvError.REQUEST_TOKEN_ERROR_FUTURE_DATE),
+                Arguments.of("someToken", "some-token-value", oldToken, DcvError.REQUEST_TOKEN_ERROR_DATE_EXPIRED),
+                Arguments.of("someToken", "some-token-value", tokenTooShort, DcvError.REQUEST_TOKEN_ERROR_INVALID_TOKEN),
+                Arguments.of("someToken", "some-token-value", invalidDate, DcvError.REQUEST_TOKEN_ERROR_INVALID_TOKEN)
         );
     }
 
@@ -84,9 +84,9 @@ class BasicRequestTokenValidatorTest {
                                                   String textBody,
                                                   DcvError dcvError) {
 
-        ChallengeValidationResponse response = basicTokenValueSecretValidator.validate(tokenKey, tokenValue, textBody);
+        ChallengeValidationResponse response = basicRequestTokenValidator.validate(new BasicRequestTokenData(tokenKey, tokenValue), textBody);
 
-        assertFalse(response.token().isPresent());
+        assertFalse(response.challengeValue().isPresent());
         assertFalse(response.errors().isEmpty());
         assertTrue(response.errors().contains(dcvError), "expected: " + dcvError + " but got: " + response.errors());
     }

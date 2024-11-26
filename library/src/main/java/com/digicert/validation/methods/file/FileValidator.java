@@ -96,10 +96,10 @@ public class FileValidator {
     /**
      * Prepare for file validation.
      * <p>
-     * This method prepares for file domain validation by generating a random value if the secret type is {@link ChallengeType#RANDOM_VALUE}.
+     * This method prepares for file domain validation by generating a random value if the challenge type is {@link ChallengeType#RANDOM_VALUE}.
      * It verifies the preparation request and constructs a response containing the necessary information for the validation process.
      *
-     * @param preparationRequest {@link FilePreparationRequest} object containing the domain and secret type
+     * @param preparationRequest {@link FilePreparationRequest} object containing the domain and challenge type
      * @return {@link FilePreparationResponse} object containing the random value and domain
      * @throws DcvException if the request is invalid. {@link InputException} when missing required fields.
      */
@@ -125,14 +125,16 @@ public class FileValidator {
     /**
      * Perform File Validation
      * <p>
-     * This method performs the file-based domain validation by verifying the provided validation request. It checks the validity
-     * of the domain, secret type, random value, and validation state. If the validation is successful, it returns a {@link DomainValidationEvidence}
-     * object containing the validation evidence. If the validation fails, it throws a {@link ValidationException} with the encountered errors.
+     * This method performs the file-based domain validation by verifying the provided validation request. It checks the
+     * validity of the domain, challenge type, random value or request token data, and validation state. If the
+     * validation is successful, it returns a {@link DomainValidationEvidence} object containing the validation
+     * evidence. If the validation fails, it throws a {@link ValidationException} with the encountered errors.
      *
-     * @param validationRequest {@link FileValidationRequest} object containing the domain, secret type, random value and validation state
+     * @param validationRequest {@link FileValidationRequest} object containing the domain, challenge type, random value
+     * or request token data, and validation state
      * @return {@link DomainValidationEvidence} object containing the domain validation evidence
      * @throws ValidationException if the File Validation fails.
-     * @throws InputException if the input parameters are invalid. See #verifyFileValidationRequest
+     * @throws InputException if the input parameters are invalid. See {@link #verifyFileValidationRequest}
      */
     public DomainValidationEvidence validate(FileValidationRequest validationRequest) throws DcvException {
         log.debug("fileValidationRequest={}", validationRequest);
@@ -168,19 +170,20 @@ public class FileValidator {
                 .validationDate(Instant.now())
                 .fileUrl(response.fileUrl())
                 .randomValue(response.validRandomValue())
-                .foundToken(response.validToken())
+                .requestToken(response.validRequestToken())
                 .build();
     }
 
     /**
      * Performs validation on the values in {@link FileValidationRequest}.
      * <p>
-     * This method validates the values in the provided {@link FileValidationRequest}. It checks the domain, validation state,
-     * and secret type, ensuring that all required fields are present and valid. For random values, it verifies the entropy and expiration.
-     * For request tokens, it checks the presence of the token key and value.
+     * This method validates the values in the provided {@link FileValidationRequest}. It checks the domain, validation
+     * state, and challenge type, ensuring that all required fields are present and valid. For random values, it
+     * verifies the entropy and expiration. For request tokens, it checks the presence of the request token data.
      *
      * @param fileValidationRequest The validation verification request
-     * @throws DcvException If entropy level is insufficient. If the random value has expired.
+     * @throws DcvException If entropy level is insufficient, the random value has expired, or the request token data
+     * is missing.
      */
     void verifyFileValidationRequest(FileValidationRequest fileValidationRequest) throws DcvException {
 
@@ -193,11 +196,8 @@ public class FileValidator {
                 randomValueVerifier.verifyRandomValue(fileValidationRequest.getRandomValue(), instant);
             }
             case REQUEST_TOKEN -> {
-                if(fileValidationRequest.getTokenKey() == null) {
-                    throw new InputException(DcvError.TOKEN_KEY_REQUIRED);
-                }
-                if (fileValidationRequest.getTokenValue() == null) {
-                    throw new InputException(DcvError.TOKEN_VALUE_REQUIRED);
+                if (fileValidationRequest.getRequestTokenData() == null) {
+                    throw new InputException(DcvError.REQUEST_TOKEN_DATA_REQUIRED);
                 }
             }
         }
@@ -206,8 +206,9 @@ public class FileValidator {
     /**
      * Verify the File Preparation Request
      * <p>
-     * This method verifies the provided {@link FilePreparationRequest} to ensure that all required fields are present and valid.
-     * It checks the domain name and secret type, ensuring that the domain name is correctly formatted and does not contain wildcards.
+     * This method verifies the provided {@link FilePreparationRequest} to ensure that all required fields are present
+     * and valid. It checks the domain name and challenge type, ensuring that the domain name is correctly formatted and
+     * does not contain wildcards.
      *
      * @param filePreparationRequest The File Preparation Request
      * @throws DcvException if the request is invalid. {@link InputException} when missing required fields.
@@ -216,7 +217,7 @@ public class FileValidator {
         domainNameUtils.validateDomainName(filePreparationRequest.domain());
 
         if (filePreparationRequest.challengeType() == null) {
-            throw new InputException(DcvError.SECRET_TYPE_REQUIRED);
+            throw new InputException(DcvError.CHALLENGE_TYPE_REQUIRED);
         }
 
         if (filePreparationRequest.filename() != null) {

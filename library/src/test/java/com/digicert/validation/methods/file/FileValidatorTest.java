@@ -5,8 +5,10 @@ import static org.mockito.Mockito.*;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
 import com.digicert.validation.methods.file.validate.FileValidationRequest;
@@ -23,6 +25,9 @@ import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
 import com.digicert.validation.methods.file.validate.FileValidationHandler;
 import com.digicert.validation.methods.file.validate.FileValidationResponse;
 import com.digicert.validation.enums.ChallengeType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class FileValidatorTest {
 
@@ -157,7 +162,7 @@ class FileValidatorTest {
         assertNotNull(evidence.getValidationDate());
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", evidence.getFileUrl());
         assertEquals("randomValue", evidence.getRandomValue());
-        assertNull(evidence.getFoundToken());
+        assertNull(evidence.getRequestToken());
         assertEquals(DcvMethod.BR_3_2_2_4_18, evidence.getDcvMethod());
     }
 
@@ -180,32 +185,15 @@ class FileValidatorTest {
     }
 
     @Test
-    void testValidateFileValidationRequest_NullTokenKey() {
+    void testValidateFileValidationRequest_NullRequestTokenData() {
         // Arrange
         FileValidationRequest request = getTokenFileValidationRequest()
-                .tokenKey(null)
+                .requestTokenData(null)
                 .build();
-        FileValidationResponse response = getDefaultFileValidationResponse().build();
-        when(fileValidationHandler.validate(request)).thenReturn(response);
 
         // Act & Assert
         InputException exception = assertThrows(InputException.class, () -> fileValidator.verifyFileValidationRequest(request));
-        assertTrue(exception.getErrors().contains(DcvError.TOKEN_KEY_REQUIRED));
-    }
-
-    @Test
-    void testValidateFileValidationRequest_NullTokenValue() {
-        // Arrange
-        FileValidationRequest request = getTokenFileValidationRequest()
-                .tokenValue(null)
-                .build();
-        FileValidationResponse response = getDefaultFileValidationResponse().build();
-        when(fileValidationHandler.validate(request)).thenReturn(response);
-
-        // Act & Assert
-        InputException exception = assertThrows(InputException.class, () -> fileValidator.verifyFileValidationRequest(request));
-
-        assertTrue(exception.getErrors().contains(DcvError.TOKEN_VALUE_REQUIRED));
+        assertTrue(exception.getErrors().contains(DcvError.REQUEST_TOKEN_DATA_REQUIRED));
     }
 
     private FileValidationResponse.FileValidationResponseBuilder getDefaultFileValidationResponse() {
@@ -215,7 +203,7 @@ class FileValidatorTest {
                 .fileUrl("http://example.com/.well-known/pki-validation/fileauth.txt")
                 .challengeType(ChallengeType.RANDOM_VALUE)
                 .validRandomValue("randomValue")
-                .validToken(null);
+                .validRequestToken(null);
     }
 
 
@@ -231,8 +219,7 @@ class FileValidatorTest {
         return FileValidationRequest.builder()
                 .domain("example.com")
                 .challengeType(ChallengeType.REQUEST_TOKEN)
-                .tokenKey("someTokenKey")
-                .tokenValue("someTokenValue")
+                .requestTokenData(new BasicRequestTokenData("someHashingKey", "someHashingValue"))
                 .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_18));
     }
 }

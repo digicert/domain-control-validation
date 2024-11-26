@@ -3,6 +3,7 @@ package com.digicert.validation.service;
 import java.util.List;
 import java.util.Objects;
 
+import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
 import com.digicert.validation.methods.file.validate.FileValidationRequest;
 import org.springframework.stereotype.Component;
@@ -239,14 +240,17 @@ public class DcvService {
         DnsValidationRequest.DnsValidationRequestBuilder requestBuilder = DnsValidationRequest.builder()
                 .domain(validateRequest.domain)
                 .randomValue(validateRequest.randomValue)
-                .tokenValue(validateRequest.tokenValue)
                 .dnsType(dnsType)
                 .challengeType(mapToChallengeType(validateRequest.dcvRequestType))
                 .validationState(validationState);
 
-        // Set the token key if it is a DNS_TXT_TOKEN request
+        // Set the requestTokenData if it is a DNS_TXT_TOKEN request
         if (validateRequest.dcvRequestType == DcvRequestType.DNS_TXT_TOKEN) {
-            accountsRepository.findById(accountId).ifPresent(accountsEntity -> requestBuilder.tokenKey(accountsEntity.tokenKey));
+            accountsRepository.findById(accountId).map(
+                    accountsEntity -> requestBuilder.requestTokenData(new BasicRequestTokenData(accountsEntity.tokenKey, validateRequest.tokenValue))
+            ).orElseThrow(
+                    () -> new InvalidDcvRequestException("Account not set up for request token validation")
+            );
         }
 
         DnsValidationRequest dnsValidationRequest = requestBuilder.build();
@@ -291,13 +295,16 @@ public class DcvService {
                 .domain(validateRequest.domain)
                 .randomValue(validateRequest.randomValue)
                 .filename(validateRequest.filename)
-                .tokenValue(validateRequest.tokenValue)
                 .challengeType(mapToChallengeType(validateRequest.dcvRequestType))
                 .validationState(validationState);
 
-        // Set the token key if it is a FILE_VALIDATION_TOKEN request
+        // Set the requestTokenData if it is a FILE_VALIDATION_TOKEN request
         if (validateRequest.dcvRequestType == DcvRequestType.FILE_VALIDATION_TOKEN) {
-            accountsRepository.findById(accountId).ifPresent(accountsEntity -> requestBuilder.tokenKey(accountsEntity.tokenKey));
+            accountsRepository.findById(accountId).map(
+                    accountsEntity -> requestBuilder.requestTokenData(new BasicRequestTokenData(accountsEntity.tokenKey, validateRequest.tokenValue))
+            ).orElseThrow(
+                    () -> new InvalidDcvRequestException("Account not set up for request token validation")
+            );
         }
 
         try {

@@ -1,14 +1,14 @@
 package com.digicert.validation.enums;
 
+import com.digicert.validation.challenges.RequestTokenData;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.utils.DomainNameUtils;
-import lombok.Getter;
 
 /**
  * Enumeration representing various errors that can occur during Domain Control Validation (DCV).
  * Each error type corresponds to a specific validation failure scenario, providing detailed information
  * about the nature of the error to facilitate debugging and resolution.
  */
-@Getter
 public enum DcvError {
     /**
      * Error indicating that the DNS type is required.
@@ -18,46 +18,44 @@ public enum DcvError {
     DNS_TYPE_REQUIRED,
 
     /**
-     * Error indicating that the secret type is required.
-     * This error occurs when the secret type is missing in the request. The secret type is crucial
-     * for the validation process as it defines the method of secret verification. This is specific
-     * for the DNS and File Validation types.
+     * Error indicating that the user requested DNS or FILE validation without providing a challenge type.
+     * <p>
+     * DNS and FILE validation methods can be performed using either a random value or a request token, so
+     * the user must specify which type of challenge they are using.
      */
-    SECRET_TYPE_REQUIRED,
+    CHALLENGE_TYPE_REQUIRED,
 
     /**
-     * Error indicating that the token key is required.
-     * This error occurs when the token key is not provided in the request. The token key is a critical
-     * component used to authenticate the request for token specific DCV methods (DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN).
+     * Error indicating that the user requested the use of either the DNS_TXT or FILE_VALIDATION dcv method with a
+     * request token without providing the request token data necessary to identify valid request tokens.
      */
-    TOKEN_KEY_REQUIRED,
+    REQUEST_TOKEN_DATA_REQUIRED,
 
     /**
-     * Error indicating that the token value is required.
-     * This error occurs when the token key is not provided in the request. The token value is a critical
-     * component used to authenticate the request for token specific DCV methods (DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN).
+     * Error indicating that the user requested the use of either the DNS_TXT or FILE_VALIDATION dcv method with a
+     * request token without providing usable request token data necessary to identify valid request tokens.
+     * <p>
+     * This error can occur because request token data is of the wrong subtype of {@link RequestTokenData} for the
+     * {@link RequestTokenValidator} being used, or because some of its data is missing or malformed.
      */
-    TOKEN_VALUE_REQUIRED,
+    INVALID_REQUEST_TOKEN_DATA,
 
     /**
-     * Error indicating that the random value is required.
-     * This error occurs when the random value is not provided in the request for DCV methods that utilize a random value.
-     * The random value is used by the client to prove control of the domain they are submitting for validation.
+     * Error indicating that the user requested the use of a dcv method with a random value without providing a random
+     * value.
      */
     RANDOM_VALUE_REQUIRED,
 
     /**
      * Error indicating that the random value has insufficient entropy.
-     * This error occurs when the provided random value does not meet the required entropy criteria.
-     * High entropy is necessary to ensure the randomness and unpredictability of the value, which is
-     * crucial for security purposes.
+     * <p>
+     * The baseline requirements require that random values must have at least 112 bits of entropy. This error occurs
+     * when the library can determine that the provided random value does not meet that requirement. High entropy is
+     * necessary to ensure the unpredictability of the value, which is crucial for security purposes.
      */
     RANDOM_VALUE_INSUFFICIENT_ENTROPY,
 
-    /**
-     * Error indicating that the DNS type is invalid.
-     * This error occurs when the provided DNS type is not support by DCV method requested.
-     */
+    /** Error indicating that the DNS type is not support by DCV method requested. */
     INVALID_DNS_TYPE,
 
     /**
@@ -153,69 +151,65 @@ public enum DcvError {
      */
     FILE_VALIDATION_INVALID_STATUS_CODE,
 
-    /**
-     * Error indicating that the token was not found.
-     * Tokens are used to authenticate requests, and a missing token means that the system cannot
-     * verify the request, leading to a validation failure.
-     */
-    TOKEN_ERROR_NOT_FOUND,
+    /** Error indicating that no potential request token was found. */
+    REQUEST_TOKEN_ERROR_NOT_FOUND,
 
     /**
-     * Error indicating that the token string is too short.
-     * This error occurs when the provided token string is shorter than the required length. Tokens
-     * must meet a minimum length to be considered valid.
+     * Error indicating that a potential request token was found but is not valid.
+     * <p>
+     * This error occurs when the potential token does not follow the specification expected by the
+     * {@link RequestTokenValidator} being used.
      */
-    TOKEN_ERROR_STRING_TOO_SHORT,
+    REQUEST_TOKEN_ERROR_INVALID_TOKEN,
 
     /**
-     * Error indicating that the token date is invalid.
-     * This error occurs when the date associated with the token is not valid. The token date is used
-     * to determine the validity period of the token. An invalid date means that the token cannot be
-     * trusted.
+     * Error indicating that the request token has expired.
+     * <p>
+     * The baseline requirements specify that "A Request Token that includes a timestamp SHALL remain valid for no more
+     * than 30 days from the time of creation." If the timestamp is more than 30 days old (or a shorter age specified by
+     * the CA), the request token has expired.
      */
-    TOKEN_ERROR_INVALID_DATE,
+    REQUEST_TOKEN_ERROR_DATE_EXPIRED,
 
     /**
-     * Error indicating that the token date has expired.
-     * This error occurs when the token has passed its expiration date. Expired tokens are no longer
-     * valid and cannot be used for authentication, leading to a validation failure.
+     * Error indicating that the request token's date is in the future.
+     * <p>
+     * The baseline requirements specify that "A Request Token that includes a timestamp SHALL be treated as invalid if
+     * its timestamp is in the future."
      */
-    TOKEN_ERROR_DATE_EXPIRED,
+    REQUEST_TOKEN_ERROR_FUTURE_DATE,
 
     /**
-     * Error indicating that the token date is in the future.
-     * This error occurs when the token date is set to a future date, which is not allowed. Tokens
-     * must have a valid date within the current time frame.
+     * Error indicating that the text body that should contain a request token is instead empty.
+     * <p>
+     * The text body should contain the actual data to be validated. An empty text body can indicate a problem on the
+     * customer's side that they need to address.
      */
-    TOKEN_ERROR_FUTURE_DATE,
+    REQUEST_TOKEN_EMPTY_TEXT_BODY,
 
     /**
-     * Error indicating that the token TXT body is empty.
-     * The TXT body contains the actual data to be validated. An empty TXT body means that the token
-     * does not contain the necessary information for validation.
+     * Error indicating that the hash for a request token cannot be generated.
+     * <p>
+     * The baseline requirements specify that request tokens "SHALL use a digital signature algorithm or a cryptographic
+     * hash algorithm." A failure in hash generation means that the request token cannot be verified.
      */
-    TOKEN_ERROR_EMPTY_TXT_BODY,
-
-    /**
-     * Error indicating that the token hash cannot be generated.
-     * The token hash is used to ensure the integrity and authenticity of the token. A failure in hash
-     * generation means that the token cannot be verified.
-     */
-    TOKEN_CANNOT_GENERATE_HASH,
+    REQUEST_TOKEN_CANNOT_GENERATE_HASH,
 
     /**
      * Error indicating that the random value was not found.
+     * <p>
      * Random values are used by the client to prove control of the domain they are submitting for
-     * validation. A missing random value means that the validation cannot proceed.
+     * validation. A missing random value means that the validation has failed.
      */
     RANDOM_VALUE_NOT_FOUND,
 
     /**
-     * Error indicating that the random value TXT body is empty.
-     * The TXT body contains the actual data to be validated. An empty TXT body means that there is no
-     * available random value for validation.
+     * Error indicating that the text body that should contain a random value is instead empty.
+     * <p>
+     * The text body should contain the expected random value. An empty text body can indicate a problem on the
+     * customer's side that they need to address.
      */
-    RANDOM_VALUE_EMPTY_TXT_BODY,
+    RANDOM_VALUE_EMPTY_TEXT_BODY,
 
     /**
      * Error indicating that the random value has expired.

@@ -90,10 +90,9 @@ import com.digicert.domaincontrolvalidation.DnsValidationRequest;
 DnsValidationRequest dnsValidationRequest = DnsValidationRequest().Builder()
         .domain(prepare.getDomain())
         .dnsType(prepare.getDnsType())
-        .challengeType(prepare.getSecretType())
-        .randomValue(prepare.getRandomValue()) // only one of randomValue or tokenValue / tokenKey should be provided
-//        .tokenKey("tokenKey")
-//        .tokenValue("tokenValue")
+        .challengeType(prepare.getChallengeType())
+        .randomValue(prepare.getRandomValue()) // only one of randomValue or requestTokenData should be provided
+//        .requestTokenData(requestTokenData) // requestTokenData will not come from the prepare response
         .validationState(prepare.getValidationState())
         .build();
 
@@ -107,20 +106,20 @@ The 'validate' method will return a 'DomainValidationEvidence' object with the r
 #### FilePreparationRequest
 The `FilePreparationRequest` is used to prepare the file validation process
 
-| Field           | Type             | Description                                 |
-|-----------------|------------------|---------------------------------------------|
-| domain          | String           | The domain name to validate.                |
-| challengeType   | ChallengeType    | The secret type to use for the DCV process. |
+| Field           | Type             | Description                                    |
+|-----------------|------------------|------------------------------------------------|
+| domain          | String           | The domain name to validate.                   |
+| challengeType   | ChallengeType    | The challenge type to use for the DCV process. |
 
 #### FilePreparationResponse
 The `FilePreparationResponse` object is returned by the `FileValidator` after the `prepare` method is called. This preparation response object contains the necessary information to validate the DCV process, as well as the following fields:
 
-| Field           | Type            | Description                               |
-|-----------------|-----------------|-------------------------------------------|
-| domain          | String          | The domain name that was validated.       |
-| challengeType   | ChallengeType      | The secret type used for the DCV process. |
-| randomValue     | String          | A random value used for validation.       |
-| validationState | ValidationState | The state of the validation process.      |
+| Field           | Type            | Description                                  |
+|-----------------|-----------------|----------------------------------------------|
+| domain          | String          | The domain name that was validated.          |
+| challengeType   | ChallengeType   | The challenge type used for the DCV process. |
+| randomValue     | String          | A random value used for validation.          |
+| validationState | ValidationState | The state of the validation process.         |
 
 NOTE: The validationState object returned here will be used in the subsequent validation request
 
@@ -133,18 +132,17 @@ FilePreparationResponse response = fileValidator.prepare(filePreparationRequest)
 #### FileValidation Request
 The `FileValidationRequest` object is likewise used to provide the necessary information to the `FileValidator` to perform the DCV process, and contains the following fields:
 
-| Field           | Type                | Description                                 |
-|-----------------|---------------------|---------------------------------------------|
-| domain          | String              | The domain name to validate.                |
-| randomValue     | String              | A random value used for validation.         |
-| filename        | String	             | The filename used for validation.           |
-| tokenKey        | String              | A token key used for validation.            |
-| tokenValue      | String              | A token value used for validation.          |
-| challengeType   | ChallengeType       | The secret type to use for the DCV process. |
-| validationState | ValidationState     | The state of the validation process.        |
+| Field            | Type             | Description                                            |
+|------------------|------------------|--------------------------------------------------------|
+| domain           | String           | The domain name to validate.                           |
+| filename         | String           | The filename used for validation.                      |
+| randomValue      | String           | A random value to expect to find.                      |
+| requestTokenData | RequestTokenData | The data necessary to use the request token validator. |
+| challengeType    | ChallengeType    | The challenge type to use for the DCV process.         |
+| validationState  | ValidationState  | The state of the validation process.                   |
 
 NOTES: 
-- Either randomValue or tokenValue should be provided based on the challengeType
+- Either randomValue or requestTokenData should be provided based on the challengeType
 - Filename can be null if the default filename (found in the configuration) will be used
 - The validationState object used here is what was returned on the preparation response
 
@@ -155,19 +153,19 @@ This validation response object contains the result of the DCV process, as well 
 
 ##### DomainValidationEvidence Fields (used in each validation method, but not all fields are used in each method):
 
-| Field          | Type      | Description                                                                     |
-|----------------|-----------|---------------------------------------------------------------------------------|
-| domain         | String    | The domain name that was validated. Used in File, DNS, Email validation.        |
-| dcvMethod      | DcvMethod | The URL of the file used for validation. Used in File, DNS, Email validation.   |
-| BrVersion      | String    | Version of baseline requirements. Used for each method.                         |
-| validationDate | Instant   | The date of validation. Used in Email and DNS validation.                       |
-| emailAddress   | String    | The email address used for validation. Used in File and Email validation.       |
-| fileUrl        | String    | The URL of the file used for validation. Used in File validation.               |
-| dnsType        | DnsType   | The DNS record type used for validation. Used in DNS validation.                |
-| dnsServer      | String    | The DNS server used for validation. Used in DNS validation.                     |
-| dnsRecordName  | String    | The DNS record name used for validation. Used in DNS validation.                |
-| foundToken     | String    | The token found in the file. Used in File and DNS validation.                   |
-| randomValue    | String    | The random value used for validation. Used in File, DNS, and Email validation.  |
+| Field          | Type      | Description                                                                    |
+|----------------|-----------|--------------------------------------------------------------------------------|
+| domain         | String    | The domain name that was validated. Used in File, DNS, Email validation.       |
+| dcvMethod      | DcvMethod | The URL of the file used for validation. Used in File, DNS, Email validation.  |
+| BrVersion      | String    | Version of baseline requirements. Used for each method.                        |
+| validationDate | Instant   | The date of validation. Used in Email and DNS validation.                      |
+| emailAddress   | String    | The email address used for validation. Used in File and Email validation.      |
+| fileUrl        | String    | The URL of the file used for validation. Used in File validation.              |
+| dnsType        | DnsType   | The DNS record type used for validation. Used in DNS validation.               |
+| dnsServer      | String    | The DNS server used for validation. Used in DNS validation.                    |
+| dnsRecordName  | String    | The DNS record name used for validation. Used in DNS validation.               |
+| requestToken   | String    | The request token found in the file. Used in File and DNS validation.          |
+| randomValue    | String    | The random value used for validation. Used in File, DNS, and Email validation. |
 
 
 #### Example of the File Validation request / response
@@ -190,7 +188,7 @@ The `DnsPreparationRequest` object is used to prepare the DNS validation process
 |-----------------|------------------|-------------------------------------------------|
 | domain          | String           | The domain name to validate.                    |
 | dnsType         | DnsType          | The DNS record type to use for the DCV process. |
-| challengeType   | ChallengeType    | The secret type to use for the DCV process.     |
+| challengeType   | ChallengeType    | The challenge type to use for the DCV process.  |
 
 The `DnsPreparationResponse` object is returned by the `DnsValidator` after the `prepare` method is called. This preparation response object contains the necessary information to validate the DCV process, as well as the following fields:
 
@@ -212,17 +210,17 @@ DnsPreparationResponse dnsPreparationResponse = dnsValidator.prepare(dnsPreparat
 #### DnsValidation Request and Response
 The `DnsValidationRequest` object is used to provide the necessary information to the `DnsValidator` to perform the DCV process, and contains the following fields:
 
-| Field            | Type             | Description                                      |
-|------------------|------------------|--------------------------------------------------|
-| domain           | String           | The domain name to validate.                     |
-| randomValue      | String           | A random value used for validation.              |
-| tokenValue       | String           | A token value used for validation.               |
-| dnsType          | DnsType          | The DNS record type to use for the DCV process.  |
-| challengeType    | ChallengeType    | The secret type to use for the DCV process.      |
-| validationState  | ValidationState  | The state of the validation process.             |
+| Field            | Type             | Description                                            |
+|------------------|------------------|--------------------------------------------------------|
+| domain           | String           | The domain name to validate.                           |
+| randomValue      | String           | A random value to expect to find.                      |
+| requestTokenData | RequestTokenData | The data necessary to use the request token validator. |
+| dnsType          | DnsType          | The DNS record type to use for the DCV process.        |
+| challengeType    | ChallengeType    | The challenge type to use for the DCV process.         |
+| validationState  | ValidationState  | The state of the validation process.                   |
 
 NOTES:
-- Either randomValue or tokenValue should be provided based on the challengeType
+- Either randomValue or requestTokenData should be provided based on the challengeType
 - The validationState object used here is what was returned on the preparation response
 
 #### DnsValidationResponse
@@ -280,7 +278,7 @@ The `EmailValidationRequest` object is used to provide the necessary information
 | validationState | ValidationState  | The state of the validation process.    |
 
 NOTES:
-- randomValue should be provided
+- randomValue needs to be provided
 - The validationState object used here is what was returned on the preparation response
 
 ##### EmailValidationResponse

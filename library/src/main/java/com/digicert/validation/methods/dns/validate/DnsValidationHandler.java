@@ -27,10 +27,10 @@ public class DnsValidationHandler {
     /** The DNS domain label used for validation. */
     final String dnsDomainLabel;
 
-    /** Validator for random value secrets. */
+    /** The random value validator used to confirm that a DNS record contains the expected random value. */
     final RandomValueValidator randomValueValidator;
 
-    /** Validator for token secrets. */
+    /** The request token validator used to confirm that a DNS record contains a valid request token. */
     final RequestTokenValidator requestTokenValidator;
 
     /** The DNS client used to fetch DNS data. */
@@ -53,8 +53,8 @@ public class DnsValidationHandler {
      * Validates the DNS records based on the provided request.
      * <p>
      * This method performs the DNS validation process based on the given DNS validation request. It fetches the DNS
-     * data using the DNS client, validates the DNS records against the provided secret type, and builds a DNS validation
-     * response.
+     * data using the DNS client, validates the DNS records against the provided challenge type, and builds a DNS
+     * validation response.
      *
      * @param request the DNS validation request
      * @return the DNS validation response
@@ -79,55 +79,55 @@ public class DnsValidationHandler {
     }
 
     /**
-     * Validates the random value secret against the DNS records.
+     * Validates the DNS records against the supplied random value.
      * <p>
-     * This method validates the random value secret provided in the DNS validation request against the DNS records.
-     * It iterates through the DNS record values and uses the RandomValueValidator to check if the random value matches
-     * any of the record values. If a match is found, a successful TokenValidatorResponse is returned; otherwise, an
-     * error response is generated.
+     * This method validates the DNS records found against the random value provided in the DNS validation request. It
+     * iterates through the DNS record values and uses the RandomValueValidator to check if any of the record values
+     * match the random value. If a match is found, the ChallengeValidationResponse returned will contain the random
+     * value; otherwise, it will contain all the errors found while attempting validation.
      *
      * @param recordValues the values of the DNS records
-     * @param request      the DNS validation request
-     * @return the token validator response
+     * @param request the DNS validation request
+     * @return the {@link RandomValueValidator} response
      */
     private ChallengeValidationResponse validateRandomValue(List<String> recordValues, DnsValidationRequest request) {
         return recordValues.stream()
                 .map(recordValue -> randomValueValidator.validate(request.getRandomValue(), recordValue))
-                .filter(tr -> tr.errors().isEmpty() && tr.token().isPresent())
-                .findFirst()
-                .orElse(new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.RANDOM_VALUE_NOT_FOUND)));
+                .reduce(ChallengeValidationResponse::merge)
+                .orElse(new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND)));
     }
 
     /**
-     * Validates the request token against the DNS records.
+     * Validates the DNS records for the presence of a valid request token.
      * <p>
-     * This method validates the request token provided in the DNS validation request against the DNS records. It
-     * iterates through the DNS record values and uses the TokenValidator to check if the token matches any of the
-     * record values. If a match is found, a successful TokenValidatorResponse is returned; otherwise, an error response
-     * is generated.
+     * This method iterates through the DNS record values and uses the {@link RequestTokenValidator} with the supplied
+     * request token data to check if any of the record values contains a valid request token. If a valid request token
+     * is found, the ChallengeValidationResponse returned will contain that valid token; otherwise it will contain all
+     * the errors found while attempting validation.
      *
      * @param recordValues the values of the DNS records
-     * @param request      the DNS validation request
-     * @return the token validator response
+     * @param request the DNS validation request
+     * @return a {@link ChallengeValidationResponse} containing the first valid request token found or all errors that
+     * occurred during the DNS lookups.
      */
     private ChallengeValidationResponse validateRequestToken(List<String> recordValues, DnsValidationRequest request) {
         return recordValues.stream()
-                .map(recordValue -> requestTokenValidator.validate(request.getTokenKey(), request.getTokenValue(), recordValue))
-                .findFirst()
-                .orElse(new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.TOKEN_ERROR_NOT_FOUND)));
+                .map(recordValue -> requestTokenValidator.validate(request.getRequestTokenData(), recordValue))
+                .reduce(ChallengeValidationResponse::merge)
+                .orElse(new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND)));
     }
 
     /**
      * Builds a DNS validation response based on the provided parameters.
      * <p>
-     * This method constructs a DnsValidationResponse object based on the token validator response, DNS data, DNS type,
-     * and secret type. It determines the validity of the random value or token and includes any errors encountered
-     * during the validation process.
+     * This method constructs a DnsValidationResponse object based on the challenge validator response, DNS data,
+     * DNS type, and challenge type. It places the challenge value in the correct place based on the challenge type and
+     * includes any errors encountered during the validation process.
      *
      * @param challengeValidationResponse the token validator response
-     * @param dnsData                the DNS data
-     * @param dnsType                the DNS type
-     * @param challengeType             the secret type
+     * @param dnsData the DNS data
+     * @param dnsType the DNS type (CNAME, TXT, or CAA)
+     * @param challengeType the challenge type (RANDOM_VALUE or REQUEST_TOKEN)
      * @return the DNS validation response
      */
     DnsValidationResponse buildDnsValidationResponse(ChallengeValidationResponse challengeValidationResponse,
@@ -140,16 +140,17 @@ public class DnsValidationHandler {
         }
 
         String validRandomValue = null;
-        String validToken = null;
+        String validRequestToken = null;
 
         if (challengeType == ChallengeType.RANDOM_VALUE) {
-            validRandomValue = challengeValidationResponse.token().orElse(null);
+            validRandomValue = challengeValidationResponse.challengeValue().orElse(null);
         } else {
-            validToken = challengeValidationResponse.token().orElse(null);
+            validRequestToken = challengeValidationResponse.challengeValue().orElse(null);
         }
 
-        return new DnsValidationResponse(challengeValidationResponse.token().isPresent(), dnsData.serverWithData(), dnsData.domain(),
-                dnsType, validRandomValue, validToken, challengeValidationResponse.errors());
+        return new DnsValidationResponse(challengeValidationResponse.challengeValue().isPresent(),
+                dnsData.serverWithData(), dnsData.domain(), dnsType, validRandomValue, validRequestToken,
+                challengeValidationResponse.errors());
     }
 
     /**
@@ -160,7 +161,7 @@ public class DnsValidationHandler {
      * record value.
      *
      * @param dnsRecord the DNS record
-     * @param type      the type of DNS record
+     * @param type the type of DNS record
      * @return the string value of the DNS record
      */
     String getDnsRecordStringValue(Record dnsRecord, DnsType type) {

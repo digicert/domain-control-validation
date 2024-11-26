@@ -126,7 +126,7 @@ class DcvConfigurationTest {
     }
 
     @Test
-    void testRandomValueSecretValidator() {
+    void testRandomValueValidator() {
         RandomValueValidator mockRandomValueValidator = mock(RandomValueValidator.class);
         DcvConfiguration.DcvConfigurationBuilder builder = new DcvConfiguration.DcvConfigurationBuilder();
 
@@ -137,11 +137,11 @@ class DcvConfigurationTest {
     }
 
     @Test
-    void testTokenValueSecretValidator() {
+    void testRequestTokenValidator() {
         RequestTokenValidator mockValidator = mock(RequestTokenValidator.class);
         DcvConfiguration.DcvConfigurationBuilder builder = new DcvConfiguration.DcvConfigurationBuilder();
 
-        builder.tokenValidator(mockValidator);
+        builder.requestTokenValidator(mockValidator);
         DcvConfiguration config = builder.build();
 
         assertEquals(mockValidator, config.getRequestTokenValidator());

@@ -109,15 +109,15 @@ class DnsValidatorTest {
     static Stream<Arguments> provideInvalidDnsValidationResponse() {
         return Stream.of(
                 Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(),
-                        List.of("Domain is required", "Secret Type is required", "Domain in Validation State is required")),
+                        List.of("Domain is required", "Challenge Type is required", "Domain in Validation State is required")),
                 Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now(),
-                        List.of("Secret Type is required")),
+                        List.of("Challenge Type is required")),
                 Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now(),
-                        List.of("DNS Record Type is required", "Secret Type is required")),
+                        List.of("DNS Record Type is required", "Challenge Type is required")),
                 Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now(),
-                        List.of("Secret Type is required", "Invalid DCV Method")),
+                        List.of("Challenge Type is required", "Invalid DCV Method")),
                 Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null),
-                        List.of("Secret Type is required", "Prepare Time is required"))
+                        List.of("Challenge Type is required", "Prepare Time is required"))
         );
     }
 
@@ -171,7 +171,7 @@ class DnsValidatorTest {
         return Stream.of(
                 Arguments.of(null, DnsType.TXT, ChallengeType.RANDOM_VALUE, DcvError.DOMAIN_REQUIRED),
                 Arguments.of("example.com", null, ChallengeType.RANDOM_VALUE, DcvError.DNS_TYPE_REQUIRED),
-                Arguments.of("example.com", DnsType.TXT, null, DcvError.SECRET_TYPE_REQUIRED)
+                Arguments.of("example.com", DnsType.TXT, null, DcvError.CHALLENGE_TYPE_REQUIRED)
         );
     }
 

@@ -2,26 +2,39 @@ package com.digicert.validation.challenges;
 
 import com.digicert.validation.enums.DcvError;
 
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 
 /**
- * A record that represents the response of a token validation.
+ * A record to hold the results of a response validator.
  * <p>
- * This record encapsulates the result of a token validation process. It contains two fields: `token` and `errors`.
- * The `token` field is an `Optional` that holds the validated token if the validation is successful, or is empty if the validation fails.
- * The `errors` field is a `Set` of `DcvError` that indicates the errors encountered during the validation process.
- * The use of `Optional` for the token ensures that the absence of a token is explicitly represented, while the `Set` of errors provides a comprehensive list of issues that occurred.
+ * The `challengeValue` field is an `Optional` that holds the validated random value or request token if the validation
+ * is successful and is empty if the validation fails. The `errors` field is a `Set` of {@link DcvError} that allows for
+ * providing a comprehensive list of issues that occurred during validation.
  *
- * @param token  an Optional containing the validated token, or an empty Optional if validation fails
- *               <p>
- *               The `token` parameter is an `Optional` that holds the validated token if the validation process is successful.
- *               If the validation fails, this `Optional` will be empty.
- *
+ * @param challengeValue an Optional containing the validated challenge value, or an empty Optional if validation fails
  * @param errors a Set of DcvError indicating the errors encountered during validation
- *               <p>
- *               The `errors` parameter is a `Set` of `DcvError` that contains the errors encountered during the validation process.
- *               Each `DcvError` in the set represents a specific type of validation error.
  */
-public record ChallengeValidationResponse(Optional<String> token,
-                                          Set<DcvError> errors) { }
+public record ChallengeValidationResponse(Optional<String> challengeValue,
+                                          Set<DcvError> errors) {
+
+    /**
+     * A convenience method to merge two challenge validation responses.
+     * <p>
+     * If either response is successful, the challenge value from the first successful response is returned. If both
+     * responses are not valid, the errors from both responses are combined.
+     * @param other the second response to merge with this response
+     * @return a new ChallengeValidationResponse containing the merged results
+     */
+    public ChallengeValidationResponse merge(ChallengeValidationResponse other) {
+        if (challengeValue().isPresent()) {
+            return this;
+        } else if (other.challengeValue().isPresent()) {
+            return other;
+        }
+        Set<DcvError> allErrors = EnumSet.copyOf(errors);
+        allErrors.addAll(other.errors());
+        return new ChallengeValidationResponse(challengeValue, allErrors);
+    }
+}
