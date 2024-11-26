@@ -69,7 +69,7 @@ jobs:
               }
             ]
 
-      - name: Deploy to Maven Central (no publish)
+      - name: Deploy to Maven Central
         run: |
           mvn -pl library javadoc:jar
           mvn -pl library deploy -P deploy-to-maven-central-beta -DskipTests -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} -DautoReleaseAfterClose=false --batch-mode
