@@ -1,4 +1,4 @@
-package com.digicert.validation.secrets;
+package com.digicert.validation.challenges;
 
 import com.digicert.validation.enums.DcvError;
 import org.junit.jupiter.api.Test;
@@ -19,13 +19,13 @@ class BasicRandomValueValidatorTest {
         String textBody = "some text body with randomValue in it";
         BasicRandomValueValidator basicRandomValueValidator = new BasicRandomValueValidator();
         ChallengeValidationResponse response = basicRandomValueValidator.validate(randomValue, textBody);
-        assertEquals(randomValue, response.token().orElseThrow());
+        assertEquals(randomValue, response.challengeValue().orElseThrow());
         assertEquals(0, response.errors().size());
     }
 
     static Stream<Arguments> invalidArgs() {
         return Stream.of(
-                Arguments.of("randomValue", "", DcvError.RANDOM_VALUE_EMPTY_TXT_BODY),
+                Arguments.of("randomValue", "", DcvError.RANDOM_VALUE_EMPTY_TEXT_BODY),
                 Arguments.of("abc", "some text body with no value in it", DcvError.RANDOM_VALUE_NOT_FOUND)
         );
     }

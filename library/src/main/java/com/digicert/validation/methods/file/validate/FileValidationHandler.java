@@ -1,27 +1,26 @@
 package com.digicert.validation.methods.file.validate;
 
-import java.util.*;
-
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.ChallengeValidationResponse;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
+import com.digicert.validation.client.file.FileClient;
+import com.digicert.validation.client.file.FileClientResponse;
+import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.LogEvents;
-import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.secrets.ChallengeValidationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import com.digicert.validation.client.file.FileClient;
-import com.digicert.validation.client.file.FileClientResponse;
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
+import java.util.*;
 
 /**
  * Handles the validation of file-based domain control validation (DCV) requests.
  * <p>
  * This class is responsible for managing the validation process of file-based DCV requests. It interacts with various
- * components such as the file validation client, random value validator, and token validator to ensure that the
+ * components such as the file validation client, random value validator, and request token validator to ensure that the
  * validation process is carried out correctly. The class provides methods to set up the necessary clients, validate
- * the requests, and retrieve the required file URLs.
+ * the requests, and retrieve files from the required URLs.
  */
 @Slf4j
 public class FileValidationHandler {
@@ -29,20 +28,14 @@ public class FileValidationHandler {
     /** The file validation client. */
     private FileClient fileClient;
 
-    /**
-     * The random value validator.
-     * <p>
-     * This validator is used to validate the random values used in the file-based DCV process. It ensures that the
-     * random values are correct and match the expected values. This is crucial for maintaining the security and
-     * integrity of the validation process, as incorrect random values can lead to validation failures.
-     */
+    /** The random value validator used to confirm that the file text contains the expected random value. */
     private final RandomValueValidator randomValueValidator;
 
-    /** The token validator. */
-    private final TokenValidator tokenValidator;
+    /** The request token validator used to confirm that the file text contains a valid request token. */
+    private final RequestTokenValidator requestTokenValidator;
 
-    /** The path to the token. */
-    private static final String TOKEN_PATH = "/.well-known/pki-validation/";
+    /** The path to the file containing the challenge value. */
+    private static final String FILE_PATH = "/.well-known/pki-validation/";
 
     /** The default file validation filename. */
     private final String defaultFileValidationFilename;
@@ -62,7 +55,7 @@ public class FileValidationHandler {
     public FileValidationHandler(DcvContext dcvContext) {
         fileClient = dcvContext.get(FileClient.class);
         randomValueValidator = dcvContext.get(RandomValueValidator.class);
-        tokenValidator = dcvContext.get(TokenValidator.class);
+        requestTokenValidator = dcvContext.get(RequestTokenValidator.class);
 
         defaultFileValidationFilename = dcvContext.getDcvConfiguration().getFileValidationFilename();
         fileValidationCheckHttps = dcvContext.getDcvConfiguration().getFileValidationCheckHttps();
@@ -73,7 +66,7 @@ public class FileValidationHandler {
      * <p>
      * This method processes the file-based DCV request by validating the provided file URLs and checking for errors.
      * It uses the file validation client to execute requests and retrieve responses, which are then validated
-     * using the random value validator and token validator. The method constructs a response based on the validation
+     * using the random value validator or request token validator. The method constructs a response based on the validation
      * results, indicating whether the validation was successful or not.
      *
      * @param validationRequest the file validation request
@@ -95,21 +88,21 @@ public class FileValidationHandler {
             }
 
             // Check and find errors in the token validation response
-            ChallengeValidationResponse challengeValidationResponse = getValidSecret(validationRequest, fileClientResponse.getFileContent());
-            if (challengeValidationResponse.token().isEmpty() && !challengeValidationResponse.errors().isEmpty()) {
+            ChallengeValidationResponse challengeValidationResponse = getValidChallengeResponse(validationRequest, fileClientResponse.getFileContent());
+            if (challengeValidationResponse.challengeValue().isEmpty() && !challengeValidationResponse.errors().isEmpty()) {
                 errors.addAll(challengeValidationResponse.errors());
                 continue;
             }
 
             FileValidationResponse.FileValidationResponseBuilder responseBuilder = FileValidationResponse.builder()
-                    .isValid(challengeValidationResponse.token().isPresent())
+                    .isValid(challengeValidationResponse.challengeValue().isPresent())
                     .domain(validationRequest.getDomain())
                     .fileUrl(fileUrl)
                     .challengeType(challengeType);
 
             switch (challengeType) {
-                case RANDOM_VALUE -> responseBuilder.validRandomValue(challengeValidationResponse.token().orElse(null));
-                case REQUEST_TOKEN -> responseBuilder.validToken(challengeValidationResponse.token().orElse(null));
+                case RANDOM_VALUE -> responseBuilder.validRandomValue(challengeValidationResponse.challengeValue().orElse(null));
+                case REQUEST_TOKEN -> responseBuilder.validRequestToken(challengeValidationResponse.challengeValue().orElse(null));
             }
 
             FileValidationResponse response = responseBuilder.build();
@@ -128,21 +121,21 @@ public class FileValidationHandler {
     }
 
     /**
-     * Retrieves the valid secret or null if the validation fails.
+     * Validates the presence of the random value or a valid request token in the provided file content.
      *
      * @param fileValidationRequest the file validation request
-     * @param fileContent the content of the file where the secret can be found
-     * @return TokenValidatorResponse with a valid secret or null with populated errors if the validation fails.
+     * @param fileContent the content of the file where the challenge response should be found
+     * @return ChallengeValidationResponse containing a valid challenge response or a set of errors
      */
-    private ChallengeValidationResponse getValidSecret(FileValidationRequest fileValidationRequest, String fileContent) {
+    private ChallengeValidationResponse getValidChallengeResponse(FileValidationRequest fileValidationRequest, String fileContent) {
         return switch (fileValidationRequest.getChallengeType()) {
             case RANDOM_VALUE -> randomValueValidator.validate(fileValidationRequest.getRandomValue(), fileContent);
-            case REQUEST_TOKEN -> tokenValidator.validate(fileValidationRequest.getTokenKey(), fileValidationRequest.getTokenValue(), fileContent);
+            case REQUEST_TOKEN -> requestTokenValidator.validate(fileValidationRequest.getRequestTokenData(), fileContent);
         };
     }
 
     /**
-     * Checks if the file validation response is valid.
+     * Checks if the file client response is valid.
      *
      * @param fileClientResponse the file validation client response
      * @return empty list if valid, otherwise a list of errors
@@ -185,8 +178,8 @@ public class FileValidationHandler {
      * <p>
      * This method constructs the list of file URLs that will be used in the file-based DCV request. It uses the domain
      * and filename provided in the validation request to create the URLs. If no specific filename is provided, the
-     * default file validation filename is used. The method returns a list of URLs with both HTTP and HTTPS
-     * protocols, ensuring that the validation process can handle different types of requests.
+     * default file validation filename is used. If the `fileValidationCheckHttps` flag is true it will return a
+     * list using both HTTP and HTTPS protocols, otherwise it will return a list that only includes HTTP.
      *
      * @param fileValidationRequest the file validation request
      * @return the list of file URLs
@@ -194,9 +187,9 @@ public class FileValidationHandler {
     public List<String> getFileUrls(FileValidationRequest fileValidationRequest) {
         String domainPath;
         if (StringUtils.isNotBlank(fileValidationRequest.getFilename())) {
-            domainPath = fileValidationRequest.getDomain() + TOKEN_PATH + fileValidationRequest.getFilename();
+            domainPath = fileValidationRequest.getDomain() + FILE_PATH + fileValidationRequest.getFilename();
         } else {
-            domainPath = fileValidationRequest.getDomain() + TOKEN_PATH + defaultFileValidationFilename;
+            domainPath = fileValidationRequest.getDomain() + FILE_PATH + defaultFileValidationFilename;
         }
         if (fileValidationCheckHttps) {
             return List.of("http://" + domainPath, "https://" + domainPath);

@@ -1,5 +1,6 @@
 package com.digicert.validation.methods.file.validate;
 
+import com.digicert.validation.challenges.RequestTokenData;
 import com.digicert.validation.common.ValidationState;
 import com.digicert.validation.enums.ChallengeType;
 import lombok.Builder;
@@ -31,23 +32,11 @@ public class FileValidationRequest {
      */
     private final ChallengeType challengeType;
 
-    /**
-     * The random value to be used for file validation.
-     * Only used for RANDOM_VALUE secret type.
-     */
+    /** The random value to be used for file validation. Only used for RANDOM_VALUE challenge type. */
     private final String randomValue;
 
-    /**
-     * The token key to be used for file validation.
-     * Only used for REQUEST_TOKEN secret type.
-     */
-    private final String tokenKey;
-
-    /**
-     * The token value to be used for file validation.
-     * Only used for REQUEST_TOKEN secret type.
-     */
-    private final String tokenValue;
+    /** The request token data to be used for file validation. Only used for REQUEST_TOKEN challenge type. */
+    private final RequestTokenData requestTokenData;
 
     /**
      * The validation state of the file validation request.
@@ -58,21 +47,19 @@ public class FileValidationRequest {
      * Private constructor to prevent instantiation without using the builder.
      * Constructs a new FileValidationRequest with the specified parameters.
      *
-     * @param domain          The domain for which the file validation is being requested.
-     * @param filename        The filename to be used for file validation.
-     * @param challengeType      The type of secret used for file validation.
-     * @param randomValue     The random value to be used for file validation.
-     * @param tokenKey        The token key to be used for file validation.
-     * @param tokenValue      The token value to be used for file validation.
-     * @param validationState The validation state of the file validation request.
+     * @param domain           The domain for which the file validation is being requested.
+     * @param filename         The filename to check for.
+     * @param challengeType    The type of challenge (random value or request token).
+     * @param randomValue      The random value to be used for file validation.
+     * @param requestTokenData The data necessary to validate request tokens.
+     * @param validationState  The validation state of the file validation request.
      */
-    private FileValidationRequest(String domain, String filename, ChallengeType challengeType, String randomValue, String tokenKey, String tokenValue, ValidationState validationState) {
+    private FileValidationRequest(String domain, String filename, ChallengeType challengeType, String randomValue, RequestTokenData requestTokenData, ValidationState validationState) {
         this.domain = domain;
         this.filename = filename;
         this.challengeType = challengeType;
         this.randomValue = randomValue;
-        this.tokenKey = tokenKey;
-        this.tokenValue = tokenValue;
+        this.requestTokenData = requestTokenData;
         this.validationState = validationState;
     }
 }

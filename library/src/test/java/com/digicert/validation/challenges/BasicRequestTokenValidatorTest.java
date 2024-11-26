@@ -1,4 +1,4 @@
-package com.digicert.validation.secrets;
+package com.digicert.validation.challenges;
 
 import com.digicert.validation.enums.DcvError;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -19,17 +19,17 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BasicTokenValidatorTest {
+class BasicRequestTokenValidatorTest {
 
-    private static final RequestTokenUtils requestTokenUtils = new RequestTokenUtils();
+    private static final BasicRequestTokenUtils requestTokenUtils = new BasicRequestTokenUtils();
     private static final String DEFAULT_TOKEN_KEY = "someToken";
     private static final String DEFAULT_TOKEN_VALUE = "some-token-value";
 
-    private BasicTokenValidator basicTokenValueSecretValidator;
+    private BasicRequestTokenValidator basicRequestTokenValidator;
 
     @BeforeEach
     void setUp() {
-        basicTokenValueSecretValidator = new BasicTokenValidator();
+        basicRequestTokenValidator = new BasicRequestTokenValidator();
     }
 
     @Test
@@ -37,10 +37,10 @@ class BasicTokenValidatorTest {
         String generatedToken = generateTokenValue(getZonedDateTimeNow(), DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE).orElseThrow();
 
         String textBody = "some text body with token " + generatedToken + " in it";
-        ChallengeValidationResponse response = basicTokenValueSecretValidator
-                .validate(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, textBody);
+        ChallengeValidationResponse response = basicRequestTokenValidator
+                .validate(new BasicRequestTokenData(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE), textBody);
 
-        assertEquals(generatedToken, response.token().orElseThrow());
+        assertEquals(generatedToken, response.challengeValue().orElseThrow());
     }
 
     @Test
@@ -49,10 +49,10 @@ class BasicTokenValidatorTest {
         String generatedToken = generateTokenValue(getZonedDateTimeNow(), DEFAULT_TOKEN_KEY, generatedCSR).orElseThrow();
 
         String textBody = "some text body with token " + generatedToken + " in it";
-        ChallengeValidationResponse response = basicTokenValueSecretValidator
-                .validate("someToken", generatedCSR, textBody);
+        ChallengeValidationResponse response = basicRequestTokenValidator
+                .validate(new BasicRequestTokenData("someToken", generatedCSR), textBody);
 
-        assertEquals(generatedToken, response.token().orElseThrow());
+        assertEquals(generatedToken, response.challengeValue().orElseThrow());
     }
 
     static Stream<Arguments> invalidTxtBodyTokens() {
@@ -60,20 +60,20 @@ class BasicTokenValidatorTest {
         String oldToken = generateTokenValue(getZonedDateTimeNow().minusDays(31), DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE).orElseThrow();
 
         String formattedDate = getZonedDateTimeNow().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-        String tokenTooShort = requestTokenUtils.generateRequestToken(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, formattedDate).orElseThrow();
+        String tokenTooShort = requestTokenUtils.generateRequestToken(new BasicRequestTokenData(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE), formattedDate).orElseThrow();
 
         formattedDate = getZonedDateTimeNow().format(DateTimeFormatter.ofPattern("yyyy"));
-        String invalidDate = requestTokenUtils.generateRequestToken(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE, formattedDate + "1234567890").orElseThrow();
+        String invalidDate = requestTokenUtils.generateRequestToken(new BasicRequestTokenData(DEFAULT_TOKEN_KEY, DEFAULT_TOKEN_VALUE), formattedDate + "1234567890").orElseThrow();
 
         return Stream.of(
-                Arguments.of("", "some-token-value", futureToken, DcvError.TOKEN_KEY_REQUIRED),
-                Arguments.of("someToken", "", futureToken, DcvError.TOKEN_VALUE_REQUIRED),
-                Arguments.of("someToken", "some-token-value", null, DcvError.TOKEN_ERROR_EMPTY_TXT_BODY),
-                Arguments.of("someToken", "some-token-value", "", DcvError.TOKEN_ERROR_EMPTY_TXT_BODY),
-                Arguments.of("someToken", "some-token-value", futureToken, DcvError.TOKEN_ERROR_FUTURE_DATE),
-                Arguments.of("someToken", "some-token-value", oldToken, DcvError.TOKEN_ERROR_DATE_EXPIRED),
-                Arguments.of("someToken", "some-token-value", tokenTooShort, DcvError.TOKEN_ERROR_STRING_TOO_SHORT),
-                Arguments.of("someToken", "some-token-value", invalidDate, DcvError.TOKEN_ERROR_INVALID_DATE)
+                Arguments.of("", "some-token-value", futureToken, DcvError.INVALID_REQUEST_TOKEN_DATA),
+                Arguments.of("someToken", "", futureToken, DcvError.INVALID_REQUEST_TOKEN_DATA),
+                Arguments.of("someToken", "some-token-value", null, DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY),
+                Arguments.of("someToken", "some-token-value", "", DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY),
+                Arguments.of("someToken", "some-token-value", futureToken, DcvError.REQUEST_TOKEN_ERROR_FUTURE_DATE),
+                Arguments.of("someToken", "some-token-value", oldToken, DcvError.REQUEST_TOKEN_ERROR_DATE_EXPIRED),
+                Arguments.of("someToken", "some-token-value", tokenTooShort, DcvError.REQUEST_TOKEN_ERROR_INVALID_TOKEN),
+                Arguments.of("someToken", "some-token-value", invalidDate, DcvError.REQUEST_TOKEN_ERROR_INVALID_TOKEN)
         );
     }
 
@@ -84,16 +84,16 @@ class BasicTokenValidatorTest {
                                                   String textBody,
                                                   DcvError dcvError) {
 
-        ChallengeValidationResponse response = basicTokenValueSecretValidator.validate(tokenKey, tokenValue, textBody);
+        ChallengeValidationResponse response = basicRequestTokenValidator.validate(new BasicRequestTokenData(tokenKey, tokenValue), textBody);
 
-        assertFalse(response.token().isPresent());
+        assertFalse(response.challengeValue().isPresent());
         assertFalse(response.errors().isEmpty());
         assertTrue(response.errors().contains(dcvError), "expected: " + dcvError + " but got: " + response.errors());
     }
 
-    private static Optional<String> generateTokenValue(ZonedDateTime dateTime, String tokenKey, String tokenValue) {
+    private static Optional<String> generateTokenValue(ZonedDateTime dateTime, String hashingKey, String hashingValue) {
         String formattedDate = dateTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        return requestTokenUtils.generateRequestToken(tokenKey, tokenValue, formattedDate);
+        return requestTokenUtils.generateRequestToken(new BasicRequestTokenData(hashingKey, hashingValue), formattedDate);
     }
 
     public static ZonedDateTime getZonedDateTimeNow() {

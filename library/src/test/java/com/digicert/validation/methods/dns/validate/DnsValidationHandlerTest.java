@@ -1,14 +1,11 @@
 package com.digicert.validation.methods.dns.validate;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.*;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.secrets.BasicRandomValueValidator;
-import com.digicert.validation.secrets.BasicTokenValidator;
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +29,7 @@ class DnsValidationHandlerTest {
 
         DcvContext dcvContext = mock(DcvContext.class, RETURNS_DEEP_STUBS);
         when(dcvContext.get(RandomValueValidator.class)).thenReturn(new BasicRandomValueValidator());
-        when(dcvContext.get(TokenValidator.class)).thenReturn(new BasicTokenValidator());
+        when(dcvContext.get(RequestTokenValidator.class)).thenReturn(new BasicRequestTokenValidator());
         when(dcvContext.get(DnsClient.class)).thenReturn(dnsClient);
         when(dcvContext.getDcvConfiguration().getDnsDomainLabel()).thenReturn("_testLabel");
 
@@ -83,7 +80,7 @@ class DnsValidationHandlerTest {
         assertEquals("8.8.8.8", response.server());
         assertEquals("example.com", response.domain());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
-        assertTrue(StringUtils.isEmpty(response.validToken()));
+        assertTrue(StringUtils.isEmpty(response.validRequestToken()));
     }
 
     @Test
@@ -119,8 +116,7 @@ class DnsValidationHandlerTest {
     void testDnsValidationHandler_validate_requestToken() throws TextParseException {
         DnsValidationRequest request = DnsValidationRequest.builder()
                 .domain("example.com")
-                .tokenKey("tokenKey")
-                .tokenValue("tokenValue")
+                .requestTokenData(new BasicRequestTokenData("hashingKey", "hashingValue"))
                 .dnsType(DnsType.CNAME)
                 .challengeType(ChallengeType.REQUEST_TOKEN)
                 .build();

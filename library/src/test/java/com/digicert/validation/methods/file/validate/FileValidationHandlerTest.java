@@ -6,9 +6,9 @@ import com.digicert.validation.client.file.FileClient;
 import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.secrets.RandomValueValidator;
-import com.digicert.validation.secrets.TokenValidator;
-import com.digicert.validation.secrets.ChallengeValidationResponse;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
+import com.digicert.validation.challenges.ChallengeValidationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ class FileValidationHandlerTest {
     private FileValidationHandler fileValidationHandler;
     private FileClient fileClient;
     private RandomValueValidator randomValueValidator;
-    private TokenValidator tokenValidator;
+    private RequestTokenValidator requestTokenValidator;
 
     @BeforeEach
     void setUp() {
@@ -37,12 +37,12 @@ class FileValidationHandlerTest {
     private void initializeMocks(DcvConfiguration dcvConfiguration) {
         fileClient = mock(FileClient.class);
         randomValueValidator = mock(RandomValueValidator.class);
-        tokenValidator = mock(TokenValidator.class);
+        requestTokenValidator = mock(RequestTokenValidator.class);
 
         DcvContext dcvContext = mock(DcvContext.class);
         when(dcvContext.get(FileClient.class)).thenReturn(fileClient);
         when(dcvContext.get(RandomValueValidator.class)).thenReturn(randomValueValidator);
-        when(dcvContext.get(TokenValidator.class)).thenReturn(tokenValidator);
+        when(dcvContext.get(RequestTokenValidator.class)).thenReturn(requestTokenValidator);
         when(dcvContext.getDcvConfiguration()).thenReturn(dcvConfiguration);
 
         fileValidationHandler = new FileValidationHandler(dcvContext);
@@ -105,7 +105,7 @@ class FileValidationHandlerTest {
         assertEquals("example.com", response.domain());
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
         assertEquals("randomValue", response.validRandomValue());
-        assertNull(response.validToken());
+        assertNull(response.validRequestToken());
     }
 
     @Test
@@ -129,7 +129,7 @@ class FileValidationHandlerTest {
         assertNull(response.validRandomValue());
         assertEquals(1, response.errors().size());
         assertTrue(response.errors().contains(DcvError.FILE_VALIDATION_CLIENT_ERROR));
-        assertNull(response.validToken());
+        assertNull(response.validRequestToken());
     }
 
     @Test
@@ -150,7 +150,7 @@ class FileValidationHandlerTest {
         assertEquals(1, response.errors().size());
         assertTrue(response.errors().contains(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE));
         assertNull(response.validRandomValue());
-        assertNull(response.validToken());
+        assertNull(response.validRequestToken());
     }
 
     @Test
@@ -171,7 +171,7 @@ class FileValidationHandlerTest {
         assertEquals(1, response.errors().size());
         assertTrue(response.errors().contains(DcvError.FILE_VALIDATION_EMPTY_RESPONSE));
         assertNull(response.validRandomValue());
-        assertNull(response.validToken());
+        assertNull(response.validRequestToken());
     }
 
 
@@ -182,7 +182,7 @@ class FileValidationHandlerTest {
         when(fileClient.executeRequest(anyString())).thenReturn(new FileClientResponse("http://example.com/.well-known/pki-validation/fileauth.txt",
                 "file content", 200));
 
-        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.TOKEN_ERROR_EMPTY_TXT_BODY));
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY));
         when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
 
         // Act
@@ -194,9 +194,9 @@ class FileValidationHandlerTest {
         assertEquals("example.com", response.domain());
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
         assertEquals(1, response.errors().size());
-        assertTrue(response.errors().contains(DcvError.TOKEN_ERROR_EMPTY_TXT_BODY));
+        assertTrue(response.errors().contains(DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY));
         assertNull(response.validRandomValue());
-        assertNull(response.validToken());
+        assertNull(response.validRequestToken());
     }
 
     private FileValidationRequest.FileValidationRequestBuilder getRandomValueFileValidationRequest() {

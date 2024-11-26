@@ -15,23 +15,20 @@ public enum ChallengeType {
      * and knowledge of the random value is sufficient to prove control over the domain. For other domain control
      * validation methods, the random value must be placed in a specific location (either a DNS record or a file on the
      * web server) to prove control.
-     * </p>
      */
     RANDOM_VALUE,
 
     /**
      * Specify that the domain control validation method will expect a request token.
      * <p>
-     * A request token is a domain owner&ndash;generated token that is generated according to a format specified by the
+     * A request token is a domain owner&ndash;generated token that is created according to a format specified by the
      * CA. Each request token must incorporate the key used in the certificate request and can only be reused if the
      * token includes a timestamp. The request token must be placed in a specific location (either a DNS record or a
      * file on the web server) to prove control. Request tokens cannot be used for email domain control validation
      * methods.
-     * </p>
      * <p>
      * It is useful to note that because request tokens are not supplied by the CA, it is possible to skip the
      * preparation step when using request tokens.
-     * </p>
      */
     REQUEST_TOKEN
 }

@@ -23,9 +23,7 @@ public class FilePreparationResponse {
      */
     private final String domain;
 
-    /**
-     * The type of secret used for validation.
-     */
+    /** The type of challenge used for validation. */
     private final ChallengeType challengeType;
 
     /**
@@ -47,7 +45,7 @@ public class FilePreparationResponse {
      * Private constructor to prevent instantiation without using the builder.
      *
      * @param domain          The domain for which the file validation is being prepared.
-     * @param challengeType   The type of secret used for validation.
+     * @param challengeType   The type of challenge to use for validation.
      * @param randomValue     The random value to be placed in the file.
      * @param fileLocation    The location of the file to be placed on the server.
      * @param validationState The validation state of the preparation response.

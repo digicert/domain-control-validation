@@ -72,7 +72,7 @@ public class DnsValidator {
      * This method prepares the DNS record for validation by generating the necessary random values and setting up the validation state.
      * It verifies the DNS preparation parameters and constructs a DnsPreparationResponse object containing the random value and allowed FQDNs.
      *
-     * @param dnsPreparation {@link DnsPreparation} object containing the domain, DNS Type and Secret Type
+     * @param dnsPreparation {@link DnsPreparation} object containing the domain, DNS Type and Challenge Type
      * @return {@link DnsPreparationResponse} object containing the random value and allowed FQDNs
      * @throws DcvException if the DNS Preparation fails.
      */
@@ -102,7 +102,7 @@ public class DnsValidator {
      * This method validates the DNS record for domain validation by interacting with the DNS server and verifying the DNS records.
      * It checks the validity of the DNS validation request and constructs a DomainValidationEvidence object if the validation is successful.
      *
-     * @param dnsValidationRequest {@link DnsValidationRequest} object containing the domain, DNS Type, Secret Type and Validation State
+     * @param dnsValidationRequest {@link DnsValidationRequest} object containing the domain, DNS Type, Challenge Type and Validation State
      * @return {@link DomainValidationEvidence} object containing the domain validation evidence
      * @throws ValidationException if the DNS Validation fails.
      * @throws InputException      if the input parameters are invalid.
@@ -134,8 +134,8 @@ public class DnsValidator {
     /**
      * Creates a DomainValidationEvidence object from the DnsValidationRequest and DnsValidationResponse
      *
-     * @param dnsValidationRequest  The DnsValidationRequest object containing the domain, DNS Type, Secret Type and Validation State to be used
-     * @param dnsValidationResponse The DnsValidationResponse object containing the server, domain, random value and token to be used
+     * @param dnsValidationRequest  The DnsValidationRequest object containing the domain, DNS Type, challenge type, and Validation State used
+     * @param dnsValidationResponse The DnsValidationResponse object containing the server, domain, and random value or request token used
      * @return DomainValidationEvidence object containing the domain validation evidence
      */
     private DomainValidationEvidence createDomainValidationEvidence(DnsValidationRequest dnsValidationRequest,
@@ -149,7 +149,7 @@ public class DnsValidator {
                 .dnsServer(dnsValidationResponse.server())
                 .dnsRecordName(dnsValidationResponse.domain())
                 .randomValue(dnsValidationResponse.validRandomValue())
-                .foundToken(dnsValidationResponse.validToken())
+                .requestToken(dnsValidationResponse.validRequestToken())
                 .build();
     }
 
@@ -171,7 +171,7 @@ public class DnsValidator {
         }
 
         if (request.getChallengeType() == null) {
-            throw new InputException(DcvError.SECRET_TYPE_REQUIRED);
+            throw new InputException(DcvError.CHALLENGE_TYPE_REQUIRED);
         }
 
         StateValidationUtils.verifyValidationState(request.getValidationState(), DcvMethod.BR_3_2_2_4_7);
@@ -182,11 +182,8 @@ public class DnsValidator {
                 randomValueVerifier.verifyRandomValue(request.getRandomValue(), instant);
             }
             case REQUEST_TOKEN -> {
-                if (request.getTokenKey() == null) {
-                    throw new InputException(DcvError.TOKEN_KEY_REQUIRED);
-                }
-                if (request.getTokenValue() == null) {
-                    throw new InputException(DcvError.TOKEN_VALUE_REQUIRED);
+                if (request.getRequestTokenData() == null) {
+                    throw new InputException(DcvError.REQUEST_TOKEN_DATA_REQUIRED);
                 }
             }
         }
@@ -206,7 +203,7 @@ public class DnsValidator {
         }
 
         if (dnsPreparation.challengeType() == null) {
-            throw new InputException(DcvError.SECRET_TYPE_REQUIRED);
+            throw new InputException(DcvError.CHALLENGE_TYPE_REQUIRED);
         }
 
         if (!allowedDnsTypes.contains(dnsPreparation.dnsType())) {
