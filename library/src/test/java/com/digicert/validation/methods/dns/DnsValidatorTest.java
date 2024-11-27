@@ -88,7 +88,7 @@ class DnsValidatorTest {
         assertEquals(dnsType, evidence.getDnsType());
         assertEquals("8.8.8.8", evidence.getDnsServer());
         assertEquals(DcvMethod.BR_3_2_2_4_7, evidence.getDcvMethod());
-        assertEquals("v2.0.7", DomainValidationEvidence.BR_VERSION);
+        assertEquals("v2.1.1", DomainValidationEvidence.BR_VERSION);
         assertEquals(randomValue, evidence.getRandomValue());
         assertNotNull(evidence.getValidationDate());
         assertEquals(domain, evidence.getDnsRecordName());

@@ -158,7 +158,7 @@ class FileValidatorTest {
         // Assert
         assertNotNull(evidence);
         assertEquals("example.com", evidence.getDomain());
-        assertEquals("v2.0.7", DomainValidationEvidence.BR_VERSION);
+        assertEquals("v2.1.1", DomainValidationEvidence.BR_VERSION);
         assertNotNull(evidence.getValidationDate());
         assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", evidence.getFileUrl());
         assertEquals("randomValue", evidence.getRandomValue());

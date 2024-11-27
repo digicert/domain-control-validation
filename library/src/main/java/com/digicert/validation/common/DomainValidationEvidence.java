@@ -34,7 +34,7 @@ public class DomainValidationEvidence {
      *      number, they used to validate every domain.
      * </pre>
      */
-    public static final String BR_VERSION = "v2.0.7";
+    public static final String BR_VERSION = "v2.1.1";
 
     /** The instant when the domain validation was completed. */
     private final Instant validationDate;
