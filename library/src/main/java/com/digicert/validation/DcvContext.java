@@ -1,5 +1,7 @@
 package com.digicert.validation;
 
+import com.digicert.validation.challenges.BasicRequestTokenValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -7,6 +9,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -21,10 +24,20 @@ public class DcvContext {
     @Getter
     private final DcvConfiguration dcvConfiguration;
 
-    /**
-     * A map of instances that have been created by the context.
-     */
+    /** A map of instances that have been created by the context. */
     private final HashMap<Class<?>, Object> instances = new HashMap<>();
+
+    /**
+     * This map is used for basic implementations of interfaces to only load if no custom implementation is provided.
+     * <p>
+     * When the BasicRequestTokenValidator class is instantiated, it also instantiates a BasicRequestTokenUtils
+     * instance. That utils class requires a BouncyCastleProvider to be added as a security provider. By lazily loading
+     * the validator, users of this library can avoid adding the BouncyCastleProvider as a security provider if they
+     * provide their own implementation of the RequestTokenValidator interface.
+     */
+    private final Map<Class<?>, Class<?>> lazyLoadImplementations = Map.of(
+            RequestTokenValidator.class, BasicRequestTokenValidator.class
+    );
 
     /**
      * Retrieves an instance of the specified class. If an instance already exists, it returns the cached instance.
@@ -60,8 +73,13 @@ public class DcvContext {
                 }
             }
 
-            // With the interfaceImplMap as an override, instantiate the desired class, cache it, and return it
-            Object foundClass = classType.getConstructor(DcvContext.class).newInstance(this);
+            // With the lazyLoadImplementations map as an override, instantiate the desired class, cache it, and return it
+            Object foundClass;
+            if (lazyLoadImplementations.containsKey(classType)) {
+                foundClass = lazyLoadImplementations.getOrDefault(classType, classType).getConstructor().newInstance();
+            } else {
+                foundClass = classType.getConstructor(DcvContext.class).newInstance(this);
+            }
             instances.put(classType, foundClass);
             return (T) foundClass;
 

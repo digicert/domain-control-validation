@@ -114,8 +114,11 @@ public class DcvConfiguration {
      * The default implementation handles DigiCert's request token format, which is a timestamp followed by
      * a hash of the CSR using the hashing key as the key for the hash and the timestamp as a salt.
      * It can be overridden to handle a different request token format.
+     * <p>
+     * The default implementation has the side effect of adding a BouncyCastleProvider as a security provider, so
+     * this validator is lazily loaded by the {@link DcvContext} to avoid adding the provider if it is not needed.
      */
-    private RequestTokenValidator requestTokenValidator = new BasicRequestTokenValidator();
+    private RequestTokenValidator requestTokenValidator;
 
     /** The generator used to create random values for use in the DCV process. */
     private RandomValueGenerator randomValueGenerator = new BasicRandomValueGenerator();

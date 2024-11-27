@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 class DcvConfigurationTest {
@@ -138,11 +137,16 @@ class DcvConfigurationTest {
 
     @Test
     void testRequestTokenValidator() {
-        RequestTokenValidator mockValidator = mock(RequestTokenValidator.class);
+        // The RequestTokenValidator should be loaded lazily, so it should be null by default
         DcvConfiguration.DcvConfigurationBuilder builder = new DcvConfiguration.DcvConfigurationBuilder();
+        DcvConfiguration config = builder.build();
+        assertNull(config.getRequestTokenValidator());
+
+        RequestTokenValidator mockValidator = mock(RequestTokenValidator.class);
+        builder = new DcvConfiguration.DcvConfigurationBuilder();
 
         builder.requestTokenValidator(mockValidator);
-        DcvConfiguration config = builder.build();
+        config = builder.build();
 
         assertEquals(mockValidator, config.getRequestTokenValidator());
     }
