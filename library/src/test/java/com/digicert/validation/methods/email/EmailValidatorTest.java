@@ -111,7 +111,7 @@ class EmailValidatorTest {
         DomainValidationEvidence evidence = emailValidator.validate(emailValidationRequest);
 
         assertEquals(domain, evidence.getDomain());
-        assertEquals("v2.0.7", DomainValidationEvidence.BR_VERSION);
+        assertEquals("v2.1.1", DomainValidationEvidence.BR_VERSION);
         assertEquals(emailAddress, evidence.getEmailAddress());
         assertEquals(randomValue, evidence.getRandomValue());
         assertEquals(emailSource.getDcvMethod(), evidence.getDcvMethod());
