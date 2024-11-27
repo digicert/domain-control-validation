@@ -8,10 +8,7 @@ This library represents DigiCert's domain control validation (DCV) process. This
 to validate that an applicant has ownership or control over a domain. The BR documents multiple methods by which such control
 can be demonstrated. This initial version of the library is available for review. 
 
-We are open-sourcing this code to improve transparency and security around Domain Control Validation. After an initial review period, 
-DigiCert will deploy it into production, continuing to enhance the repo as relevant, while providing ongoing transparency about our processes and best practices. 
-
-We hope that others also will find this valuable for their DCV efforts. 
+DigiCert is open-sourcing this code to improve transparency and security around Domain Control Validation. We hope that others also will find this valuable for their DCV efforts. 
 
 For each method, this library has a preparation step and a validation step. The preparation step supplies information that is
 necessary for setting up the DCV, including generating a value that can be used as the required random value. The validation
