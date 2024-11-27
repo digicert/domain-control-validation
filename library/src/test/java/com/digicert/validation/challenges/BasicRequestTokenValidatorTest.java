@@ -1,6 +1,9 @@
 package com.digicert.validation.challenges;
 
+import com.digicert.validation.DcvConfiguration;
+import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +13,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -30,6 +34,29 @@ class BasicRequestTokenValidatorTest {
     @BeforeEach
     void setUp() {
         basicRequestTokenValidator = new BasicRequestTokenValidator();
+    }
+
+    @Test
+    void testBasicTokenValue_lazilyLoadedByDcvContext() {
+        // The setUp method will result in the BouncyCastleProvider being loaded, so we need to remove it first
+        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+        assertNull(Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
+
+        // Ensure that the BouncyCastleProvider is not loaded when a custom RequestTokenValidator implementation is used
+        DcvConfiguration noLoadConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
+                .requestTokenValidator((requestTokenData, textBody) -> null)
+                .build();
+        DcvContext dcvContext = new DcvContext(noLoadConfiguration);
+        RequestTokenValidator validator = dcvContext.get(RequestTokenValidator.class);
+        assertFalse(validator instanceof BasicRequestTokenValidator);
+        assertNull(Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
+
+        // Verify the BasicRequestTokenValidator is instantiated lazily
+        dcvContext = new DcvContext();
+        assertNull(Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
+        validator = dcvContext.get(RequestTokenValidator.class);
+        assertInstanceOf(BasicRequestTokenValidator.class, validator);
+        assertNotNull(Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
     }
 
     @Test
