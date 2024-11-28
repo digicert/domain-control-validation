@@ -115,7 +115,7 @@ This will be the most basic way to run the acceptance tests
 ### Debugging Acceptance Tests in Intellij
 How to run the acceptance tests in a way that allows for debugging the tests. We might not need to include this section in the final version of the readme
 
-### Guava Attirbution 
+### Guava Attribution 
 InternetDomainName has changed DCVDomainName
 Copyright (C) 2009 The Guava Authors
 
