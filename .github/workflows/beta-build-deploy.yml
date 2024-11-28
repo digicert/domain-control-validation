@@ -2,7 +2,7 @@ name: Beta Build and Deploy
 on:
   push:
     branches:
-      - master
+      - beta-build-test
 
 jobs:
   build:
@@ -40,18 +40,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-
-      - name: maven-settings-xml-action
-        uses: whelk-io/maven-settings-xml-action@v20
-        with:
-          servers: >
-            [
-              {
-                "id": "nexus",
-                "username": "${{ secrets.DEV_REPO_USERNAME }}",
-                "password": "${{ secrets.DEV_REPO_PASSWORD }}"
-              }
-            ]
 
       - name: Determine New Version
         id: new_version
