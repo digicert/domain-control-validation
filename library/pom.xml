@@ -3,15 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.digicert.validation</groupId>
-        <artifactId>domain-control-validation-parent</artifactId>
-        <version>1.0-SNAPSHOT</version>
-    </parent>
 
     <name>domain-control-validation</name>
-    <description>This library represents DigiCert's domain control validation (DCV) process.</description>
+    <groupId>com.digicert.validation</groupId>
     <artifactId>domain-control-validation</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <description>This library represents DigiCert's domain control validation (DCV) process.</description>
     <url>https://github.com/digicert/domain-control-validation</url>
 
     <licenses>
@@ -169,16 +168,23 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.1</version>
             </plugin>
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.0.0.4389</version>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
             </plugin>
 
         </plugins>
