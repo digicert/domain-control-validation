@@ -92,8 +92,10 @@ jobs:
 
       - name: Update Version in pom.xml
         run: |
-          mvn versions:set -DnewVersion=${{ steps.new_version.outputs.new_version }} -DgenerateBackupPoms=false
-
+          releaseVersion=${{ steps.new_version.outputs.new_version }}
+          releaseVersion=${releaseVersion#v}
+          mvn -pl library versions:set -DnewVersion=${releaseVersion} -DgenerateBackupPoms=false
+            
       - name: Generate Javadocs
         run: mvn -pl library javadoc:javadoc
 
@@ -123,4 +125,3 @@ jobs:
         run: |
           mvn -pl library javadoc:jar
           mvn -pl library deploy -P deploy-to-maven-central-beta -DskipTests -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} --batch-mode
-
