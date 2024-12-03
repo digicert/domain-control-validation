@@ -1,4 +1,4 @@
-![Build and Test](https://github.com/digicert/domain-control-validation/actions/workflows/beta-build-deploy.yml/badge.svg)
+![Build and Test](https://github.com/digicert/domain-control-validation/actions/workflows/build-deploy-beta.yml/badge.svg)
 ![CodeQL](https://github.com/digicert/domain-control-validation/actions/workflows/codeql.yml/badge.svg)
 
 Domain Control Validation
