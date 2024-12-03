@@ -47,7 +47,9 @@ jobs:
 
       - name: Update Version in pom.xml
         run: |
-          mvn versions:set -DnewVersion=$(git tag --points-at HEAD | grep 'release' | sort -V | tail -n 1) -DgenerateBackupPoms=false
+            releaseVersion=$(git tag --points-at HEAD | grep 'release' | sort -V | tail -n 1)
+            releaseVersion=${releaseVersion#v}
+            mvn -pl library versions:set -DnewVersion=${releaseVersion} -DgenerateBackupPoms=false
 
       - name: Generate Javadocs
         run: mvn -pl library javadoc:javadoc
