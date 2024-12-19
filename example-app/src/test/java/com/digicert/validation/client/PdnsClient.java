@@ -11,6 +11,7 @@ import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 @Service
@@ -25,14 +26,7 @@ public class PdnsClient {
                 .defaultHeader("X-API-Key", "secret")
                 .build();
         restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-        restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
-            @Override
-            public void handleError(ClientHttpResponse response) throws IOException {
-                if (response.getStatusCode() != HttpStatus.NOT_FOUND) {
-                    super.handleError(response);
-                }
-            }
-        });
+        restTemplate.setErrorHandler(new Ignore404StatusResponseErrorHandler());
     }
 
     public void createLocalhostARecord(String domain) {
@@ -152,5 +146,21 @@ public class PdnsClient {
         TXT,
         CNAME,
         A,
+    }
+
+    static class Ignore404StatusResponseErrorHandler extends DefaultResponseErrorHandler {
+        @Override
+        public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
+            if (response.getStatusCode() != HttpStatus.NOT_FOUND) {
+                super.handleError(url, method, response);
+            }
+        }
+
+        @Override
+        public void handleError(ClientHttpResponse response) throws IOException {
+            if (response.getStatusCode() != HttpStatus.NOT_FOUND) {
+                super.handleError(response);
+            }
+        }
     }
 }
