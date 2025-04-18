@@ -38,7 +38,7 @@ services:
       - PDNS_gmysql_user=pdns
       - PDNS_gmysql_password=pdns
       - PDNS_gmysql_dbname=pdns
-      - PDNS_master=yes
+#      - PDNS_master=yes
       - PDNS_api=yes
       - PDNS_api_key=secret
       - PDNS_webserver=yes
