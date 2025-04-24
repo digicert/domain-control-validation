@@ -23,7 +23,7 @@
         <junit-jupiter.version>5.12.1</junit-jupiter.version>
         <projectreactor.version>3.7.4</projectreactor.version>
         <jackson.version>2.18.3</jackson.version>
-        <httpclient5.version>5.4.1</httpclient5.version>
+        <httpclient5.version>5.4.3</httpclient5.version>
         <bouncycastle.version>1.80</bouncycastle.version>
         <mysql-connector.version>9.2.0</mysql-connector.version>
     </properties>
