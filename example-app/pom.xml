@@ -17,12 +17,12 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <spring.boot.version>3.4.3</spring.boot.version>
+        <spring.boot.version>3.4.5</spring.boot.version>
         <slf4j.version>2.0.17</slf4j.version>
         <h2.version>2.3.232</h2.version>
-        <junit-jupiter.version>5.12.1</junit-jupiter.version>
-        <projectreactor.version>3.7.4</projectreactor.version>
-        <jackson.version>2.18.3</jackson.version>
+        <junit-jupiter.version>5.12.2</junit-jupiter.version>
+        <projectreactor.version>3.7.5</projectreactor.version>
+        <jackson.version>2.19.0</jackson.version>
         <httpclient5.version>5.4.1</httpclient5.version>
         <bouncycastle.version>1.80</bouncycastle.version>
         <mysql-connector.version>9.2.0</mysql-connector.version>
@@ -159,7 +159,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.3</version>
                 <configuration>
                     <includes>
                         <include>**/*Test.java</include>
@@ -230,7 +230,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.3</version>
                 <executions>
                     <execution>
                         <goals>
