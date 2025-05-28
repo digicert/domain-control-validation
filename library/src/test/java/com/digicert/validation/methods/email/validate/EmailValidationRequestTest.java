@@ -10,7 +10,7 @@ class EmailValidationRequestTest {
     @Test
     void testEmailValidationVerification() {
         String domain = "email.com";
-        EmailSource emailSource = EmailSource.WHOIS;
+        EmailSource emailSource = EmailSource.DNS_TXT;
         String randomValue = "randomValue123";
         String emailAddress = "test@email.com";
 

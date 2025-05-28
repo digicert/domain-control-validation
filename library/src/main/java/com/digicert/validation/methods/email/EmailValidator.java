@@ -59,14 +59,6 @@ public class EmailValidator {
     private EmailProvider emailConstructedProvider;
 
     /**
-     * The WhoIs email provider.
-     * <p>
-     * This provider fetches email addresses from WHOIS data. It is used when the email source is specified
-     * as WHOIS.
-     */
-    private EmailProvider emailWhoIsProvider;
-
-    /**
      * Utility class for generating random values.
      * <p>
      * This utility is used to generate random strings that are appended to email addresses to ensure
@@ -105,7 +97,6 @@ public class EmailValidator {
     public EmailValidator(DcvContext dcvContext) {
         emailDnsTxtProvider = dcvContext.get(DnsTxtEmailProvider.class);
         emailConstructedProvider = new ConstructedEmailProvider();
-        emailWhoIsProvider = dcvContext.get(WhoisEmailProvider.class);
 
         randomValueGenerator = dcvContext.get(RandomValueGenerator.class);
         randomValueVerifier = dcvContext.get(RandomValueVerifier.class);
@@ -121,16 +112,12 @@ public class EmailValidator {
      *
      * @param emailDnsTxtProvider The DNS TXT provider
      * @param emailConstructedProvider The constructed email provider
-     * @param emailWhoIsProvider The WhoIs email provider
      */
-    EmailValidator(EmailProvider emailDnsTxtProvider,
-                   EmailProvider emailConstructedProvider,
-                   EmailProvider emailWhoIsProvider) {
+    EmailValidator(EmailProvider emailDnsTxtProvider, EmailProvider emailConstructedProvider) {
         this(new DcvContext());
 
         this.emailDnsTxtProvider = emailDnsTxtProvider;
         this.emailConstructedProvider = emailConstructedProvider;
-        this.emailWhoIsProvider = emailWhoIsProvider;
     }
 
     /**
@@ -217,7 +204,6 @@ public class EmailValidator {
         // a default implementation that will throw an exception
         // if a new EmailSource is added and not handled.
         return switch (emailSource) {
-            case WHOIS -> emailWhoIsProvider;
             case CONSTRUCTED -> emailConstructedProvider;
             case DNS_TXT -> emailDnsTxtProvider;
         };
