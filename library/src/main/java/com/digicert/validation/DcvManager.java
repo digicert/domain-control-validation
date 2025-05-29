@@ -30,7 +30,7 @@ public class DcvManager {
     /**
      * The Email validator used for DCV.
      * <p>
-     * This validator assists with email-based domain control validation. It is able to perform whois and DNS lookups
+     * This validator assists with email-based domain control validation. It is able to perform DNS lookups
      * to determine usable email addresses for a given domain. It is not able to send out emails.
      * <p>
      * Handles

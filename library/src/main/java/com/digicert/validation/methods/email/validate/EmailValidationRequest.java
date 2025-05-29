@@ -30,7 +30,7 @@ public class EmailValidationRequest {
      * The source of the email used for validation.
      * <p>
      * The `emailSource` field indicates the origin of the email address being validated. This could
-     * be a whoIs source, constructed list, or a DNS TXT record.
+     * be a constructed list, or a DNS TXT record.
      */
     private final EmailSource emailSource;
 

@@ -47,7 +47,7 @@ public DomainResource submitDomain(DcvRequest dcvRequest) throws DcvBaseExceptio
         try {
             switch (dcvRequest.dcvRequestType()) {
                 case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> createdEntity = submitDnsDomain(dcvRequest);
-                case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT -> createdEntity = submitEmailDomain(dcvRequest);
+                case EMAIL_CONSTRUCTED, EMAIL_DNS_TXT -> createdEntity = submitEmailDomain(dcvRequest);
                 case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
             }
         

@@ -15,16 +15,6 @@ import lombok.Getter;
 
 @Getter
 public enum EmailSource {
-    /**
-     * The email addresses are found in the WHOIS record for the domain.
-     * <p>
-     * This source utilizes the WHOIS database to retrieve email addresses associated with the domain.
-     * The WHOIS record contains administrative and technical contact information, which can be used to verify domain ownership.
-     * This method is specified under BR 3.2.2.4.2 and is a reliable source for obtaining valid email addresses for DCV.
-     * </p>
-     * BR 3.2.2.4.2
-     */
-    WHOIS(DcvMethod.BR_3_2_2_4_2),       // 3.2.2.4.2
 
     /**
      * The email addresses are constructed from the domain name.
