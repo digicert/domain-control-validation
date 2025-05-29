@@ -1,5 +1,6 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
+import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
@@ -30,6 +31,7 @@ class DnsTxtEmailProviderTest {
 
         DcvContext dcvContext = mock(DcvContext.class);
         when(dcvContext.get(DnsClient.class)).thenReturn(dnsClient);
+        when(dcvContext.getDcvConfiguration()).thenReturn(new DcvConfiguration.DcvConfigurationBuilder().build());
 
         dnsTxtEmailProvider = new DnsTxtEmailProvider(dcvContext);
     }

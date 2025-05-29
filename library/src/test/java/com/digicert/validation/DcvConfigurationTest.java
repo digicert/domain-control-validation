@@ -66,6 +66,18 @@ class DcvConfigurationTest {
     }
 
     @Test
+    void testCustomDnsDomainLabel() {
+        String dnsDomainLabelWithoutPeriod = "_customauth";
+        String expectedDnsDomainLabel = "_customauth.";
+
+        DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
+                .dnsDomainLabel(dnsDomainLabelWithoutPeriod)
+                .build();
+
+        assertEquals(expectedDnsDomainLabel, config.getDnsDomainLabel());
+    }
+
+    @Test
     void testFileValidation_happyPath() {
         String fileName = "authFile.txt";
 

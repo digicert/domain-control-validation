@@ -51,6 +51,8 @@ class FileValidationHandlerTest {
     @Test
     void testGetFileUrls_noHttps() {
         // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
         FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         // Act
         List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
@@ -63,17 +65,14 @@ class FileValidationHandlerTest {
     @Test
     void testGetFileUrls_usingHttps() {
         // Arrange
-        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(true).build();
-        initializeMocks(dcvConfiguration);
-
         FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         // Act
         List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
         // Assert
         assertNotNull(fileUrls);
         assertEquals(2, fileUrls.size());
-        assertTrue(fileUrls.stream().anyMatch(url -> url.contains("http://example.com/.well-known/pki-validation/fileauth.txt")));
         assertTrue(fileUrls.stream().anyMatch(url -> url.contains("https://example.com/.well-known/pki-validation/fileauth.txt")));
+        assertTrue(fileUrls.stream().anyMatch(url -> url.contains("http://example.com/.well-known/pki-validation/fileauth.txt")));
     }
 
     @Test
@@ -86,8 +85,9 @@ class FileValidationHandlerTest {
 
         // Assert
         assertNotNull(fileUrls);
-        assertEquals(1, fileUrls.size());
+        assertEquals(2, fileUrls.size());
         assertTrue(fileUrls.stream().anyMatch(url -> url.contains("http://example.com/.well-known/pki-validation/customFilename.txt")));
+        assertTrue(fileUrls.stream().anyMatch(url -> url.contains("https://example.com/.well-known/pki-validation/customFilename.txt")));
     }
 
     @Test

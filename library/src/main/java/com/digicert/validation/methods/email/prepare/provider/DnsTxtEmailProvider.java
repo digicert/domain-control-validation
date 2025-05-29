@@ -8,6 +8,7 @@ import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.utils.DomainNameUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 import org.xbill.DNS.TXTRecord;
 
 import java.util.List;
@@ -35,15 +36,12 @@ public class DnsTxtEmailProvider implements EmailProvider {
     public static final String DNS_TXT_EMAIL_AUTHORIZATION_PREFIX = "_validation-contactemail";
 
     /**
-     * Error message used to indicate that the provider was unable to find any email addresses in the DNS TXT records
-     * for the specified domain.
-     */
-    static final String NO_CONTACTS_ERROR_MESSAGE = "Failed to find any DNS TXT Record Email Contact for domain %s";
-
-    /**
      * The DNS client used to query DNS records.
      */
     private final DnsClient dnsClient;
+
+    /** The log level used for logging errors related to domain control validation (DCV). */
+    private final Level logLevelForDcvErrors;
 
     /**
      * Constructs a new EmailDnsTxtProvider with the given DcvContext.
@@ -55,6 +53,7 @@ public class DnsTxtEmailProvider implements EmailProvider {
      */
     public DnsTxtEmailProvider(DcvContext dcvContext) {
         dnsClient = dcvContext.get(DnsClient.class);
+        logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
     }
 
     /**
@@ -78,7 +77,7 @@ public class DnsTxtEmailProvider implements EmailProvider {
                 .collect(Collectors.toUnmodifiableSet());
 
         if (emails.isEmpty()) {
-            log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain, dnsData.records().size());
+            log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} records={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain, dnsData.records().size());
             throw new PreparationException(dnsData.errors());
         }
 

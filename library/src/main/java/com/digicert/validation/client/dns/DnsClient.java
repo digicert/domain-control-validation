@@ -6,6 +6,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.*;
 
@@ -55,6 +56,9 @@ public class DnsClient {
      */
     private final int dnsRetries;
 
+    /** The log level used for logging errors related to domain control validation (DCV). */
+    private final Level logLevelForErrors;
+
     /**
      * Constructs a new DnsClient with the specified configuration.
      * <p>
@@ -67,9 +71,10 @@ public class DnsClient {
         this.dnsServers = dcvContext.getDcvConfiguration().getDnsServers();
         this.dnsTimeout = dcvContext.getDcvConfiguration().getDnsTimeout();
         this.dnsRetries = dcvContext.getDcvConfiguration().getDnsRetries();
+        this.logLevelForErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
 
         if (this.dnsServers.isEmpty()) {
-            log.warn("event_id={} message={}", LogEvents.DNS_SERVERS_NOT_CONFIGURED, "Unless the DNS servers are configured, the DNS client will throw IllegalArgumentException.");
+            log.error("event_id={} message={}", LogEvents.DNS_SERVERS_NOT_CONFIGURED, "Unless the DNS servers are configured, the DNS client will throw IllegalArgumentException.");
         }
     }
 
@@ -162,7 +167,8 @@ public class DnsClient {
             } else {
                 dcvError = DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
             }
-            log.info("event_id={} domain={} server={} error={}", LogEvents.DNS_LOOKUP_ERROR, domain, server, dcvError, e);
+            log.atLevel(logLevelForErrors).log("event_id={} domain={} server={} error={}",
+                    LogEvents.DNS_LOOKUP_ERROR, domain, server, dcvError, e);
             return new DnsData(List.of(server), domain, type, List.of(), Set.of(dcvError), server);
         }
     }

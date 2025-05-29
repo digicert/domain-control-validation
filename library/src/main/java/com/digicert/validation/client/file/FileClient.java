@@ -18,6 +18,7 @@ import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
+import org.slf4j.event.Level;
 
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
@@ -33,6 +34,9 @@ import java.security.NoSuchAlgorithmException;
  */
 @Slf4j
 public class FileClient implements Closeable {
+
+    /** The log level used for logging errors related to domain control validation (DCV). */
+    private final Level logLevelForDcvErrors;
 
     /** The HTTP client used to make requests. */
     private CloseableHttpClient httpClient;
@@ -68,6 +72,7 @@ public class FileClient implements Closeable {
     public FileClient(DcvContext dcvContext) {
         this.userAgent = dcvContext.getDcvConfiguration().getFileValidationUserAgent();
         this.maxBodyLength = dcvContext.getDcvConfiguration().getFileValidationMaxBodyLength();
+        logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
         this.dcvContext = dcvContext;
     }
 
@@ -93,14 +98,14 @@ public class FileClient implements Closeable {
                     clientResponse.setFileContent(EntityUtils.toString(fileResponse.getEntity(), maxBodyLength));
                     log.info("event_id={} url={} status_code={} length={}", LogEvents.FILE_VALIDATION_RESPONSE, fileUrl, fileResponse.getCode(), clientResponse.getFileContent().length());
                 } catch (ParseException e) {
-                    log.info("event_id={} status_code={} exception_message={}", LogEvents.FILE_VALIDATION_BAD_RESPONSE, fileResponse.getCode(), e.getMessage());
+                    log.atLevel(logLevelForDcvErrors).log("event_id={} status_code={} exception_message={}", LogEvents.FILE_VALIDATION_BAD_RESPONSE, fileResponse.getCode(), e.getMessage());
                     clientResponse.setException(e);
                     clientResponse.setDcvError(DcvError.FILE_VALIDATION_INVALID_CONTENT);
                 }
                 return fileResponse;
             });
         } catch (Exception e) {
-            log.info("event_id={} exception_message={}", LogEvents.FILE_VALIDATION_CLIENT_ERROR, e.getMessage());
+            log.atLevel(logLevelForDcvErrors).log("event_id={} exception_message={}", LogEvents.FILE_VALIDATION_CLIENT_ERROR, e.getMessage());
             clientResponse.setException(e);
             clientResponse.setDcvError(DcvError.FILE_VALIDATION_CLIENT_ERROR);
         }

@@ -13,6 +13,7 @@ import com.digicert.validation.utils.PslOverrideSupplier;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.event.Level;
 
 import java.util.List;
 
@@ -76,7 +77,7 @@ public class DcvConfiguration {
      * This flag indicates that the library will try both HTTP and HTTPS
      * when performing file validation requests.
      */
-    private Boolean fileValidationCheckHttps = false;
+    private Boolean fileValidationCheckHttps = true;
 
     /**
      * The default file validation filename.
@@ -122,6 +123,16 @@ public class DcvConfiguration {
      * governments that own a public suffix want to obtain a certificate at the level of the suffix).
      */
     private PslOverrideSupplier pslOverrideSupplier = new NoopPslOverrideSupplier();
+
+    /**
+     * The log level for DCV errors.
+     * <p>
+     * Some implementations expect to retry the validation asynchronously until it succeeds.
+     * This means that some errors are actually expected and not considered true errors.
+     * <p>
+     * This logging configuration allows for these errors to be logged at a lower level.
+     */
+    private Level logLevelForDcvErrors = Level.WARN;
 
     /** Private constructor to prevent instantiation. */
     private DcvConfiguration() {
@@ -305,9 +316,9 @@ public class DcvConfiguration {
         /**
          * Set the flag to indicate that the library will try both HTTP and HTTPS when performing file validation requests.
          * <p>
-         * Default value is false.
+         * The Default value is true.
          *
-         * @param fileValidationCheckHttps the file validation check HTTPS flag
+         * @param fileValidationCheckHttps indicates if the file validation check should also use HTTPS
          * @return the builder instance
          */
         public DcvConfigurationBuilder fileValidationCheckHttps(Boolean fileValidationCheckHttps) {
@@ -445,6 +456,17 @@ public class DcvConfiguration {
                 throw new IllegalArgumentException("pslOverrideSupplier cannot be null");
             }
             dcvConfiguration.setPslOverrideSupplier(pslOverrideSupplier);
+            return this;
+        }
+
+        /**
+         * Configure the library to use a specific log level for DCV errors.
+         *
+         * @param logLevelForDcvErrors the log level for DCV errors
+         * @return the builder instance
+         */
+        public DcvConfigurationBuilder logLevelForDcvErrors(Level logLevelForDcvErrors) {
+            dcvConfiguration.setLogLevelForDcvErrors(logLevelForDcvErrors);
             return this;
         }
 
