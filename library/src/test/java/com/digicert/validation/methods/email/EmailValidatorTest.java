@@ -30,6 +30,7 @@ import static org.mockito.Mockito.*;
 class EmailValidatorTest {
 
     private EmailProvider emailDnsTxtProvider;
+    private EmailProvider emailDnsCaaProvider;
     private EmailProvider emailConstructedProvider;
     private WhoisEmailProvider emailWhoIsProvider;
 
@@ -38,10 +39,11 @@ class EmailValidatorTest {
     @BeforeEach
     void setUp() {
         emailDnsTxtProvider = mock(EmailProvider.class);
+        emailDnsCaaProvider = mock(EmailProvider.class);
         emailConstructedProvider = mock(EmailProvider.class);
         emailWhoIsProvider = mock(WhoisEmailProvider.class);
 
-        emailValidator = new EmailValidator(emailDnsTxtProvider, emailConstructedProvider, emailWhoIsProvider);
+        emailValidator = new EmailValidator(emailDnsTxtProvider, emailDnsCaaProvider, emailConstructedProvider, emailWhoIsProvider);
     }
 
     @Test
@@ -60,6 +62,15 @@ class EmailValidatorTest {
         EmailPreparationResponse response = emailValidator.prepare(emailPreparation);
 
         assertEmailPreparationResponse(response, EmailSource.DNS_TXT, emailDnsTxtProvider);
+    }
+
+    @Test
+    void testPrepare_dnsCaaEmailSource() throws DcvException {
+        EmailPreparation emailPreparation = getEmailPreparation(EmailSource.DNS_CAA, emailDnsCaaProvider);
+
+        EmailPreparationResponse response = emailValidator.prepare(emailPreparation);
+
+        assertEmailPreparationResponse(response, EmailSource.DNS_CAA, emailDnsCaaProvider);
     }
 
     @Test

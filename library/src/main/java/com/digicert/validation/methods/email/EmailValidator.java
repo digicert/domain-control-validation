@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  * <ul>
  *     <li>{@link DcvMethod#BR_3_2_2_4_2}</li>
  *     <li>{@link DcvMethod#BR_3_2_2_4_4}</li>
+ *     <li>{@link DcvMethod#BR_3_2_2_4_13}</li>
  *     <li>{@link DcvMethod#BR_3_2_2_4_14}</li>
  * </ul>
  *
@@ -49,6 +50,15 @@ public class EmailValidator {
      * domain, which can include email addresses used for domain validation.
      */
     private EmailProvider emailDnsTxtProvider;
+
+    /**
+     * The DNS CAA provider for email.
+     * <p>
+     * This provider is responsible for fetching email addresses from DNS CAA records. It is used when the
+     * email source is specified as DNS_CAA. The DNS CAA records contain record information associated with a
+     * domain, which can include email addresses used for domain validation.
+     */
+    private EmailProvider emailDnsCaaProvider;
 
     /**
      * The constructed email provider.
@@ -104,6 +114,7 @@ public class EmailValidator {
      */
     public EmailValidator(DcvContext dcvContext) {
         emailDnsTxtProvider = dcvContext.get(DnsTxtEmailProvider.class);
+        emailDnsCaaProvider = dcvContext.get(DnsCaaEmailProvider.class);
         emailConstructedProvider = new ConstructedEmailProvider();
         emailWhoIsProvider = dcvContext.get(WhoisEmailProvider.class);
 
@@ -120,15 +131,18 @@ public class EmailValidator {
      * without relying on the actual DcvContext.
      *
      * @param emailDnsTxtProvider The DNS TXT provider
+     * @param emailDnsCaaProvider The DNS CAA provider
      * @param emailConstructedProvider The constructed email provider
      * @param emailWhoIsProvider The WhoIs email provider
      */
     EmailValidator(EmailProvider emailDnsTxtProvider,
+                   EmailProvider emailDnsCaaProvider,
                    EmailProvider emailConstructedProvider,
                    EmailProvider emailWhoIsProvider) {
         this(new DcvContext());
 
         this.emailDnsTxtProvider = emailDnsTxtProvider;
+        this.emailDnsCaaProvider = emailDnsCaaProvider;
         this.emailConstructedProvider = emailConstructedProvider;
         this.emailWhoIsProvider = emailWhoIsProvider;
     }
@@ -220,6 +234,7 @@ public class EmailValidator {
             case WHOIS -> emailWhoIsProvider;
             case CONSTRUCTED -> emailConstructedProvider;
             case DNS_TXT -> emailDnsTxtProvider;
+            case DNS_CAA -> emailDnsCaaProvider;
         };
     }
 }
