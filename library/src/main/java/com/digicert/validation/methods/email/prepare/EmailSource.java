@@ -28,6 +28,17 @@ public enum EmailSource {
     CONSTRUCTED(DcvMethod.BR_3_2_2_4_4), // 3.2.2.4.4
 
     /**
+     * The email addresses are found in a DNS CAA record for the domain.
+     * <p>
+     * This source involves querying the DNS CAA records of the domain to find email addresses.
+     * DNS CAA records can contain various types of information, including email addresses for domain validation.
+     * This method is specified under BR 3.2.2.4.13 and provides a flexible way to verify domain ownership through DNS configurations.
+     * </p>
+     * BR 3.2.2.4.13
+     */
+    DNS_CAA(DcvMethod.BR_3_2_2_4_13),
+
+    /**
      * The email addresses are found in a DNS TXT record for the domain.
      * <p>
      * This source involves querying the DNS TXT records of the domain to find email addresses.
