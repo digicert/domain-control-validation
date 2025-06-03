@@ -66,7 +66,7 @@ public class DcvService {
         try {
             switch (dcvRequest.dcvRequestType()) {
                 case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> createdEntity = submitDnsDomain(dcvRequest);
-                case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT -> createdEntity = submitEmailDomain(dcvRequest);
+                case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT, EMAIL_DNS_CAA -> createdEntity = submitEmailDomain(dcvRequest);
                 case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
             }
         } catch(DcvException ex){
@@ -85,7 +85,7 @@ public class DcvService {
 
         switch (validateRequest.dcvRequestType) {
             case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> validateDnsDomain(accountId, validationState, validateRequest);
-            case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT ->
+            case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT, EMAIL_DNS_CAA ->
                     validateEmailDomain(validationState, validateRequest);
             case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> validateFileDomain(accountId, validationState, validateRequest);
         }
@@ -214,7 +214,7 @@ public class DcvService {
                     throw new InvalidDcvRequestException("Supplied random value is invalid for domain");
                 }
             }
-            case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT -> {
+            case EMAIL_CONSTRUCTED, EMAIL_WHOIS, EMAIL_DNS_TXT, EMAIL_DNS_CAA -> {
                 if (domainEntity.domainRandomValues.stream().noneMatch(randomValue ->
                         randomValue.randomValue.equals(validateRequest.randomValue) && randomValue.email.equals(validateRequest.emailAddress))) {
                     throw new InvalidDcvRequestException("Supplied email, random value pair are invalid for domain");
@@ -319,6 +319,7 @@ public class DcvService {
             case EMAIL_CONSTRUCTED -> EmailSource.CONSTRUCTED;
             case EMAIL_WHOIS -> EmailSource.WHOIS;
             case EMAIL_DNS_TXT -> EmailSource.DNS_TXT;
+            case EMAIL_DNS_CAA -> EmailSource.DNS_CAA;
             default -> throw new InvalidDcvRequestException("Invalid dcvRequestType, must be one of the following"
                     + List.of(DcvRequestType.values()));
         };
