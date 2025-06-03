@@ -3,6 +3,8 @@ package com.digicert.validation;
 import com.digicert.validation.challenges.BasicRandomValueValidator;
 import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
+import com.digicert.validation.mpic.MpicClientInterface;
+import com.digicert.validation.mpic.NoopMpicClientImpl;
 import com.digicert.validation.psl.PslDataProvider;
 import com.digicert.validation.random.BasicRandomValueGenerator;
 import com.digicert.validation.random.RandomValueGenerator;
@@ -123,6 +125,18 @@ public class DcvConfiguration {
      * governments that own a public suffix want to obtain a certificate at the level of the suffix).
      */
     private PslOverrideSupplier pslOverrideSupplier = new NoopPslOverrideSupplier();
+
+    /**
+     * The MPIC client implementation used for DCV.
+     * <p>
+     * This is the client that will be used to communicate with the MPIC service for DCV purposes.
+     * If not set, the library will be unable to perform MPIC-related validations.
+     *
+     * <p>
+     * The default implementation is a no-op and will throw an exception
+     * if any MPIC-related validation is attempted.
+     */
+    private MpicClientInterface mpicClientImplementation = new NoopMpicClientImpl();
 
     /**
      * The log level for DCV errors.
@@ -456,6 +470,23 @@ public class DcvConfiguration {
                 throw new IllegalArgumentException("pslOverrideSupplier cannot be null");
             }
             dcvConfiguration.setPslOverrideSupplier(pslOverrideSupplier);
+            return this;
+        }
+
+        /**
+         * Configure the library to use a custom MPIC client implementation.
+         * <p>
+         * The MPIC client is used for DCV purposes. If not set, the library will be unable to perform MPIC-related validations.
+         *
+         * @param mpicClientInterface the custom MPIC client implementation
+         * @return the builder instance
+         * @throws IllegalArgumentException if mpicClientInterface is null
+         */
+        public DcvConfigurationBuilder mpicClientInterface(MpicClientInterface mpicClientInterface) {
+            if (mpicClientInterface == null) {
+                throw new IllegalArgumentException("mpicClientInterface cannot be null");
+            }
+            dcvConfiguration.setMpicClientImplementation(mpicClientInterface);
             return this;
         }
 

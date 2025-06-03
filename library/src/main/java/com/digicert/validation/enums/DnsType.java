@@ -1,5 +1,7 @@
 package com.digicert.validation.enums;
 
+import org.xbill.DNS.Type;
+
 /**
  * Enum representing the DNS record types that can be requested.
  * <p>
@@ -21,4 +23,24 @@ public enum DnsType {
 
     /** Email exchange record, which points to the IP Addresses of a domain's mail server */
     MX,
+
+    /** Delegation Signer record, which is used in DNSSEC to secure the delegation of a DNS zone. */
+    DS,
+
+    /** Resource Record Signature, which is used in DNSSEC to provide authenticity and integrity of DNS records. */
+    RRSIG;
+
+    public static DnsType fromInt(int type) {
+        return switch (type) {
+            case Type.A -> A;
+            case Type.CAA -> CAA;
+            case Type.CNAME -> CNAME;
+            case Type.MX -> MX;
+            case Type.TXT -> TXT;
+            case Type.RRSIG -> RRSIG;
+            case Type.DS -> DS;
+            default -> throw new IllegalArgumentException("Invalid DNS type: " + type);
+        };
+    }
+
 }

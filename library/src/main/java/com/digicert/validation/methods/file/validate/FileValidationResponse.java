@@ -2,6 +2,7 @@ package com.digicert.validation.methods.file.validate;
 
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.ChallengeType;
+import com.digicert.validation.mpic.MpicDetails;
 import lombok.Builder;
 
 import java.util.Set;
@@ -27,4 +28,5 @@ public record FileValidationResponse(boolean isValid,
                                      ChallengeType challengeType,
                                      String validRandomValue,
                                      String validRequestToken,
+                                     MpicDetails mpicDetails,
                                      Set<DcvError> errors) { }

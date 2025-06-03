@@ -1,0 +1,129 @@
+package com.digicert.validation.mpic;
+
+import com.digicert.validation.DcvContext;
+import com.digicert.validation.enums.DcvError;
+import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.enums.LogEvents;
+import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.mpic.api.MpicStatus;
+import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
+import com.digicert.validation.mpic.api.dns.SecondaryDnsResponse;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.digicert.validation.mpic.api.AgentStatus.DNS_LOOKUP_SUCCESS;
+
+@Slf4j
+public class MpicDnsService {
+
+    private MpicClientInterface mpicClient;
+
+    /**
+     * Constructs a new MpicService with the specified configuration.
+     *
+     * @param dcvContext context where we can find the necessary dependencies / configuration
+     */
+    public MpicDnsService(DcvContext dcvContext) {
+        this.mpicClient = dcvContext.get(MpicClientInterface.class);
+    }
+
+    public MpicDnsDetails getDnsDetails(List<String> domains, DnsType dnsType) {
+        MpicDnsDetails firstMpicDnsDetails = null;
+        for (String domain : domains) {
+            MpicDnsResponse mpicDnsResponse = mpicClient.getMpicDnsResponse(domain, dnsType);
+            MpicDnsDetails mpicDnsDetails = mapToMpicDnsDetailsWithErrorCheck(mpicDnsResponse, domain);
+            if (mpicDnsDetails.dcvError() == null) {
+                // We have a valid and corroborated MPIC response
+                // we can return it immediately
+                return mpicDnsDetails;
+            } else {
+                // Remember the first MPIC details with an dcvError to return later
+                firstMpicDnsDetails = firstMpicDnsDetails == null ? mpicDnsDetails : firstMpicDnsDetails;
+            }
+        }
+
+        // If we are here, there is no valid MPIC response for any of the domains
+        // return the first MPIC details with an error if available
+        return firstMpicDnsDetails;
+    }
+
+    private MpicDnsDetails mapToMpicDnsDetailsWithErrorCheck(MpicDnsResponse mpicDnsResponse, String domain) {
+        if (mpicDnsResponse == null ||
+                mpicDnsResponse.primaryDnsResponse() == null ||
+                mpicDnsResponse.mpicStatus() == MpicStatus.ERROR) {
+            MpicDetails mpicDetails = new MpicDetails(false,
+                    null,
+                    0,
+                    0,
+                    Collections.emptyMap());
+            log.info("event_id={} mpic_file_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicDnsResponse);
+            return new MpicDnsDetails(mpicDetails,
+                    domain,
+                    List.of(),
+                    DcvError.MPIC_INVALID_RESPONSE);
+        }
+
+        if (mpicDnsResponse.primaryDnsResponse().agentStatus() != DNS_LOOKUP_SUCCESS) {
+            DcvError dcvError = switch (mpicDnsResponse.primaryDnsResponse().agentStatus()) {
+                case DNS_LOOKUP_BAD_REQUEST,
+                     DNS_LOOKUP_TIMEOUT,
+                     DNS_LOOKUP_IO_EXCEPTION,
+                     DNS_LOOKUP_DOMAIN_NOT_FOUND,
+                     DNS_LOOKUP_RECORD_NOT_FOUND -> DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
+                case DNS_LOOKUP_TEXT_PARSE_EXCEPTION -> DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
+                case DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION -> DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
+                default -> DcvError.MPIC_INVALID_RESPONSE;
+            };
+            log.info("event_id={} agent_status={} dcv_error={}",
+                    LogEvents.DNS_LOOKUP_ERROR, mpicDnsResponse.primaryDnsResponse().agentStatus(), dcvError);
+            return mapToMpicDnsDetails(mpicDnsResponse, domain, dcvError);
+        }
+
+        if (mpicDnsResponse.primaryDnsResponse().dnsRecords() == null ||
+                mpicDnsResponse.primaryDnsResponse().dnsRecords().isEmpty()) {
+            DcvError dcvError = DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
+            log.info("event_id={} agent_status={} dcv_error={}",
+                    LogEvents.DNS_LOOKUP_ERROR, mpicDnsResponse.primaryDnsResponse().agentStatus(), dcvError);
+            return mapToMpicDnsDetails(mpicDnsResponse, domain, dcvError);
+        }
+
+        if (mpicClient.shouldEnforceCorroboration() && mpicDnsResponse.mpicStatus() == MpicStatus.NON_CORROBORATED) {
+            DcvError dcvError = DcvError.MPIC_CORROBORATION_ERROR;
+            log.info("event_id={} agent_status={} dcv_error={}",
+                    LogEvents.DNS_LOOKUP_ERROR, mpicDnsResponse.primaryDnsResponse().agentStatus(), dcvError);
+            return mapToMpicDnsDetails(mpicDnsResponse, domain, DcvError.MPIC_CORROBORATION_ERROR);
+        }
+
+        log.info("event_id={} agent_status={} domain={}",
+                LogEvents.DNS_LOOKUP_SUCCESS, mpicDnsResponse.primaryDnsResponse().agentStatus(), domain);
+        return mapToMpicDnsDetails(mpicDnsResponse, domain, null);
+    }
+
+    private MpicDnsDetails mapToMpicDnsDetails(MpicDnsResponse mpicDnsResponse, String domain, DcvError dcvError) {
+        boolean corroborated = dcvError != null && MpicStatus.CORROBORATED.equals(mpicDnsResponse.mpicStatus());
+        String primaryAgentId = mpicDnsResponse.primaryDnsResponse().agentId();
+        int serversChecked = mpicDnsResponse.secondaryDnsResponses().size() + 1;
+        long numCorroborated = mpicDnsResponse.secondaryDnsResponses().stream()
+                .filter(SecondaryDnsResponse::corroborates)
+                .count();
+        Map<String, Boolean> agentIdToCorroboration = mpicDnsResponse.secondaryDnsResponses().stream()
+                .collect(HashMap::new,
+                        (map, response) -> map.put(response.agentId(), response.corroborates()),
+                        HashMap::putAll);
+
+        MpicDetails mpicDetails = new MpicDetails(corroborated,
+                primaryAgentId,
+                serversChecked,
+                numCorroborated,
+                agentIdToCorroboration);
+
+        return new MpicDnsDetails(mpicDetails,
+                domain,
+                mpicDnsResponse.primaryDnsResponse().dnsRecords(),
+                dcvError);
+    }
+}

@@ -137,6 +137,14 @@ public enum DcvError {
     FILE_VALIDATION_CLIENT_ERROR,
 
     /**
+     * Error indicating a server dcvError during file validation.
+     * This dcvError occurs when there is a server-side dcvError during the file validation process.
+     * Server errors can include issues such as internal server problems or misconfigurations,
+     * which prevent the authentication from succeeding.
+     */
+    FILE_VALIDATION_SERVER_ERROR,
+
+    /**
      * Error indicating that the file validation content is invalid.
      * This error occurs when the content of the file validation response is invalid. Invalid
      * content means that the data received does not match the expected format or values, leading
@@ -268,7 +276,15 @@ public enum DcvError {
     DNS_LOOKUP_TEXT_PARSE_EXCEPTION,
 
     /**  Error indicating that the email address is invalid. */
-    INVALID_EMAIL_ADDRESS;
+    INVALID_EMAIL_ADDRESS,
+
+    /** Error indicating that there was a corroboration error during the DNS Lookup */
+    MPIC_CORROBORATION_ERROR,
+
+    /** Error indicating that the MPIC response is invalid. */
+    MPIC_INVALID_RESPONSE;
+
+
 
     /**
      * Returns the string representation of the error in lowercase.

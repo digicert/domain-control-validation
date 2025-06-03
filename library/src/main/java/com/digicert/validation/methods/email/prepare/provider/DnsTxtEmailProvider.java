@@ -1,15 +1,16 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.DnsClient;
-import com.digicert.validation.client.dns.DnsData;
+import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
+import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.utils.DomainNameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
-import org.xbill.DNS.TXTRecord;
 
 import java.util.List;
 import java.util.Set;
@@ -36,9 +37,11 @@ public class DnsTxtEmailProvider implements EmailProvider {
     public static final String DNS_TXT_EMAIL_AUTHORIZATION_PREFIX = "_validation-contactemail";
 
     /**
-     * The DNS client used to query DNS records.
+     * The MPIC DNS service used to fetch DNS details.
+     * <p>
+     * This service is used to interact with the Multi-Perspective DNS system for DNS-related operations.
      */
-    private final DnsClient dnsClient;
+    private final MpicDnsService mpicDnsService;
 
     /** The log level used for logging errors related to domain control validation (DCV). */
     private final Level logLevelForDcvErrors;
@@ -52,7 +55,7 @@ public class DnsTxtEmailProvider implements EmailProvider {
      * @param dcvContext context where we can find the needed dependencies and configuration
      */
     public DnsTxtEmailProvider(DcvContext dcvContext) {
-        dnsClient = dcvContext.get(DnsClient.class);
+        mpicDnsService = dcvContext.get(MpicDnsService.class);
         logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
     }
 
@@ -69,18 +72,29 @@ public class DnsTxtEmailProvider implements EmailProvider {
     @Override
     public Set<String> findEmailsForDomain(String domain) throws PreparationException {
         List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
-        DnsData dnsData = dnsClient.getDnsData(domains, DnsType.TXT);
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(domains, DnsType.TXT);
 
-        Set<String> emails = dnsData.records().stream()
-                .flatMap(dnsRecord -> ((TXTRecord) dnsRecord).getStrings().stream())
+        if (mpicDnsDetails.dcvError() != null) {
+            log.atLevel(logLevelForDcvErrors).log("event_id={} domain={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain);
+            throw new PreparationException(Set.of(mpicDnsDetails.dcvError()));
+        }
+
+        Set<String> emails = mpicDnsDetails.dnsRecords().stream()
+                .map(DnsRecord::value)
+                .map(DnsTxtEmailProvider::normalizeEmailAddress)
                 .filter(DomainNameUtils::isValidEmailAddress)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (emails.isEmpty()) {
-            log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} records={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain, dnsData.records().size());
-            throw new PreparationException(dnsData.errors());
+            log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} records={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain, mpicDnsDetails.dnsRecords().size());
+            throw new PreparationException(Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
         }
 
         return emails;
+    }
+
+    public static String normalizeEmailAddress(String dnsValue) {
+        // String the beginning and end quote off the dnsValue
+        return dnsValue.trim().replaceAll("^\"|\"$", "");
     }
 }

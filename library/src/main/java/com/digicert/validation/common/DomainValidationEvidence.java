@@ -2,6 +2,7 @@ package com.digicert.validation.common;
 
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.mpic.MpicDetails;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -62,13 +63,6 @@ public class DomainValidationEvidence {
     private final DnsType dnsType;
 
     /**
-     * DNS: The DNS server used for validation.
-     * <p>
-     * Only populated when the DCV method is DNS_CHANGE (BR_3_2_2_4_7) otherwise NULL
-     */
-    private final String dnsServer;
-
-    /**
      * DNS: The DNS record name used for validation.
      * <p>
      * Only populated when the DCV method is DNS_CHANGE (BR_3_2_2_4_7) otherwise NULL
@@ -91,6 +85,14 @@ public class DomainValidationEvidence {
     private final String randomValue;
 
     /**
+     * MPIC Details: The details of the MultiPerspective results used in the validation.
+     * <p>
+     * This field contains additional information about the MPIC results, such as whether
+     * it was successfully corroborated and the agents involved in the corroboration
+     */
+    private final MpicDetails mpicDetails;
+
+    /**
      * Constructs a new DomainValidationEvidence with the specified parameters.
      * <p>
      * This constructor is private to enforce the use of the builder pattern for creating
@@ -103,21 +105,21 @@ public class DomainValidationEvidence {
      * @param emailAddress   The email address used for validation, if an email dcv method was used
      * @param fileUrl        The URL of the file used for validation, if a file dcv method was used.
      * @param dnsType        The type of DNS record used for validation, if a DNS dcv method was used.
-     * @param dnsServer      The DNS server used for validation, if a DNS dcv method was used.
      * @param dnsRecordName  The DNS record name used for validation, if a DNS dcv method was used.
      * @param requestToken   The request token found during validation, if applicable.
      * @param randomValue    The random value used for validation, if applicable.
+     * @param mpicDetails    The details of the MultiPerspective results used in the validation.
      */
-    private DomainValidationEvidence(String domain, DcvMethod dcvMethod, Instant validationDate, String emailAddress, String fileUrl, DnsType dnsType, String dnsServer, String dnsRecordName, String requestToken, String randomValue) {
+    private DomainValidationEvidence(String domain, DcvMethod dcvMethod, Instant validationDate, String emailAddress, String fileUrl, DnsType dnsType, String dnsRecordName, String requestToken, String randomValue, MpicDetails mpicDetails) {
         this.domain = domain;
         this.dcvMethod = dcvMethod;
         this.validationDate = validationDate;
         this.emailAddress = emailAddress;
         this.fileUrl = fileUrl;
         this.dnsType = dnsType;
-        this.dnsServer = dnsServer;
         this.dnsRecordName = dnsRecordName;
         this.requestToken = requestToken;
         this.randomValue = randomValue;
+        this.mpicDetails = mpicDetails;
     }
 }

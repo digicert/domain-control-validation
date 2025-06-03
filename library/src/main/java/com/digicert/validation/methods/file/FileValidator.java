@@ -176,6 +176,8 @@ public class FileValidator {
                 .domain(response.domain())
                 .dcvMethod(request.getValidationState().dcvMethod())
                 .validationDate(Instant.now())
+                // FILE specific values
+                .mpicDetails(response.mpicDetails())
                 .fileUrl(response.fileUrl())
                 .randomValue(response.validRandomValue())
                 .requestToken(response.validRequestToken())

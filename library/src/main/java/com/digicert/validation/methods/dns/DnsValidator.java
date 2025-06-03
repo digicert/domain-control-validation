@@ -130,10 +130,10 @@ public class DnsValidator {
             return createDomainValidationEvidence(dnsValidationRequest, dnsValidationResponse, validationInstant);
         } else {
             log.atLevel(logLevelForDcvErrors).log(
-                    "event_id={} domain={} server={} dnsType={} errors={}",
+                    "event_id={} domain={} mpic_details={} dnsType={} errors={}",
                     LogEvents.DNS_VALIDATION_FAILED,
                     dnsValidationRequest.getDomain(),
-                    dnsValidationResponse.server(),
+                    dnsValidationResponse.mpicDetails(),
                     dnsValidationRequest.getDnsType().toString(),
                     dnsValidationResponse.errors());
 
@@ -157,8 +157,8 @@ public class DnsValidator {
                 .dcvMethod(dnsValidationRequest.getValidationState().dcvMethod())
                 .validationDate(validationInstant)
                 // DNS Specific Values
+                .mpicDetails(dnsValidationResponse.mpicDetails())
                 .dnsType(dnsValidationRequest.getDnsType())
-                .dnsServer(dnsValidationResponse.server())
                 .dnsRecordName(dnsValidationResponse.domain())
                 .randomValue(dnsValidationResponse.validRandomValue())
                 .requestToken(dnsValidationResponse.validRequestToken())

@@ -167,7 +167,7 @@ public class DnsClient {
             } else {
                 dcvError = DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
             }
-            log.atLevel(logLevelForErrors).log("event_id={} domain={} server={} error={}",
+            log.atLevel(logLevelForErrors).log("event_id={} domain={} server={} dcv_error={}",
                     LogEvents.DNS_LOOKUP_ERROR, domain, server, dcvError, e);
             return new DnsData(List.of(server), domain, type, List.of(), Set.of(dcvError), server);
         }
@@ -227,6 +227,8 @@ public class DnsClient {
             case CAA     -> Type.CAA;
             case A       -> Type.A;
             case MX      -> Type.MX;
+            case DS      -> Type.DS;
+            case RRSIG   -> Type.RRSIG;
         };
     }
 }
