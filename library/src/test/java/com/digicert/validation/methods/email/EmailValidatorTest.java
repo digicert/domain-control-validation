@@ -1,6 +1,5 @@
 package com.digicert.validation.methods.email;
 
-import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.common.DomainValidationEvidence;
 import com.digicert.validation.common.ValidationState;
@@ -12,7 +11,6 @@ import com.digicert.validation.methods.email.prepare.EmailPreparation;
 import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
 import com.digicert.validation.methods.email.prepare.EmailSource;
 import com.digicert.validation.methods.email.prepare.provider.EmailProvider;
-import com.digicert.validation.methods.email.prepare.provider.WhoisEmailProvider;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +29,6 @@ class EmailValidatorTest {
 
     private EmailProvider emailDnsTxtProvider;
     private EmailProvider emailConstructedProvider;
-    private WhoisEmailProvider emailWhoIsProvider;
 
     EmailValidator emailValidator;
 
@@ -39,18 +36,8 @@ class EmailValidatorTest {
     void setUp() {
         emailDnsTxtProvider = mock(EmailProvider.class);
         emailConstructedProvider = mock(EmailProvider.class);
-        emailWhoIsProvider = mock(WhoisEmailProvider.class);
 
-        emailValidator = new EmailValidator(emailDnsTxtProvider, emailConstructedProvider, emailWhoIsProvider);
-    }
-
-    @Test
-    void testPrepare_whoisEmailSource() throws DcvException {
-        EmailPreparation emailPreparation = getEmailPreparation(EmailSource.WHOIS, emailWhoIsProvider);
-
-        EmailPreparationResponse response = emailValidator.prepare(emailPreparation);
-
-        assertEmailPreparationResponse(response, EmailSource.WHOIS, emailWhoIsProvider);
+        emailValidator = new EmailValidator(emailDnsTxtProvider, emailConstructedProvider);
     }
 
     @Test
@@ -73,8 +60,8 @@ class EmailValidatorTest {
 
     static Stream<Arguments> provideInvalidEmailPreparation() {
         return Stream.of(
-                Arguments.of("domain1.com", EmailSource.WHOIS),
-                Arguments.of("domain2.com", EmailSource.WHOIS)
+                Arguments.of("domain1.com", EmailSource.DNS_TXT),
+                Arguments.of("domain2.com", EmailSource.DNS_TXT)
         );
     }
 
@@ -86,7 +73,7 @@ class EmailValidatorTest {
         EmailPreparation  emailPreparation = new EmailPreparation(domain, emailSource);
 
         doThrow(new PreparationException(Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND)))
-                .when(emailWhoIsProvider).findEmailsForDomain(domain);
+                .when(emailDnsTxtProvider).findEmailsForDomain(domain);
 
         PreparationException exception = assertThrows(PreparationException.class, () ->
                 emailValidator.prepare(emailPreparation));
@@ -98,14 +85,14 @@ class EmailValidatorTest {
         String domain = "example.com";
         String emailAddress = "test@example.com";
         String randomValue = "some-really-long-random-value";
-        EmailSource emailSource = EmailSource.WHOIS;
+        EmailSource emailSource = EmailSource.CONSTRUCTED;
 
         EmailValidationRequest emailValidationRequest = EmailValidationRequest.builder()
                 .domain(domain)
                 .emailSource(emailSource)
                 .randomValue(randomValue)
                 .emailAddress(emailAddress)
-                .validationState(new ValidationState(domain, Instant.now(), DcvMethod.BR_3_2_2_4_2))
+                .validationState(new ValidationState(domain, Instant.now(), DcvMethod.BR_3_2_2_4_4))
                 .build();
 
         DomainValidationEvidence evidence = emailValidator.validate(emailValidationRequest);
@@ -127,29 +114,12 @@ class EmailValidatorTest {
         assertNotNull(emailValidator);
         assertNotNull(emailValidator.getEmailConstructedProvider());
         assertNotNull(emailValidator.getEmailDnsTxtProvider());
-        assertNotNull(emailValidator.getEmailWhoIsProvider());
     }
 
-    @Test
-    void testDefaultDcvConfiguration_withCustomWhoisEmailProvider() {
-        DcvConfiguration defaultDcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
-                .whoisEmailProvider(emailWhoIsProvider)
-                .build();
-        DcvContext dcvContext = new DcvContext(defaultDcvConfiguration);
-
-        emailValidator = new EmailValidator(dcvContext);
-
-        assertNotNull(emailValidator);
-        assertNotNull(emailValidator.getEmailConstructedProvider());
-        assertNotNull(emailValidator.getEmailDnsTxtProvider());
-        assertNotNull(emailValidator.getEmailWhoIsProvider());
-        assertEquals(emailWhoIsProvider, emailValidator.getEmailWhoIsProvider());
-    }
-
-    private EmailPreparation getEmailPreparation(EmailSource emailSource, EmailProvider whoIsProvider) throws PreparationException{
+    private EmailPreparation getEmailPreparation(EmailSource emailSource, EmailProvider emailProvider) throws PreparationException{
         EmailPreparation emailPreparation = new EmailPreparation("example.com", emailSource);
         Set<String> emails = Set.of("test@example.com");
-        when(whoIsProvider.findEmailsForDomain("example.com")).thenReturn(emails);
+        when(emailProvider.findEmailsForDomain("example.com")).thenReturn(emails);
         return emailPreparation;
     }
 

@@ -267,27 +267,6 @@ public enum DcvError {
      */
     DNS_LOOKUP_TEXT_PARSE_EXCEPTION,
 
-    /**
-     * Error indicating that the whois response is empty.
-     * An empty response means that the system did not receive the expected data, leading to a
-     * validation failure.
-     */
-    WHOIS_EMPTY_RESPONSE,
-
-    /**
-     * Error indicating that no emails were found in the whois response.
-     * Email addresses are used to contact the domain owner for validation purposes. A lack of
-     * email addresses means that the system cannot proceed with the validation.
-     */
-    WHOIS_NO_EMAILS_FOUND,
-
-    /**
-     * Error indicating a query error during whois lookup.
-     * Query errors can include issues such as network problems or incorrect query formatting, which
-     * prevent the whois lookup from succeeding.
-     */
-    WHOIS_QUERY_ERROR,
-
     /**  Error indicating that the email address is invalid. */
     INVALID_EMAIL_ADDRESS;
 

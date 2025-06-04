@@ -1,17 +1,14 @@
 package com.digicert.validation;
 
-import com.digicert.validation.methods.email.prepare.provider.NoopWhoisEmailProvider;
-import com.digicert.validation.methods.email.prepare.provider.WhoisEmailProvider;
+import com.digicert.validation.challenges.BasicRandomValueValidator;
+import com.digicert.validation.challenges.RandomValueValidator;
+import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.psl.PslDataProvider;
 import com.digicert.validation.random.BasicRandomValueGenerator;
 import com.digicert.validation.random.RandomValueGenerator;
-import com.digicert.validation.challenges.BasicRandomValueValidator;
-import com.digicert.validation.challenges.BasicRequestTokenValidator;
-import com.digicert.validation.challenges.RandomValueValidator;
-import com.digicert.validation.challenges.RequestTokenValidator;
-import com.digicert.validation.utils.NoopPslOverrideSupplier;
 import com.digicert.validation.utils.DomainNameUtils;
 import com.digicert.validation.utils.FilenameUtils;
+import com.digicert.validation.utils.NoopPslOverrideSupplier;
 import com.digicert.validation.utils.PslOverrideSupplier;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,7 +20,7 @@ import java.util.List;
  * Configuration class for Domain Control Validation (DCV).
  * <p>
  * This class contains the configuration settings necessary for performing Domain Control Validation (DCV).
- * These settings include parameters for DNS lookups, WhoIs queries, random value generation, and other aspects of the DCV process.
+ * These settings include parameters for DNS lookups, random value generation, and other aspects of the DCV process.
  */
 @Setter(AccessLevel.PRIVATE)
 @Getter
@@ -42,14 +39,6 @@ public class DcvConfiguration {
      * Each server beyond the first will only be queried if the previous server fails or does not return any records.
      */
     private List<String> dnsServers = List.of();
-
-    /**
-     * A NoopWhoisEmailProvider. This library does not provide a WhoisEmailProvider implementation.
-     * <p>
-     * See BasicWhoIsEmailProvider in the example-application for an example implementation.
-     *
-     */
-    private WhoisEmailProvider whoisEmailProvider = new NoopWhoisEmailProvider();
 
     /**
      * The prefix domain label to use with DNS Change validation.
@@ -196,18 +185,6 @@ public class DcvConfiguration {
                 throw new IllegalArgumentException("dnsServers cannot be empty");
             }
             dcvConfiguration.setDnsServers(dnsServers);
-            return this;
-        }
-
-        /**
-         * Use a custom WhoIs provider. This can allow for querying different WhoIs hosts for different
-         * TLDs and using different WhoIs parsers for those different hosts.
-         *
-         * @param whoisEmailProvider custom WhoisEmailProvider
-         * @return DcvConfigurationBuilder configured with the provided whoisEmailProvider.
-         */
-        public DcvConfigurationBuilder whoisEmailProvider(WhoisEmailProvider whoisEmailProvider) {
-            dcvConfiguration.setWhoisEmailProvider(whoisEmailProvider);
             return this;
         }
 

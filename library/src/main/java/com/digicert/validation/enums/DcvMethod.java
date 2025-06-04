@@ -9,7 +9,7 @@ import lombok.Getter;
  * Brief Description of the DCV Methods:
  * <ul>
  *     <li>3.2.2.4.1 -> NOT Allowed</li>
- *     <li><b>3.2.2.4.2 -> Email (whois)</b></li>
+ *     <li>3.2.2.4.2 -> Email (whois) - Not Supported</li>
  *     <li>3.2.2.4.3 -> Phone - NOT Allowed</li>
  *     <li><b>3.2.2.4.4 -> Email to constructed email address</b></li>
  *     <li>3.2.2.4.5 -> NOT Allowed</li>
@@ -34,13 +34,6 @@ import lombok.Getter;
  */
 @Getter
 public enum DcvMethod {
-    /**
-     * Email to Domain Contact.
-     * <br>
-     * This method involves sending an email to a domain contact, as listed in the WHOIS database for the domain.
-     * The email will contain a random value that the recipient can use to confirm control over the domain.
-     */
-    BR_3_2_2_4_2("3.2.2.4.2"),
 
     /**
      * Constructed Email to Domain Contact.
