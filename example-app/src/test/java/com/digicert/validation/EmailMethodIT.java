@@ -87,6 +87,7 @@ class EmailMethodIT {
         DomainResource verifiedDomain = exampleAppClient.getDomainResource(domainResource.getId());
         assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
     }
+    
 
     @Test
     void verifyEmailDnsTxtSubmitFlow_EmailDoesNotMatchDomain() {
