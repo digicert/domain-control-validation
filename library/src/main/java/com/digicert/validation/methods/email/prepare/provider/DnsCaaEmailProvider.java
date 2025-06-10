@@ -68,7 +68,6 @@ public class DnsCaaEmailProvider implements EmailProvider {
         Set<String> emails = dnsData.records().stream()
                 .filter(dnsRecord -> ((CAARecord) dnsRecord).getTag().equals(DNS_CAA_EMAIL_TAG))
                 .map(dnsRecord -> ((CAARecord) dnsRecord).getValue())
-                .filter(DomainNameUtils::isValidEmailAddress)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (emails.isEmpty()) {
