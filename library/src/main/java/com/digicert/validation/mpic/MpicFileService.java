@@ -30,6 +30,13 @@ public class MpicFileService {
         this.mpicClient = dcvContext.get(MpicClientInterface.class);
     }
 
+    /**
+     * Retrieves MPIC file details for a list of file URLs.
+     * It will return the first valid and corroborated MPIC response or the first MPIC response with an error.
+     *
+     * @param fileUrls List of file URLs to validate
+     * @return MpicFileDetails containing the MPIC details, file URL, file contents, status code, and any errors encountered
+     */
     public MpicFileDetails getMpicFileDetails(List<String> fileUrls) {
         MpicFileDetails firstMpicFileDetails = null;
         for (String fileUrl : fileUrls) {
@@ -70,12 +77,12 @@ public class MpicFileService {
 
         if (!FILE_SUCCESS.equals(mpicFileResponse.primaryFileResponse().agentStatus())) {
             DcvError dcvError = switch (mpicFileResponse.primaryFileResponse().agentStatus()) {
-                case FILE_BAD_REQUEST,
-                     FILE_CLIENT_ERROR,
-                     FILE_REQUEST_TIMEOUT -> DcvError.FILE_VALIDATION_CLIENT_ERROR;
-                case FILE_BAD_RESPONSE,
-                     FILE_NOT_FOUND,
-                     FILE_TOO_LARGE -> DcvError.FILE_VALIDATION_INVALID_CONTENT;
+                case FILE_BAD_REQUEST -> DcvError.FILE_VALIDATION_BAD_REQUEST;
+                case FILE_CLIENT_ERROR -> DcvError.FILE_VALIDATION_CLIENT_ERROR;
+                case FILE_REQUEST_TIMEOUT -> DcvError.FILE_VALIDATION_TIMEOUT;
+                case FILE_BAD_RESPONSE -> DcvError.FILE_VALIDATION_BAD_RESPONSE;
+                case FILE_NOT_FOUND -> DcvError.FILE_VALIDATION_NOT_FOUND;
+                case FILE_TOO_LARGE -> DcvError.FILE_VALIDATION_INVALID_CONTENT;
                 case FILE_SERVER_ERROR -> DcvError.FILE_VALIDATION_INVALID_STATUS_CODE;
                 default -> DcvError.MPIC_INVALID_RESPONSE;
             };

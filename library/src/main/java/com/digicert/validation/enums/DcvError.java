@@ -152,6 +152,18 @@ public enum DcvError {
      */
     FILE_VALIDATION_INVALID_CONTENT,
 
+    /** Error indicating that the request to retrieve the file was a bad request. */
+    FILE_VALIDATION_BAD_REQUEST,
+
+    /** Error indicating that the file validation request timed out. */
+    FILE_VALIDATION_TIMEOUT,
+
+    /** Error indicating that the file validation response was bad. */
+    FILE_VALIDATION_BAD_RESPONSE,
+
+    /** Error indicating that the file validation response was not found. */
+    FILE_VALIDATION_NOT_FOUND,
+
     /**
      * Error indicating that the file validation status code is not as expected.
      * The status code indicates the result of the authentication request, and an unexpected code
@@ -267,6 +279,18 @@ public enum DcvError {
      * preventing the DNS validation from succeeding.
      */
     DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION,
+
+    /** Error indicating that the DNS lookup domain was not found. */
+    DNS_LOOKUP_DOMAIN_NOT_FOUND,
+
+    /** Error indicating some kind of I/O exception during DNS lookup. */
+    DNS_LOOKUP_IO_EXCEPTION,
+
+    /** Error indicating that the DNS lookup timed out. */
+    DNS_LOOKUP_TIMEOUT,
+
+    /** Error indicating a bad request during DNS lookup. */
+    DNS_LOOKUP_BAD_REQUEST,
 
     /**
      * Error indicating a text parse exception during DNS lookup.

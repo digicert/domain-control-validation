@@ -1,5 +1,9 @@
 package com.digicert.validation.mpic.api;
 
+/**
+ * Enum representing the various statuses that can be returned by the MPIC agent.
+ * These statuses indicate the result of DNS lookups and file validations.
+ */
 public enum AgentStatus {
     DNS_LOOKUP_SUCCESS,
     DNS_LOOKUP_BAD_REQUEST,

@@ -2,6 +2,10 @@ package com.digicert.validation.mpic.api.dns;
 
 import com.digicert.validation.enums.DnsType;
 
+/**
+ * Represents a DNS record used in the MPIC (Multi-Perspective Corroboration) validation process.
+ * This record encapsulates the DNS type, name, value, time-to-live (TTL), flag, and tag associated with the DNS record.
+ */
 public record DnsRecord(DnsType dnsType,
                         String name,
                         String value,
@@ -13,6 +17,10 @@ public record DnsRecord(DnsType dnsType,
         return new Builder();
     }
 
+    /**
+     * Builder class for constructing instances of {@link DnsRecord}.
+     * This class provides methods to set each field of the DNS record.
+     */
     public static class Builder {
         private DnsType dnsType;
         private String name;

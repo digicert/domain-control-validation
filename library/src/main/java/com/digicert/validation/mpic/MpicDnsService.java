@@ -31,6 +31,14 @@ public class MpicDnsService {
         this.mpicClient = dcvContext.get(MpicClientInterface.class);
     }
 
+    /**
+     * Retrieves MPIC DNS details for a list of domains.
+     * It will return the first valid and corroborated MPIC response or the first MPIC response with an error.
+     *
+     * @param domains  List of domain names to validate
+     * @param dnsType  The type of DNS records to retrieve (e.g., TXT, CNAME)
+     * @return MpicDnsDetails containing the MPIC details, domain, DNS records, and any errors encountered
+     */
     public MpicDnsDetails getDnsDetails(List<String> domains, DnsType dnsType) {
         MpicDnsDetails firstMpicDnsDetails = null;
         for (String domain : domains) {
@@ -69,11 +77,11 @@ public class MpicDnsService {
 
         if (mpicDnsResponse.primaryDnsResponse().agentStatus() != DNS_LOOKUP_SUCCESS) {
             DcvError dcvError = switch (mpicDnsResponse.primaryDnsResponse().agentStatus()) {
-                case DNS_LOOKUP_BAD_REQUEST,
-                     DNS_LOOKUP_TIMEOUT,
-                     DNS_LOOKUP_IO_EXCEPTION,
-                     DNS_LOOKUP_DOMAIN_NOT_FOUND,
-                     DNS_LOOKUP_RECORD_NOT_FOUND -> DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
+                case DNS_LOOKUP_BAD_REQUEST -> DcvError.DNS_LOOKUP_BAD_REQUEST;
+                case DNS_LOOKUP_TIMEOUT -> DcvError.DNS_LOOKUP_TIMEOUT;
+                case DNS_LOOKUP_IO_EXCEPTION -> DcvError.DNS_LOOKUP_IO_EXCEPTION;
+                case DNS_LOOKUP_DOMAIN_NOT_FOUND -> DcvError.DNS_LOOKUP_DOMAIN_NOT_FOUND;
+                case DNS_LOOKUP_RECORD_NOT_FOUND -> DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
                 case DNS_LOOKUP_TEXT_PARSE_EXCEPTION -> DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
                 case DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION -> DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
                 default -> DcvError.MPIC_INVALID_RESPONSE;

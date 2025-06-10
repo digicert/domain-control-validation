@@ -4,7 +4,6 @@ import com.digicert.validation.DcvContext;
 import com.digicert.validation.challenges.ChallengeValidationResponse;
 import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
-import com.digicert.validation.client.file.FileClient;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.mpic.MpicFileService;
@@ -155,7 +154,7 @@ public class FileValidationHandler {
             domainPath = fileValidationRequest.getDomain() + FILE_PATH + defaultFileValidationFilename;
         }
         if (fileValidationCheckHttps) {
-            return List.of("http://" + domainPath, "https://" + domainPath);
+            return List.of("https://" + domainPath, "http://" + domainPath);
         }
         else {
             return List.of("http://" + domainPath);
