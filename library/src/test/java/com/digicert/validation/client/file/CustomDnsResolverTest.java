@@ -3,6 +3,7 @@ package com.digicert.validation.client.file;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
+import com.digicert.validation.client.dns.DnsValue;
 import com.digicert.validation.enums.DnsType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,16 +61,16 @@ class CustomDnsResolverTest {
     @Test
     void testCustomDnsResolver_resolve() throws Exception {
         String domain = "digicert.com";
-        Name name = Name.fromString(domain + ".");
-        ARecord aRecord = new ARecord(name, 1, 3600, InetAddress.getByName("64.78.193.234"));
-        DnsData expectedDnsData = new DnsData(List.of("dnsServer"), domain, DnsType.A, List.of(aRecord), Set.of(), "dnsServer");
+        String digicertIp = "64.78.193.234";
+        DnsValue dnsValue = new DnsValue(DnsType.A, domain, "A/" + digicertIp, 3600);
+        DnsData expectedDnsData = new DnsData(List.of("dnsServer"), domain, DnsType.A, List.of(dnsValue), Set.of(), "dnsServer");
         when(dnsClient.getDnsData(List.of(domain), DnsType.A)).thenReturn(expectedDnsData);
 
         InetAddress[] actualResult = customDnsResolver.resolve(domain);
 
         assertNotNull(actualResult);
         assertEquals(1, actualResult.length);
-        assertEquals("64.78.193.234", actualResult[0].getHostAddress());
+        assertEquals(digicertIp, actualResult[0].getHostAddress());
     }
 
     @Test

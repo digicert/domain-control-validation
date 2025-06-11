@@ -49,6 +49,9 @@ public enum LogEvents {
     /** Log event indicating that a connection error occurred with the client. */
     FILE_VALIDATION_CLIENT_ERROR,
 
+    /** Log event indicating that the connection attempt timed out. */
+    FILE_VALIDATION_CONNECTION_TIMEOUT_ERROR,
+
     /** Log event indicating that the file validation cannot be completed. */
     FILE_VALIDATION_FAILED,
 

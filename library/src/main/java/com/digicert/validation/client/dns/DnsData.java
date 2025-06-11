@@ -29,10 +29,10 @@ import java.util.Set;
  *                       <p>
  *                       This parameter indicates the type of DNS record that was requested, such as A, CNAME, TXT, etc.
  *
- * @param records        The list of DNS records retrieved.
+ * @param values        The list of DNSValues retrieved.
  *                       <p>
- *                       This parameter contains the actual DNS records that were returned in response to the query. These
- *                       records provide the requested information and are the primary result of the DNS query operation.
+ *                       This parameter contains the actual DNSValues that were returned in response to the query. These
+ *                       values provide the requested information and are the primary result of the DNS query operation.
  *
  * @param errors         The list of errors encountered during the DNS query.
  *                       <p>
@@ -46,7 +46,7 @@ import java.util.Set;
 public record DnsData(List<String> servers,
                       String domain,
                       DnsType dnsType,
-                      List<Record> records,
+                      List<DnsValue> values,
                       Set<DcvError> errors,
                       String serverWithData) {
 }

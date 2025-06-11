@@ -126,7 +126,6 @@ public class CustomRedirectStrategy extends DefaultRedirectStrategy {
                 logErrorMessage(LogEvents.BAD_REDIRECT_PORT, redirectTo, sourceUrl);
                 return false;
             }
-
             return StringUtils.equals(domainNameUtils.getBaseDomain(host), domainNameUtils.getBaseDomain(new URI(sourceUrl).getHost()));
         } catch (Exception e) {
             logErrorMessage(LogEvents.REDIRECT_ERROR, redirectTo, sourceUrl, e);
@@ -141,13 +140,9 @@ public class CustomRedirectStrategy extends DefaultRedirectStrategy {
      * @return true if the port matches the scheme, false otherwise.
      */
     private boolean portMatchesScheme(URI uri) {
-        if (uri.getPort() == -1) {
-            // no port specified -> it's the default port for the scheme
-            return true;
-        }
         return switch (uri.getScheme()) {
-            case "http" -> uri.getPort() == 80;
-            case "https" -> uri.getPort() == 443;
+            case "http" -> uri.getPort() == -1 || uri.getPort() == 80;
+            case "https" -> uri.getPort() == -1 || uri.getPort() == 443;
             default -> false; // MUST be retrieved via either the "http" or "https" scheme -> can't redirect to a different scheme
         };
     }

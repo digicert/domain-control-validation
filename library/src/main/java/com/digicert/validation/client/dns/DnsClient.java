@@ -2,14 +2,17 @@ package com.digicert.validation.client.dns;
 
 import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.client.ClientStatus;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.*;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -17,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 /**
  * DnsClient is responsible for querying DNS records from specified DNS servers.
@@ -100,7 +104,7 @@ public class DnsClient {
             for (String domain : domains) {
                 DnsData dnsData = getDnsData(server, domain, type);
                 errors.addAll(dnsData.errors());
-                if (!dnsData.records().isEmpty()) {
+                if (!dnsData.values().isEmpty()) {
                     return dnsData;
                 }
             }
@@ -142,35 +146,182 @@ public class DnsClient {
      */
     private DnsData getDnsData(String server, String domain, DnsType type) {
         try {
-            int dnsPort = 53;
             String[] serverParts = server.split(":");
             String dnsHostName = serverParts[0];
-            if (serverParts.length > 1) {
-                dnsPort = Integer.parseInt(serverParts[1]);
-            }
+            int dnsPort = serverParts.length > 1 ? Integer.parseInt(serverParts[1]) : 53;
+
             ExtendedResolver resolver = createResolver(dnsHostName, dnsPort);
             resolver.setTimeout(Duration.ofMillis(dnsTimeout));
             resolver.setRetries(dnsRetries);
-            Lookup domainLookup = createLookup(domain, mapToDnsIntType(type));
-            domainLookup.setResolver(resolver);
 
-            Record[] records = domainLookup.run();
-            List<Record> recordList = records != null ? List.of(records) : List.of();
-            Set<DcvError> errors = recordList.isEmpty() ? Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND) : Set.of();
+            Record query = Record.newRecord(Name.fromString(createZoneFromDomain(domain)), mapToDnsIntType(type), DClass.IN);
+            Message response = resolver.send(Message.newQuery(query));
 
-            log.info("event_id={} domain={} server={} type={} records={}", LogEvents.DNS_LOOKUP_SUCCESS, domain, server, type, recordList.size());
-            return new DnsData(List.of(server), domain, type, recordList, errors, server);
-        } catch (UnknownHostException | TextParseException e) {
-            DcvError dcvError;
-            if (e instanceof UnknownHostException) {
-                dcvError = DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
-            } else {
-                dcvError = DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
+            List<DnsValue> values = getDnsValues(response);
+            ClientStatus clientStatus = getClientStatus(response, values);
+
+            Set<DcvError> errors = new HashSet<>();
+            if(clientStatus != ClientStatus.DNS_LOOKUP_SUCCESS){
+                errors.add(mapClientStatusToDcvError(clientStatus));
             }
-            log.atLevel(logLevelForErrors).log("event_id={} domain={} server={} dcv_error={}",
-                    LogEvents.DNS_LOOKUP_ERROR, domain, server, dcvError, e);
-            return new DnsData(List.of(server), domain, type, List.of(), Set.of(dcvError), server);
+
+            return new DnsData(List.of(server), domain, type, values, errors, server);
+        } catch (Exception e) {
+            return handleDnsException(e, type, domain, server);
         }
+    }
+
+    /**
+     * Creates a zone name from the provided domain.
+     * <p>
+     * This method ensures that the domain ends with a dot (.) to conform to DNS zone naming conventions. If the domain
+     * does not end with a dot, it appends one.
+     *
+     * @param domain The domain to convert into a zone name.
+     * @return The zone name created from the domain.
+     */
+    private String createZoneFromDomain(String domain) {
+        if (!domain.endsWith(".")) {
+            return domain + ".";
+        }
+        return domain;
+    }
+
+    /**
+     * Extracts DNS values from the response message.
+     * <p>
+     * This method retrieves the DNS records from the answer section of the response message and maps them to a list of
+     * {@link DnsValue} objects. If the response code is NOERROR, it processes the records; otherwise, it returns an
+     * empty list.
+     *
+     * @param response The DNS response message.
+     * @return A list of DnsValue objects containing the DNS records found in the response.
+     */
+    private List<DnsValue> getDnsValues(Message response) {
+        List<DnsValue> values = List.of();
+        if (response.getRcode() == Rcode.NOERROR) {
+            values = response.getSection(Section.ANSWER).stream()
+                    .map(this::mapRecordToDnsValue)
+                    .toList();
+        }
+        return values;
+    }
+
+    /**
+     * Maps a DNS record to a DnsValue object.
+     * <p>
+     * This method converts a DNS record into a DnsValue object, extracting relevant information such as the value,
+     * name, type, and TTL. It handles different types of DNS records, including TXT, CNAME, A, MX, CAA, DS, and RRSIG.
+     *
+     * @param recordValue The DNS record to map.
+     * @return A DnsValue object containing the mapped data.
+     */
+    private DnsValue mapRecordToDnsValue(Record recordValue) {
+        DnsValue dnsValue = new DnsValue();
+        switch (recordValue) {
+            case TXTRecord txtRecord -> dnsValue.setValue(txtRecord.rdataToString());
+            case CNAMERecord cnameRecord -> dnsValue.setValue(cnameRecord.getTarget().toString());
+            case ARecord aRecord -> dnsValue.setValue(aRecord.getAddress().toString());
+            case MXRecord mxRecord -> dnsValue.setValue(mxRecord.getTarget().toString());
+            case CAARecord caaRecord -> dnsValue = populateCaaRecordData(caaRecord);
+            case DSRecord dsRecord -> dnsValue.setValue(dsRecord.toString());
+            case RRSIGRecord rrsigRecord -> dnsValue.setValue(rrsigRecord.toString());
+            default -> throw new IllegalStateException("Unexpected value: " + recordValue);
+        }
+        dnsValue.setName(recordValue.getName().toString());
+        dnsValue.setDnsType(DnsType.fromInt(recordValue.getType()));
+        dnsValue.setTtl(recordValue.getTTL());
+        return dnsValue;
+    }
+
+    /**
+     * Populates the CAARecord data into a DnsValue object.
+     * <p>
+     * This method extracts the flags, tag, and value from the CAARecord and sets them in a new CaaRecord object.
+     *
+     * @param recordValue The CAARecord to populate data from.
+     * @return A CaaRecord object containing the populated data.
+     */
+    private CaaValue populateCaaRecordData(CAARecord recordValue) {
+        CaaValue caaValue = new CaaValue();
+        caaValue.setFlag(recordValue.getFlags());
+        caaValue.setTag(recordValue.getTag());
+        caaValue.setValue(recordValue.getValue());
+        return caaValue;
+    }
+
+    /**
+     * Handles exceptions that occur during DNS queries.
+     * <p>
+     * This method processes exceptions thrown during DNS queries, logging the error and returning a DnsData object
+     * with the appropriate error codes. It categorizes the exceptions into specific client statuses and maps them to
+     * corresponding {@link DcvError} values.
+     *
+     * @param e      The exception that occurred during the DNS query.
+     * @param type   The type of DNS record that was being queried.
+     * @param domain The domain that was being queried.
+     * @param server The DNS server that was being queried.
+     * @return A DnsData object containing the error information.
+     */
+    private DnsData handleDnsException(@NonNull Exception e, DnsType type, String domain, String server) {
+        ClientStatus clientStatus = switch (e) {
+            case TextParseException ignored -> ClientStatus.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
+            case UnknownHostException ignored -> ClientStatus.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
+            case IOException ignored -> {
+                if (ignored.getCause() instanceof TimeoutException) {
+                    yield ClientStatus.DNS_LOOKUP_TIMEOUT;
+                } else {
+                    yield ClientStatus.DNS_LOOKUP_IO_EXCEPTION;
+                }
+            }
+            default -> ClientStatus.INTERNAL_SERVER_ERROR;
+        };
+        if(clientStatus == ClientStatus.INTERNAL_SERVER_ERROR) {
+            log.info("event_id={} domain={} dns_type={} server={} agent_status={}", LogEvents.DNS_LOOKUP_ERROR, domain, type, server, clientStatus, e);
+        } else {
+            log.info("event_id={} domain={} dns_type={} server={} agent_status={}", LogEvents.DNS_LOOKUP_ERROR, domain, type, server, clientStatus);
+        }
+
+        return new DnsData(List.of(server), domain, type, List.of(), Set.of(mapClientStatusToDcvError(clientStatus)), server);
+    }
+
+    /**
+     * Determines the client status based on the DNS response message and the found DNS values.
+     * <p>
+     * This method analyzes the response code of the DNS message and the list of found DNS values to determine the
+     * appropriate client status. It handles different response codes such as NOERROR, NXDOMAIN, and others, and
+     * categorizes the status accordingly.
+     *
+     * @param message         The DNS response message.
+     * @param foundDnsValues  The list of DNS values found in the response.
+     * @return The determined client status based on the response code and found values.
+     */
+    private ClientStatus getClientStatus(Message message, List<DnsValue> foundDnsValues) {
+        int rcode = message.getRcode();
+        ClientStatus agentStatus;
+
+        switch (rcode) {
+            case Rcode.NOERROR ->
+                // If the response code is NOERROR, check if are DNS values that we found
+                    agentStatus = foundDnsValues.isEmpty() ? ClientStatus.DNS_LOOKUP_RECORD_NOT_FOUND : ClientStatus.DNS_LOOKUP_SUCCESS;
+
+            case Rcode.NXDOMAIN -> {
+                // This response could mean that the domain does not exist or the record does not exist
+                // Check if the answer section is empty to determine the status
+                if (message.getSection(Section.ANSWER).isEmpty()) {
+                    // If the response code is NXDOMAIN and there are no values, treat it as domain not found
+                    agentStatus = ClientStatus.DNS_LOOKUP_DOMAIN_NOT_FOUND;
+                } else {
+                    // If the response code is NXDOMAIN but there are values, treat it as a record not found
+                    agentStatus = ClientStatus.DNS_LOOKUP_RECORD_NOT_FOUND;
+                }
+            }
+            default ->
+                // Treat REFUSED and all other cases as IO Exception
+                    agentStatus = ClientStatus.DNS_LOOKUP_IO_EXCEPTION;
+        }
+
+        return agentStatus;
     }
 
     /**
@@ -187,27 +338,8 @@ public class DnsClient {
      * @throws UnknownHostException If the DNS server is unknown.
      */
     protected ExtendedResolver createResolver(String server, Integer port) throws UnknownHostException {
-        if (port != null) {
-            InetSocketAddress address = new InetSocketAddress(server, port);
-            return new ExtendedResolver(List.of(new SimpleResolver(address)));
-        }
-        return new ExtendedResolver(List.of(new SimpleResolver(server)));
-    }
-
-    /**
-     * Creates a new Lookup for the specified domain and DNS record type.
-     * <p>
-     * This method creates and configures a {@link Lookup} for the specified domain and DNS record type. The lookup is
-     * used to perform the actual DNS query, translating the domain name and record type into a DNS request. The method
-     * throws {@link TextParseException} if it is unable to parse the response.
-     *
-     * @param domain The domain to create a lookup for.
-     * @param type   The DNS record type to query.
-     * @return The created Lookup.
-     * @throws TextParseException If the domain name is invalid.
-     */
-    protected Lookup createLookup(String domain, int type) throws TextParseException {
-        return new Lookup(domain, type);
+        InetSocketAddress address = new InetSocketAddress(server, port);
+        return new ExtendedResolver(List.of(new SimpleResolver(address)));
     }
 
     /**
@@ -229,6 +361,27 @@ public class DnsClient {
             case MX      -> Type.MX;
             case DS      -> Type.DS;
             case RRSIG   -> Type.RRSIG;
+        };
+    }
+
+    /**
+     * Maps the {@link ClientStatus} enum to the corresponding {@link DcvError} DcvError.
+     * <p>
+     * throws an {@link IllegalArgumentException} if the provided ClientStatus is not recognized.
+     * @param clientStatus The ClientStatus to map.
+     * @return The corresponding DcvError for the given ClientStatus.
+     */
+    DcvError mapClientStatusToDcvError(ClientStatus clientStatus) {
+        return switch (clientStatus) {
+            case DNS_LOOKUP_BAD_REQUEST -> DcvError.DNS_LOOKUP_BAD_REQUEST;
+            case DNS_LOOKUP_TEXT_PARSE_EXCEPTION -> DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
+            case DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION -> DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
+            case DNS_LOOKUP_TIMEOUT -> DcvError.DNS_LOOKUP_TIMEOUT;
+            case DNS_LOOKUP_IO_EXCEPTION -> DcvError.DNS_LOOKUP_IO_EXCEPTION;
+            case DNS_LOOKUP_DOMAIN_NOT_FOUND -> DcvError.DNS_LOOKUP_DOMAIN_NOT_FOUND;
+            case DNS_LOOKUP_RECORD_NOT_FOUND -> DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
+            case INTERNAL_SERVER_ERROR -> DcvError.DNS_LOOKUP_EXCEPTION;
+            default -> throw new IllegalArgumentException("Unknown ClientStatus: " + clientStatus);
         };
     }
 }

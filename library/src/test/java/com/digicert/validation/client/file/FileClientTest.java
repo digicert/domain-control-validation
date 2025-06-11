@@ -4,6 +4,7 @@ import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.ClientProtocolException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
@@ -37,7 +38,7 @@ public class FileClientTest {
     private static final String TOKEN_PATH = "/.well-known/pki-validation/";
     private CloseableHttpClient httpClientSpy;
     private CustomDnsResolver mockCustomDnsResolver;
-
+    private DcvContext dcvContext;
 
     @BeforeAll
     public static void startServer() {
@@ -57,13 +58,12 @@ public class FileClientTest {
                 .fileValidationUserAgent("testUserAgent")
                 .dnsServers(List.of("localhost"))
                 .build();
-        DcvContext dcvContext = spy(new DcvContext(dcvConfiguration));
+        dcvContext = spy(new DcvContext(dcvConfiguration));
 
         // Configure the CustomDnsResolver to return localhost for any domain
         mockCustomDnsResolver = mock(CustomDnsResolver.class);
         when(mockCustomDnsResolver.resolve(any())).thenReturn(new InetAddress[]{InetAddress.getByName("localhost")});
         when(dcvContext.get(CustomDnsResolver.class)).thenReturn(mockCustomDnsResolver);
-        doCallRealMethod().when(dcvContext).get(any());
 
         fileClient = new FileClient(dcvContext) {
             @Override
@@ -125,9 +125,9 @@ public class FileClientTest {
     }
 
     @Test
-    void testFileClient_ResponseSizeLimit() {
+    void testFileClient_ResponseSizeLimit() throws UnknownHostException {
         DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
-                .dnsServers(List.of("123.45.67.89", "8.8.8.8"))
+                .dnsServers(List.of("localhost"))
                 .fileValidationMaxBodyLength(10)
                 .build();
 
@@ -142,7 +142,20 @@ public class FileClientTest {
                         .withBody("a".repeat(config.getFileValidationMaxBodyLength() * 2))
         );
 
-        fileClient = new FileClient(new DcvContext(config));
+        dcvContext = spy(new DcvContext(config));
+
+        // Configure the CustomDnsResolver to return localhost for any domain
+        mockCustomDnsResolver = mock(CustomDnsResolver.class);
+        when(mockCustomDnsResolver.resolve(any())).thenReturn(new InetAddress[]{InetAddress.getByName("localhost")});
+        when(dcvContext.get(CustomDnsResolver.class)).thenReturn(mockCustomDnsResolver);
+
+        fileClient = new FileClient(dcvContext) {
+            @Override
+            CloseableHttpClient createHttpClient() {
+                httpClientSpy = spy(super.createHttpClient());
+                return httpClientSpy;
+            }
+        };
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
         FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
@@ -157,7 +170,7 @@ public class FileClientTest {
     void testFileClient_withCustomDnsResolver() {
         String domain = "my-cool-host.com";
         DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
-                .dnsServers(List.of("123.45.67.89", "8.8.8.8"))
+                .dnsServers(List.of("localhost"))
                 .build();
 
         DcvContext dcvContext = new DcvContext(dcvConfiguration);
@@ -209,9 +222,9 @@ public class FileClientTest {
     }
 
     @Test
-    void testFileClient_Timeout() {
+    void testFileClient_Timeout() throws UnknownHostException {
         DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
-                .dnsServers(List.of("123.45.67.89", "8.8.8.8"))
+                .dnsServers(List.of("localhost"))
                 .fileValidationReadTimeout(5)
                 .build();
 
@@ -233,13 +246,26 @@ public class FileClientTest {
                 }
         );
 
-        fileClient = new FileClient(new DcvContext(config));
+        dcvContext = spy(new DcvContext(config));
+
+        // Configure the CustomDnsResolver to return localhost for any domain
+        mockCustomDnsResolver = mock(CustomDnsResolver.class);
+        when(mockCustomDnsResolver.resolve(any())).thenReturn(new InetAddress[]{InetAddress.getByName("localhost")});
+        when(dcvContext.get(CustomDnsResolver.class)).thenReturn(mockCustomDnsResolver);
+
+        fileClient = new FileClient(dcvContext) {
+            @Override
+            CloseableHttpClient createHttpClient() {
+                httpClientSpy = spy(super.createHttpClient());
+                return httpClientSpy;
+            }
+        };
 
         String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "timeout.txt";
         FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
-        assertEquals(0, actualResponse.getStatusCode());
+        assertEquals(500, actualResponse.getStatusCode());
         assertNull(actualResponse.getFileContent());
         assertInstanceOf(SocketTimeoutException.class, actualResponse.getException());
     }
@@ -257,7 +283,7 @@ public class FileClientTest {
         FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
-        assertEquals(0, actualResponse.getStatusCode());
+        assertEquals(500, actualResponse.getStatusCode());
         assertNull(actualResponse.getFileContent());
         assertNotNull(actualResponse.getException());
         assertInstanceOf(SocketTimeoutException.class, actualResponse.getException());
@@ -324,8 +350,51 @@ public class FileClientTest {
         FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
 
         assertNotNull(actualResponse);
-        assertEquals(0, actualResponse.getStatusCode());
+        assertEquals(500, actualResponse.getStatusCode());
         assertNull(actualResponse.getFileContent());
+        assertTrue(actualResponse.getException() instanceof ClientProtocolException);
         assertTrue(actualResponse.getException().getMessage().contains("Circular redirect"));
+    }
+
+    @Test
+    void testGetFileData_ServerError(){
+
+        mockServer.when(
+                request()
+                        .withMethod("GET")
+                        .withPath(TOKEN_PATH + "file.txt")
+        ).respond(
+                response()
+                        .withStatusCode(500)
+                        .withContentType(MediaType.TEXT_PLAIN)
+        );
+
+        String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "file.txt";
+        FileClientResponse fileClientResponse = fileClient.executeRequest(fileUrl);
+
+        assertEquals(500, fileClientResponse.getStatusCode());
+        assertEquals(fileUrl, fileClientResponse.getFileUrl());
+        assertNull(fileClientResponse.getException());
+        assertEquals(DcvError.FILE_VALIDATION_SERVER_ERROR, fileClientResponse.getDcvError());
+    }
+
+    @Test
+    void testGetFileData_ClientError() {
+        mockServer.when(
+                request()
+                    .withMethod("GET")
+                    .withPath(TOKEN_PATH + "file.txt")
+        ).respond(
+                response()
+                        .withStatusCode(400)
+                        .withContentType(MediaType.TEXT_PLAIN)
+        );
+
+        String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "file.txt";
+        FileClientResponse fileClientResponse = fileClient.executeRequest(fileUrl);
+
+        assertEquals(400, fileClientResponse.getStatusCode());
+        assertEquals(fileUrl, fileClientResponse.getFileUrl());
+        assertEquals(DcvError.FILE_VALIDATION_CLIENT_ERROR, fileClientResponse.getDcvError());
     }
 }
