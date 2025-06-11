@@ -79,7 +79,7 @@ public class FileValidationHandler {
         ChallengeValidationResponse challengeValidationResponse = null;
 
         if (mpicFileDetails.dcvError() == null) {
-            String fileContent = mpicFileDetails.fileContent();
+            String fileContent = mpicFileDetails.fileContents();
             challengeValidationResponse = getValidChallengeResponse(validationRequest, fileContent);
         }
 

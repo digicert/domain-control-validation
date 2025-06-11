@@ -206,14 +206,6 @@ class FileValidationHandlerTest {
             .challengeType(ChallengeType.RANDOM_VALUE);
     }
 
-    private FileValidationRequest getTokenFileValidationRequest() {
-        return FileValidationRequest.builder()
-                .domain("example.com")
-                .randomValue("randomValue")
-                .challengeType(ChallengeType.REQUEST_TOKEN)
-                .build();
-    }
-
     private static MpicFileDetails getMpicFileDetails(boolean corroborated, DcvError dcvError, int statusCode, String fileContents) {
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 "primary-agent",

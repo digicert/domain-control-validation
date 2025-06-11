@@ -71,7 +71,7 @@ public class MpicClientImpl implements MpicClientInterface {
     }
 
     private DnsRecord mapRecordToDnsRecord(Record recordValue) {
-        DnsRecord.Builder dnsRecordBuilder = DnsRecord.builder();
+        DnsRecord.DnsRecordBuilder dnsRecordBuilder = DnsRecord.builder();
 
         switch (recordValue) {
             case TXTRecord txtRecord -> dnsRecordBuilder.value(txtRecord.rdataToString());

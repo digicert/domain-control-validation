@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public record MpicDetails(boolean corroborated,
                           String primaryAgentId,
-                          long numServersChecked,
-                          long numServersCorroborated,
+                          long secondaryServersChecked,
+                          long secondaryServersCorroborated,
                           Map<String, Boolean> agentIdToCorroboration) {
 }

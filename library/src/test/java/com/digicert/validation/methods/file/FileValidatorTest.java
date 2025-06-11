@@ -1,33 +1,29 @@
 package com.digicert.validation.methods.file;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.time.Instant;
-import java.util.Set;
-import java.util.stream.Stream;
-
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.challenges.BasicRequestTokenData;
-import com.digicert.validation.enums.DcvError;
-import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
-import com.digicert.validation.methods.file.validate.FileValidationRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.common.DomainValidationEvidence;
 import com.digicert.validation.common.ValidationState;
+import com.digicert.validation.enums.ChallengeType;
+import com.digicert.validation.enums.DcvError;
+import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.exceptions.DcvException;
 import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
+import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
 import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
 import com.digicert.validation.methods.file.validate.FileValidationHandler;
+import com.digicert.validation.methods.file.validate.FileValidationRequest;
 import com.digicert.validation.methods.file.validate.FileValidationResponse;
-import com.digicert.validation.enums.ChallengeType;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class FileValidatorTest {
 

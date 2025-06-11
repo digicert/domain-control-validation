@@ -10,6 +10,6 @@ import com.digicert.validation.mpic.MpicDetails;
  */
 public record MpicFileDetails(MpicDetails mpicDetails,
                               String fileUrl,
-                              String fileContent,
+                              String fileContents,
                               int statusCode,
                               DcvError dcvError) { }
