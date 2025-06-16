@@ -22,6 +22,7 @@ import com.digicert.validation.utils.FilenameUtils;
 import com.digicert.validation.utils.StateValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.event.Level;
 
 import java.time.Instant;
 
@@ -69,7 +70,7 @@ public class FileValidator {
      *     This string is combined with the submitted domain name and file location to create the URL
      *     where the file will be placed.
      */
-    private final static String FILE_LOCATION = "http://%s/.well-known/pki-validation/%s";
+    private final static String FILE_LOCATION = "%s/.well-known/pki-validation/%s";
 
     /**
      * Default filename for the file validation
@@ -77,6 +78,9 @@ public class FileValidator {
      *     If no filename is specified in the request, the default filename specified in the dcvConfiguration will be used.
      */
     private final String defaultFilename;
+
+    /** The log level used for logging errors related to domain control validation (DCV). */
+    private final Level logLevelForDcvErrors;
 
     /**
      * Constructor for FileValidator
@@ -91,6 +95,7 @@ public class FileValidator {
         this.domainNameUtils = dcvContext.get(DomainNameUtils.class);
         this.fileValidationHandler = dcvContext.get(FileValidationHandler.class);
         this.defaultFilename = dcvContext.getDcvConfiguration().getFileValidationFilename();
+        this.logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
     }
 
     /**
@@ -147,7 +152,10 @@ public class FileValidator {
             log.info("event_id={} domain={}", LogEvents.FILE_VALIDATION_SUCCESSFUL, validationRequest.getDomain());
             return createDomainValidationEvidence(validationRequest, fileValidationResponse);
         } else {
-            log.info("event_id={} domain={} file_validation_response={}", LogEvents.FILE_VALIDATION_FAILED, validationRequest.getDomain(), fileValidationResponse);
+            log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} file_validation_response={}",
+                    LogEvents.FILE_VALIDATION_FAILED,
+                    validationRequest.getDomain(),
+                    fileValidationResponse);
             throw new ValidationException(fileValidationResponse.errors());
         }
     }
@@ -168,6 +176,8 @@ public class FileValidator {
                 .domain(response.domain())
                 .dcvMethod(request.getValidationState().dcvMethod())
                 .validationDate(Instant.now())
+                // FILE specific values
+                .mpicDetails(response.mpicDetails())
                 .fileUrl(response.fileUrl())
                 .randomValue(response.validRandomValue())
                 .requestToken(response.validRequestToken())

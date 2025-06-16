@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * <p>
  * This class implements Validation for the following methods:
  * <ul>
- *     <li>{@link DcvMethod#BR_3_2_2_4_2}</li>
  *     <li>{@link DcvMethod#BR_3_2_2_4_4}</li>
  *     <li>{@link DcvMethod#BR_3_2_2_4_14}</li>
  * </ul>

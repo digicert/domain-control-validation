@@ -3,10 +3,10 @@ package com.digicert.validation.methods.dns;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.common.DomainValidationEvidence;
 import com.digicert.validation.common.ValidationState;
+import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.enums.DnsType;
-import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.exceptions.DcvException;
 import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
@@ -15,6 +15,7 @@ import com.digicert.validation.methods.dns.prepare.DnsPreparationResponse;
 import com.digicert.validation.methods.dns.validate.DnsValidationHandler;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
 import com.digicert.validation.methods.dns.validate.DnsValidationResponse;
+import com.digicert.validation.mpic.MpicDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -76,7 +78,7 @@ class DnsValidatorTest {
 
     @Test
     void testDnsValidator_validate_HappyPath() throws DcvException {
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(true, "8.8.8.8", domain,
+        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(true, getMpicDetails(), domain,
                                                         dnsType, randomValue, null, Set.of());
 
         when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
@@ -86,7 +88,8 @@ class DnsValidatorTest {
         assertNotNull(evidence);
         assertEquals(domain, evidence.getDomain());
         assertEquals(dnsType, evidence.getDnsType());
-        assertEquals("8.8.8.8", evidence.getDnsServer());
+        assertNotNull(evidence.getMpicDetails());
+        assertEquals("primary-agent", evidence.getMpicDetails().primaryAgentId());
         assertEquals(DcvMethod.BR_3_2_2_4_7, evidence.getDcvMethod());
         assertEquals("v2.1.1", DomainValidationEvidence.BR_VERSION);
         assertEquals(randomValue, evidence.getRandomValue());
@@ -96,7 +99,7 @@ class DnsValidatorTest {
 
     @Test
     void testDnsValidator_validate_FalseDnsValidation() {
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, "8.8.8.8", domain,
+        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, getMpicDetails(), domain,
                                                         dnsType, randomValue, null, Set.of(DcvError.INVALID_DNS_TYPE));
 
         when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
@@ -185,5 +188,13 @@ class DnsValidatorTest {
                 dnsValidator.prepare(invalidDnsPreparation));
 
         assertTrue(exception.getErrors().contains(dcvError), "expected: " + dcvError + " but got: " + exception.getErrors());
+    }
+
+    private static MpicDetails getMpicDetails() {
+        return new MpicDetails(true,
+                "primary-agent",
+                3,
+                3,
+                Map.of("secondary-agent-id", true));
     }
 }

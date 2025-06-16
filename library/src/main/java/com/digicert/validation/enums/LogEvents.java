@@ -61,6 +61,9 @@ public enum LogEvents {
     /** Log event indicating that the domain name does not match the regex used to validate the domain name syntax. */
     INVALID_DOMAIN_NAME,
 
+    /** Log event indicating that there was an issue with the response from the mpic service */
+    MPIC_INVALID_RESPONSE,
+
     /**
      * Reserved labels, which are two alphanumeric characters followed by two hyphens, must follow a specific
      * standards which this domain does not follow.

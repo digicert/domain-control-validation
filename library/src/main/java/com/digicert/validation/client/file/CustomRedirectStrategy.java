@@ -12,6 +12,7 @@ import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.slf4j.event.Level;
 
 /**
  * This class extends the DefaultRedirectStrategy to offer more control over the redirection process
@@ -37,12 +38,20 @@ public class CustomRedirectStrategy extends DefaultRedirectStrategy {
     private final DomainNameUtils domainNameUtils;
 
     /**
+     * The log level for DCV errors.
+     * <p>
+     * This specifies the logging level to be used when logging issues that do not meet the BR requirements.
+     */
+    private final Level logLevelForDcvErrors;
+
+    /**
      * Constructs a new CustomRedirectStrategy.
      *
      * @param dcvContext The DcvContext instance to use.
      * */
     public CustomRedirectStrategy(DcvContext dcvContext) {
         this.domainNameUtils = dcvContext.get(DomainNameUtils.class);
+        logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
     }
 
     /**
@@ -88,7 +97,7 @@ public class CustomRedirectStrategy extends DefaultRedirectStrategy {
         try {
             locationURI = URI.create(newLocationUrl);
         } catch (Exception e) {
-            log.info("event_id={} location={} sourceUrl={}", LogEvents.BAD_REDIRECT_URL, newLocationUrl, originalUrl);
+            logErrorMessage(LogEvents.BAD_REDIRECT_URL, newLocationUrl, originalUrl, e);
             return false;
         }
 
@@ -110,17 +119,17 @@ public class CustomRedirectStrategy extends DefaultRedirectStrategy {
             URI redirectURI = new URI(redirectTo);
             String host = redirectURI.getHost();
             if (host == null) {
-                log.warn("event_id={} location={} sourceUrl={}", LogEvents.BAD_REDIRECT_NO_HOST, redirectTo, sourceUrl);
+                logErrorMessage(LogEvents.BAD_REDIRECT_NO_HOST, redirectTo, sourceUrl);
                 return false;
             }
             if (!portMatchesScheme(redirectURI)) {
-                log.warn("event_id={} location={} sourceUrl={}", LogEvents.BAD_REDIRECT_PORT, redirectTo, sourceUrl);
+                logErrorMessage(LogEvents.BAD_REDIRECT_PORT, redirectTo, sourceUrl);
                 return false;
             }
 
             return StringUtils.equals(domainNameUtils.getBaseDomain(host), domainNameUtils.getBaseDomain(new URI(sourceUrl).getHost()));
         } catch (Exception e) {
-            log.error("event_id={} sourceUrl={} redirectUrl={}", LogEvents.REDIRECT_ERROR, sourceUrl, redirectTo, e);
+            logErrorMessage(LogEvents.REDIRECT_ERROR, redirectTo, sourceUrl, e);
             return false;
         }
     }
@@ -141,5 +150,17 @@ public class CustomRedirectStrategy extends DefaultRedirectStrategy {
             case "https" -> uri.getPort() == 443;
             default -> false; // MUST be retrieved via either the "http" or "https" scheme -> can't redirect to a different scheme
         };
+    }
+
+    private void logErrorMessage(LogEvents badRedirectUrl, String newLocationUrl, String originalUrl) {
+        logErrorMessage(badRedirectUrl, newLocationUrl, originalUrl, null);
+    }
+
+    private void logErrorMessage(LogEvents badRedirectUrl, String newLocationUrl, String originalUrl, Exception e) {
+        if (e != null) {
+            log.atLevel(logLevelForDcvErrors).log("event_id={} location={} source_url={}", badRedirectUrl, newLocationUrl, originalUrl, e);
+        } else {
+            log.atLevel(logLevelForDcvErrors).log("event_id={} location={} source_url={}", badRedirectUrl, newLocationUrl, originalUrl);
+        }
     }
 }

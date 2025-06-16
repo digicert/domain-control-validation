@@ -1,19 +1,15 @@
 package com.digicert.validation.methods.dns.validate;
 
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.DnsClient;
-import com.digicert.validation.client.dns.DnsData;
-import com.digicert.validation.enums.DcvError;
-import com.digicert.validation.enums.DnsType;
-import com.digicert.validation.enums.ChallengeType;
+import com.digicert.validation.challenges.ChallengeValidationResponse;
 import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
-import com.digicert.validation.challenges.ChallengeValidationResponse;
+import com.digicert.validation.enums.ChallengeType;
+import com.digicert.validation.enums.DcvError;
+import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import lombok.extern.slf4j.Slf4j;
-import org.xbill.DNS.CAARecord;
-import org.xbill.DNS.CNAMERecord;
-import org.xbill.DNS.Record;
-import org.xbill.DNS.TXTRecord;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,18 +29,18 @@ public class DnsValidationHandler {
     /** The request token validator used to confirm that a DNS record contains a valid request token. */
     final RequestTokenValidator requestTokenValidator;
 
-    /** The DNS client used to fetch DNS data. */
-    final DnsClient dnsClient;
+    /** The MPIC service used to fetch DNS details. */
+    final MpicDnsService mpicDnsService;
 
     /**
      * Constructs a new DnsValidationHandler with the specified configuration.
      *
-     * @param dcvContext context where we can find the needed dependencies / configuration
+     * @param dcvContext context where we can find the necessary dependencies / configuration
      */
     public DnsValidationHandler(DcvContext dcvContext) {
         this.randomValueValidator = dcvContext.get(RandomValueValidator.class);
         this.requestTokenValidator = dcvContext.get(RequestTokenValidator.class);
-        this.dnsClient = dcvContext.get(DnsClient.class);
+        this.mpicDnsService = dcvContext.get(MpicDnsService.class);
 
         this.dnsDomainLabel = dcvContext.getDcvConfiguration().getDnsDomainLabel();
     }
@@ -62,20 +58,21 @@ public class DnsValidationHandler {
     public DnsValidationResponse validate(DnsValidationRequest request) {
 
         List<String> lookupNames = Arrays.asList(dnsDomainLabel + request.getDomain(), request.getDomain());
-        DnsData dnsData = dnsClient.getDnsData(lookupNames, request.getDnsType());
-
-        List<String> recordValues = dnsData.records().stream()
-                .map(dnsRecord -> getDnsRecordStringValue(dnsRecord, request.getDnsType()))
-                .toList();
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(lookupNames, request.getDnsType());
 
         ChallengeValidationResponse challengeValidationResponse = null;
+        if (mpicDnsDetails.dcvError() == null) {
+            List<String> dnsValues = mpicDnsDetails.dnsRecords().stream()
+                    .map(DnsRecord::value)
+                    .toList();
 
-        switch (request.getChallengeType()) {
-            case RANDOM_VALUE -> challengeValidationResponse = validateRandomValue(recordValues, request);
-            case REQUEST_TOKEN -> challengeValidationResponse = validateRequestToken(recordValues, request);
+            switch (request.getChallengeType()) {
+                case RANDOM_VALUE -> challengeValidationResponse = validateRandomValue(dnsValues, request);
+                case REQUEST_TOKEN -> challengeValidationResponse = validateRequestToken(dnsValues, request);
+            }
         }
 
-        return buildDnsValidationResponse(challengeValidationResponse, dnsData, request.getDnsType(), request.getChallengeType());
+        return buildDnsValidationResponse(challengeValidationResponse, mpicDnsDetails, request.getDnsType(), request.getChallengeType());
     }
 
     /**
@@ -125,18 +122,25 @@ public class DnsValidationHandler {
      * includes any errors encountered during the validation process.
      *
      * @param challengeValidationResponse the token validator response
-     * @param dnsData the DNS data
+     * @param mpicDnsDetails the DNS data
      * @param dnsType the DNS type (CNAME, TXT, or CAA)
      * @param challengeType the challenge type (RANDOM_VALUE or REQUEST_TOKEN)
      * @return the DNS validation response
      */
     DnsValidationResponse buildDnsValidationResponse(ChallengeValidationResponse challengeValidationResponse,
-                                                     DnsData dnsData,
+                                                     MpicDnsDetails mpicDnsDetails,
                                                      DnsType dnsType,
                                                      ChallengeType challengeType) {
         if (challengeValidationResponse == null) {
-            return new DnsValidationResponse(false, dnsData.serverWithData(), dnsData.domain(), dnsType,
-                    null, null, Set.of());
+            // If the challenge validation response is null, it means there was an error in the DNS lookup
+            DcvError dcvError = mpicDnsDetails.dcvError() == null ? DcvError.DNS_LOOKUP_RECORD_NOT_FOUND : mpicDnsDetails.dcvError();
+            return new DnsValidationResponse(false,
+                    mpicDnsDetails.mpicDetails(),
+                    mpicDnsDetails.domain(),
+                    dnsType,
+                    null,
+                    null,
+                    Set.of(dcvError));
         }
 
         String validRandomValue = null;
@@ -149,27 +153,11 @@ public class DnsValidationHandler {
         }
 
         return new DnsValidationResponse(challengeValidationResponse.challengeValue().isPresent(),
-                dnsData.serverWithData(), dnsData.domain(), dnsType, validRandomValue, validRequestToken,
+                mpicDnsDetails.mpicDetails(),
+                mpicDnsDetails.domain(),
+                dnsType,
+                validRandomValue,
+                validRequestToken,
                 challengeValidationResponse.errors());
-    }
-
-    /**
-     * Retrieves the string value of a DNS record based on its type.
-     * <p>
-     * This method extracts the string value from a DNS record based on the specified DNS type. It supports different
-     * types of DNS records, such as CNAME, TXT, and CAA, and returns the corresponding string representation of the
-     * record value.
-     *
-     * @param dnsRecord the DNS record
-     * @param type the type of DNS record
-     * @return the string value of the DNS record
-     */
-    String getDnsRecordStringValue(Record dnsRecord, DnsType type) {
-        return switch (type) {
-            case CNAME -> ((CNAMERecord) dnsRecord).getTarget().toString();
-            case TXT -> String.join(System.lineSeparator(), ((TXTRecord) dnsRecord).getStrings());
-            case CAA -> ((CAARecord) dnsRecord).getValue();
-            default -> throw new IllegalStateException("Unexpected value: " + type);
-        };
     }
 }

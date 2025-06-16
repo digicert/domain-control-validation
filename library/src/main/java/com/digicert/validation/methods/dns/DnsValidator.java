@@ -17,6 +17,7 @@ import com.digicert.validation.random.RandomValueVerifier;
 import com.digicert.validation.utils.DomainNameUtils;
 import com.digicert.validation.utils.StateValidationUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 
 import java.time.Instant;
 import java.util.List;
@@ -51,6 +52,9 @@ public class DnsValidator {
     /** List of allowed DNS Types for DNS Validation */
     private final List<DnsType> allowedDnsTypes = List.of(DnsType.CNAME, DnsType.TXT, DnsType.CAA);
 
+    /** The log level used for logging errors related to domain control validation (DCV). */
+    private final Level logLevelForDcvErrors;
+
     /**
      * Constructor for DnsValidator
      * <p>
@@ -64,6 +68,7 @@ public class DnsValidator {
         this.dnsValidationHandler = dcvContext.get(DnsValidationHandler.class);
         this.randomValueVerifier = dcvContext.get(RandomValueVerifier.class);
         this.domainNameUtils = dcvContext.get(DomainNameUtils.class);
+        logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
     }
 
     /**
@@ -117,13 +122,18 @@ public class DnsValidator {
         DnsValidationResponse dnsValidationResponse = dnsValidationHandler.validate(dnsValidationRequest);
 
         if (dnsValidationResponse.isValid()) {
+            // Set the timestamp of when the validation was completed
+            // This time should be within a few ms of the validation succeeding
+            Instant validationInstant = Instant.now();
+
             log.info("event_id={} domain={}", LogEvents.DNS_VALIDATION_SUCCESSFUL, dnsValidationRequest.getDomain());
-            return createDomainValidationEvidence(dnsValidationRequest, dnsValidationResponse);
+            return createDomainValidationEvidence(dnsValidationRequest, dnsValidationResponse, validationInstant);
         } else {
-            log.info("event_id={} domain={} server={} dnsType={} errors={}",
+            log.atLevel(logLevelForDcvErrors).log(
+                    "event_id={} domain={} mpic_details={} dnsType={} errors={}",
                     LogEvents.DNS_VALIDATION_FAILED,
                     dnsValidationRequest.getDomain(),
-                    dnsValidationResponse.server(),
+                    dnsValidationResponse.mpicDetails(),
                     dnsValidationRequest.getDnsType().toString(),
                     dnsValidationResponse.errors());
 
@@ -136,17 +146,19 @@ public class DnsValidator {
      *
      * @param dnsValidationRequest  The DnsValidationRequest object containing the domain, DNS Type, challenge type, and Validation State used
      * @param dnsValidationResponse The DnsValidationResponse object containing the server, domain, and random value or request token used
+     * @param validationInstant     The Instant when the validation was completed
      * @return DomainValidationEvidence object containing the domain validation evidence
      */
     private DomainValidationEvidence createDomainValidationEvidence(DnsValidationRequest dnsValidationRequest,
-                                                                    DnsValidationResponse dnsValidationResponse) {
+                                                                    DnsValidationResponse dnsValidationResponse,
+                                                                    Instant validationInstant) {
         return DomainValidationEvidence.builder()
                 .domain(dnsValidationRequest.getDomain())
                 .dcvMethod(dnsValidationRequest.getValidationState().dcvMethod())
-                .validationDate(Instant.now())
+                .validationDate(validationInstant)
                 // DNS Specific Values
+                .mpicDetails(dnsValidationResponse.mpicDetails())
                 .dnsType(dnsValidationRequest.getDnsType())
-                .dnsServer(dnsValidationResponse.server())
                 .dnsRecordName(dnsValidationResponse.domain())
                 .randomValue(dnsValidationResponse.validRandomValue())
                 .requestToken(dnsValidationResponse.validRequestToken())

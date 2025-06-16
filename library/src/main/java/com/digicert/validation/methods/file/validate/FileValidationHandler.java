@@ -4,15 +4,14 @@ import com.digicert.validation.DcvContext;
 import com.digicert.validation.challenges.ChallengeValidationResponse;
 import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
-import com.digicert.validation.client.file.FileClient;
-import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
-import com.digicert.validation.enums.LogEvents;
+import com.digicert.validation.mpic.MpicFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Handles the validation of file-based domain control validation (DCV) requests.
@@ -25,8 +24,8 @@ import java.util.*;
 @Slf4j
 public class FileValidationHandler {
 
-    /** The file validation client. */
-    private FileClient fileClient;
+    /** The MPIC file service used to fetch file validation details. */
+    private final MpicFileService mpicFileService;
 
     /** The random value validator used to confirm that the file text contains the expected random value. */
     private final RandomValueValidator randomValueValidator;
@@ -53,7 +52,7 @@ public class FileValidationHandler {
      * @param dcvContext context where we can find the needed dependencies / configuration
      */
     public FileValidationHandler(DcvContext dcvContext) {
-        fileClient = dcvContext.get(FileClient.class);
+        mpicFileService = dcvContext.get(MpicFileService.class);
         randomValueValidator = dcvContext.get(RandomValueValidator.class);
         requestTokenValidator = dcvContext.get(RequestTokenValidator.class);
 
@@ -75,50 +74,52 @@ public class FileValidationHandler {
     public FileValidationResponse validate(FileValidationRequest validationRequest) {
         List<String> fileUrls = getFileUrls(validationRequest);
         ChallengeType challengeType = validationRequest.getChallengeType();
-        Set<DcvError> errors = new HashSet<>();
 
-        for (String fileUrl : fileUrls) {
-            FileClientResponse fileClientResponse = fileClient.executeRequest(fileUrl);
+        MpicFileDetails mpicFileDetails = mpicFileService.getMpicFileDetails(fileUrls);
+        ChallengeValidationResponse challengeValidationResponse = null;
 
-            // Check and find errors in the file validation response
-            Optional<DcvError> responseError =  getErrorsFromFileClientResponse(fileClientResponse);
-            if (responseError.isPresent()) {
-                errors.add(responseError.get());
-                continue;
-            }
+        if (mpicFileDetails.dcvError() == null) {
+            String fileContent = mpicFileDetails.fileContents();
+            challengeValidationResponse = getValidChallengeResponse(validationRequest, fileContent);
+        }
 
-            // Check and find errors in the token validation response
-            ChallengeValidationResponse challengeValidationResponse = getValidChallengeResponse(validationRequest, fileClientResponse.getFileContent());
-            if (challengeValidationResponse.challengeValue().isEmpty() && !challengeValidationResponse.errors().isEmpty()) {
-                errors.addAll(challengeValidationResponse.errors());
-                continue;
-            }
+        return buildFileValidationResponse(challengeValidationResponse, mpicFileDetails, challengeType, validationRequest);
+    }
 
-            FileValidationResponse.FileValidationResponseBuilder responseBuilder = FileValidationResponse.builder()
-                    .isValid(challengeValidationResponse.challengeValue().isPresent())
+    private FileValidationResponse buildFileValidationResponse(ChallengeValidationResponse challengeValidationResponse, MpicFileDetails mpicFileDetails, ChallengeType challengeType, FileValidationRequest validationRequest) {
+        if (challengeValidationResponse == null) {
+            DcvError dcvError = mpicFileDetails.dcvError() == null ? DcvError.FILE_VALIDATION_EMPTY_RESPONSE : mpicFileDetails.dcvError();
+            return FileValidationResponse.builder()
+                    .isValid(false)
+                    .mpicDetails(mpicFileDetails.mpicDetails())
                     .domain(validationRequest.getDomain())
-                    .fileUrl(fileUrl)
-                    .challengeType(challengeType);
+                    .fileUrl(mpicFileDetails.fileUrl())
+                    .challengeType(challengeType)
+                    .errors(Set.of(dcvError))
+                    .build();
+        }
 
-            switch (challengeType) {
-                case RANDOM_VALUE -> responseBuilder.validRandomValue(challengeValidationResponse.challengeValue().orElse(null));
-                case REQUEST_TOKEN -> responseBuilder.validRequestToken(challengeValidationResponse.challengeValue().orElse(null));
-            }
+        String validRandomValue = null;
+        String validRequestToken = null;
 
-            FileValidationResponse response = responseBuilder.build();
-            if (response.isValid()) {
-                return response;
-            }
+        if (challengeType == ChallengeType.RANDOM_VALUE) {
+            validRandomValue = challengeValidationResponse.challengeValue().orElse(null);
+        } else {
+            validRequestToken = challengeValidationResponse.challengeValue().orElse(null);
         }
 
         return FileValidationResponse.builder()
-                .isValid(false)
+                .isValid(challengeValidationResponse.challengeValue().isPresent())
+                .mpicDetails(mpicFileDetails.mpicDetails())
                 .domain(validationRequest.getDomain())
-                .fileUrl(fileUrls.getFirst())
+                .fileUrl(mpicFileDetails.fileUrl())
                 .challengeType(challengeType)
-                .errors(errors)
+                .validRandomValue(validRandomValue)
+                .validRequestToken(validRequestToken)
+                .errors(challengeValidationResponse.errors())
                 .build();
     }
+
 
     /**
      * Validates the presence of the random value or a valid request token in the provided file content.
@@ -132,45 +133,6 @@ public class FileValidationHandler {
             case RANDOM_VALUE -> randomValueValidator.validate(fileValidationRequest.getRandomValue(), fileContent);
             case REQUEST_TOKEN -> requestTokenValidator.validate(fileValidationRequest.getRequestTokenData(), fileContent);
         };
-    }
-
-    /**
-     * Checks if the file client response is valid.
-     *
-     * @param fileClientResponse the file validation client response
-     * @return empty list if valid, otherwise a list of errors
-     */
-    private Optional<DcvError> getErrorsFromFileClientResponse(FileClientResponse fileClientResponse) {
-
-        if (fileClientResponse.getException() != null) {
-            log.info("event_id={} error={} exception_message={}",
-                    LogEvents.FILE_VALIDATION_BAD_RESPONSE,
-                    fileClientResponse.getDcvError(),
-                    fileClientResponse.getException().getMessage());
-            return Optional.of(fileClientResponse.getDcvError());
-        }
-
-        // Although the BRs allow for any 2xx level response, the expectation is that the response will be 200.
-        // https://tools.ietf.org/html/rfc7231#section-6.3.1
-        if (fileClientResponse.getStatusCode() != 200) {
-            log.info("event_id={} error={} status_code={}",
-                    LogEvents.FILE_VALIDATION_BAD_RESPONSE,
-                    DcvError.FILE_VALIDATION_INVALID_STATUS_CODE,
-                    fileClientResponse.getStatusCode());
-
-            return Optional.of(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE);
-        }
-
-        if (StringUtils.isEmpty(fileClientResponse.getFileContent())) {
-            log.info("event_id={} error={} status_code={}",
-                    LogEvents.FILE_VALIDATION_BAD_RESPONSE,
-                    DcvError.FILE_VALIDATION_EMPTY_RESPONSE,
-                    fileClientResponse.getStatusCode());
-
-            return Optional.of(DcvError.FILE_VALIDATION_EMPTY_RESPONSE);
-        }
-
-        return Optional.empty();
     }
 
     /**
@@ -192,7 +154,7 @@ public class FileValidationHandler {
             domainPath = fileValidationRequest.getDomain() + FILE_PATH + defaultFileValidationFilename;
         }
         if (fileValidationCheckHttps) {
-            return List.of("http://" + domainPath, "https://" + domainPath);
+            return List.of("https://" + domainPath, "http://" + domainPath);
         }
         else {
             return List.of("http://" + domainPath);

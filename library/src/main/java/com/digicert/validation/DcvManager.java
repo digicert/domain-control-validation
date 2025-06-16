@@ -1,6 +1,7 @@
 package com.digicert.validation;
 
 import com.digicert.validation.client.dns.DnsClient;
+import com.digicert.validation.client.file.FileClient;
 import com.digicert.validation.methods.dns.DnsValidator;
 import com.digicert.validation.methods.email.EmailValidator;
 import com.digicert.validation.methods.file.FileValidator;
@@ -59,6 +60,11 @@ public class DcvManager {
     private final DnsClient dnsClient;
 
     /**
+     * The File Client used for file operations. Exposed to allow for use outside the library.
+     */
+    private final FileClient fileClient;
+
+    /**
      * Private constructor to enforce the use of the Builder for object creation.
      *
      * @param dcvConfiguration the configuration for DCV
@@ -70,6 +76,7 @@ public class DcvManager {
         this.emailValidator = dcvContext.get(EmailValidator.class);
         this.fileValidator = dcvContext.get(FileValidator.class);
         this.dnsClient = dcvContext.get(DnsClient.class);
+        this.fileClient = dcvContext.get(FileClient.class);
     }
 
     /** Builder class for constructing DcvManager instances. */

@@ -29,7 +29,7 @@ public class CSRGenerator {
     }
 
     /**
-     * Generates a key pair if one has not already been generated. This is not in the constructor because of the exception handling.
+     * Generates a key pair. This method uses RSA with a key size of 2048 bits.
      */
     KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");

@@ -1,35 +1,39 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
+import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.DnsClient;
-import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
+import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.xbill.DNS.TXTRecord;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.digicert.validation.methods.email.prepare.provider.DnsTxtEmailProvider.DNS_TXT_EMAIL_AUTHORIZATION_PREFIX;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class DnsTxtEmailProviderTest {
 
-    private DnsClient dnsClient;
+    private MpicDnsService mpicDnsService;
 
     private DnsTxtEmailProvider dnsTxtEmailProvider;
 
     @BeforeEach
     public void setUp() {
-        dnsClient = mock(DnsClient.class);
+        mpicDnsService = mock(MpicDnsService.class);
 
         DcvContext dcvContext = mock(DcvContext.class);
-        when(dcvContext.get(DnsClient.class)).thenReturn(dnsClient);
+        when(dcvContext.get(MpicDnsService.class)).thenReturn(mpicDnsService);
+        when(dcvContext.getDcvConfiguration()).thenReturn(new DcvConfiguration.DcvConfigurationBuilder().build());
 
         dnsTxtEmailProvider = new DnsTxtEmailProvider(dcvContext);
     }
@@ -37,18 +41,15 @@ class DnsTxtEmailProviderTest {
     @Test
     void testFindEmailsForDomainTxt() throws PreparationException {
         String domain = "example.com";
-        List<String> dnsValues = List.of("test@example.com", "invalid-email");
-
-        // Mock the TXTRecord to return the dnsValues
-        TXTRecord dnsRecord = mock(TXTRecord.class);
-        when(dnsRecord.getStrings()).thenReturn(dnsValues);
+        List<DnsRecord> dnsRecords = List.of(
+                new DnsRecord(DnsType.TXT, domain, "test@example.com", 0, 0, ""),
+                new DnsRecord(DnsType.TXT, domain, "invalid-email", 0, 0, ""));
 
         // Create DnsData with the mocked TXTRecord
-        String host = "some-host";
-        DnsData dnsData = new DnsData(List.of(host), "some-name", DnsType.TXT, List.of(dnsRecord),
-                Set.of(), host);
-        String prefixedDomain = String.format("%s.%s", DnsTxtEmailProvider.DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
-        when(dnsClient.getDnsData(List.of(prefixedDomain), DnsType.TXT)).thenReturn(dnsData);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
+        List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
+        when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
         Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain);
@@ -60,12 +61,37 @@ class DnsTxtEmailProviderTest {
     }
 
     @Test
-    void testFindEmailsForDomain_throwsPreparationException() {
+    void testFindEmailsForDomainTxt_multipleEmails() throws PreparationException {
         String domain = "example.com";
-        String prefixedDomain = String.format("%s.%s", DnsTxtEmailProvider.DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
-        DnsData dnsData = new DnsData(Collections.emptyList(), "some-name", DnsType.TXT, List.of(),
-                Set.of(DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION), "some-host");
-        when(dnsClient.getDnsData(List.of(prefixedDomain), DnsType.TXT)).thenReturn(dnsData);
+        List<DnsRecord> dnsRecords = List.of(
+                new DnsRecord(DnsType.TXT, domain, "test@example.com", 0, 0, ""),
+                new DnsRecord(DnsType.TXT, domain, "another@example.com", 0, 0, ""));
+
+        // Create DnsData with the mocked TXTRecord
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
+        List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
+        when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
+
+        // Call the method under test
+        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain);
+
+        // Verify the results
+        assertTrue(emails.contains("test@example.com"));
+        assertTrue(emails.contains("another@example.com"));
+        assertEquals(2, emails.size());
+    }
+
+    @Test
+    void testFindEmailsForDomain_dnsLookupError() {
+        String domain = "example.com";
+        List<DnsRecord> dnsRecords = List.of();
+
+        // Create DnsData with the mocked TXTRecord
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION);
+        List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
+        when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         PreparationException exception = assertThrows(PreparationException.class, () -> dnsTxtEmailProvider.findEmailsForDomain(domain));
 
@@ -73,18 +99,36 @@ class DnsTxtEmailProviderTest {
     }
 
     @Test
-    void testFindEmailsForDomainTxt_missingDnsData() {
+    void testFindEmailsForDomain_noEmailsFound() {
         String domain = "example.com";
-        String prefixedDomain = String.format("%s.%s", DnsTxtEmailProvider.DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
-        List<String> domainList = List.of(prefixedDomain);
-        String host = "some-host";
-        DnsData dnsData = new DnsData(List.of(), "", DnsType.TXT, List.of(), Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND), host);
-        when(dnsClient.getDnsData(domainList, DnsType.TXT)).thenReturn(dnsData);
+        List<DnsRecord> dnsRecords = List.of(
+                new DnsRecord(DnsType.TXT, domain, "one-invalid-email", 0, 0, ""),
+                new DnsRecord(DnsType.TXT, domain, "another-invalid-email", 0, 0, ""));
 
-        // Call the method under test
+        // Create DnsData with the mocked TXTRecord
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
+        List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
+        when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
+
         PreparationException exception = assertThrows(PreparationException.class, () -> dnsTxtEmailProvider.findEmailsForDomain(domain));
 
-        // Verify the results
+        assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
+    }
+
+    @Test
+    void testFindEmailsForDomainTxt_missingDnsData() {
+        String domain = "example.com";
+        List<DnsRecord> dnsRecords = List.of();
+
+        // Create DnsData with the mocked TXTRecord
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, DcvError.DNS_LOOKUP_RECORD_NOT_FOUND);
+        List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
+        when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
+
+        PreparationException exception = assertThrows(PreparationException.class, () -> dnsTxtEmailProvider.findEmailsForDomain(domain));
+
         assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
     }
 }
