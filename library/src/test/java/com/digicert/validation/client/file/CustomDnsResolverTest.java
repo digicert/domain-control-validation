@@ -62,7 +62,7 @@ class CustomDnsResolverTest {
     void testCustomDnsResolver_resolve() throws Exception {
         String domain = "digicert.com";
         String digicertIp = "64.78.193.234";
-        DnsValue dnsValue = new DnsValue(DnsType.A, domain, "A/" + digicertIp, 3600);
+        DnsValue dnsValue = new DnsValue(DnsType.A, domain, digicertIp, 3600);
         DnsData expectedDnsData = new DnsData(List.of("dnsServer"), domain, DnsType.A, List.of(dnsValue), Set.of(), "dnsServer");
         when(dnsClient.getDnsData(List.of(domain), DnsType.A)).thenReturn(expectedDnsData);
 

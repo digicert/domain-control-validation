@@ -221,7 +221,7 @@ public class DnsClient {
         switch (recordValue) {
             case TXTRecord txtRecord -> dnsValue.setValue(txtRecord.rdataToString());
             case CNAMERecord cnameRecord -> dnsValue.setValue(cnameRecord.getTarget().toString());
-            case ARecord aRecord -> dnsValue.setValue(aRecord.getAddress().toString());
+            case ARecord aRecord -> dnsValue.setValue(aRecord.getAddress().getHostAddress());
             case MXRecord mxRecord -> dnsValue.setValue(mxRecord.getTarget().toString());
             case CAARecord caaRecord -> dnsValue = populateCaaRecordData(caaRecord);
             case DSRecord dsRecord -> dnsValue.setValue(dsRecord.toString());
@@ -267,8 +267,8 @@ public class DnsClient {
         ClientStatus clientStatus = switch (e) {
             case TextParseException ignored -> ClientStatus.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
             case UnknownHostException ignored -> ClientStatus.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
-            case IOException ignored -> {
-                if (ignored.getCause() instanceof TimeoutException) {
+            case IOException ex -> {
+                if (ex.getCause() instanceof TimeoutException) {
                     yield ClientStatus.DNS_LOOKUP_TIMEOUT;
                 } else {
                     yield ClientStatus.DNS_LOOKUP_IO_EXCEPTION;
@@ -298,30 +298,30 @@ public class DnsClient {
      */
     private ClientStatus getClientStatus(Message message, List<DnsValue> foundDnsValues) {
         int rcode = message.getRcode();
-        ClientStatus agentStatus;
+        ClientStatus clientStatus;
 
         switch (rcode) {
             case Rcode.NOERROR ->
                 // If the response code is NOERROR, check if are DNS values that we found
-                    agentStatus = foundDnsValues.isEmpty() ? ClientStatus.DNS_LOOKUP_RECORD_NOT_FOUND : ClientStatus.DNS_LOOKUP_SUCCESS;
+                    clientStatus = foundDnsValues.isEmpty() ? ClientStatus.DNS_LOOKUP_RECORD_NOT_FOUND : ClientStatus.DNS_LOOKUP_SUCCESS;
 
             case Rcode.NXDOMAIN -> {
                 // This response could mean that the domain does not exist or the record does not exist
                 // Check if the answer section is empty to determine the status
                 if (message.getSection(Section.ANSWER).isEmpty()) {
                     // If the response code is NXDOMAIN and there are no values, treat it as domain not found
-                    agentStatus = ClientStatus.DNS_LOOKUP_DOMAIN_NOT_FOUND;
+                    clientStatus = ClientStatus.DNS_LOOKUP_DOMAIN_NOT_FOUND;
                 } else {
                     // If the response code is NXDOMAIN but there are values, treat it as a record not found
-                    agentStatus = ClientStatus.DNS_LOOKUP_RECORD_NOT_FOUND;
+                    clientStatus = ClientStatus.DNS_LOOKUP_RECORD_NOT_FOUND;
                 }
             }
             default ->
                 // Treat REFUSED and all other cases as IO Exception
-                    agentStatus = ClientStatus.DNS_LOOKUP_IO_EXCEPTION;
+                    clientStatus = ClientStatus.DNS_LOOKUP_IO_EXCEPTION;
         }
 
-        return agentStatus;
+        return clientStatus;
     }
 
     /**

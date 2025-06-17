@@ -55,8 +55,7 @@ public class CustomDnsResolver extends SystemDefaultDnsResolver {
                     .filter(value -> value.getDnsType() == DnsType.A)
                     .map(value -> {
                         try {
-                            String ipString = value.getValue().split("/")[1];
-                            return InetAddress.getByName(ipString);
+                            return InetAddress.getByName(value.getValue());
                         } catch (Exception e) {
                             throw new RuntimeException("Failed to convert DNS value to InetAddress: " + value.getValue(), e);
                         }

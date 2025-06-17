@@ -125,6 +125,30 @@ public class FileClientTest {
     }
 
     @Test
+    void testFileClient_1xxStatusCode() {
+
+        String expectedResponse = "Early Hint";
+        mockServer.when(
+                request()
+                        .withMethod("GET")
+                        .withPath(TOKEN_PATH + "fileauth.txt")
+        ).respond(
+                response()
+                        .withStatusCode(103)
+                        .withContentType(MediaType.TEXT_PLAIN)
+                        .withBody(expectedResponse)
+        );
+
+        String fileUrl = "http://localhost:" + mockServer.getLocalPort() + TOKEN_PATH + "fileauth.txt";
+        FileClientResponse actualResponse = fileClient.executeRequest(fileUrl);
+
+        assertNotNull(actualResponse);
+        assertNull(actualResponse.getFileContent());
+        assertNotNull(actualResponse.getException());
+
+    }
+
+    @Test
     void testFileClient_ResponseSizeLimit() throws UnknownHostException {
         DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
                 .dnsServers(List.of("localhost"))

@@ -292,7 +292,7 @@ public enum DcvError {
     /** Error indicating a bad request during DNS lookup. */
     DNS_LOOKUP_BAD_REQUEST,
 
-    /** general error looking up DNS. Used when the error is not one of the more specific DNS lookup errors. */
+    /** General error looking up DNS. Used when the error is not one of the more specific DNS lookup errors. */
     DNS_LOOKUP_EXCEPTION,
 
     /**
