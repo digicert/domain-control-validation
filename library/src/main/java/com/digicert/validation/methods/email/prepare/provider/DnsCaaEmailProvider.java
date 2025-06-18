@@ -1,8 +1,10 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.client.dns.CaaValue;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
+import com.digicert.validation.client.dns.DnsValue;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
@@ -65,13 +67,14 @@ public class DnsCaaEmailProvider implements EmailProvider {
     public Set<String> findEmailsForDomain(String domain) throws PreparationException {
         DnsData dnsData = dnsClient.getDnsData(List.of(domain), DnsType.CAA);
 
-        Set<String> emails = dnsData.records().stream()
-                .filter(dnsRecord -> ((CAARecord) dnsRecord).getTag().equals(DNS_CAA_EMAIL_TAG))
-                .map(dnsRecord -> ((CAARecord) dnsRecord).getValue())
+        Set<String> emails = dnsData.values().stream()
+                .filter(dnsValue -> dnsValue.getDnsType().equals(DnsType.CAA))
+                .filter(dnsRecord -> ((CaaValue) dnsRecord).getTag().equals(DNS_CAA_EMAIL_TAG))
+                .map(DnsValue::getValue)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (emails.isEmpty()) {
-            log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.records().size());
+            log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.values().size());
             throw new PreparationException(dnsData.errors());
         }
 
