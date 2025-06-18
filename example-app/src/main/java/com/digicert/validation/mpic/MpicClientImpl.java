@@ -1,8 +1,10 @@
 package com.digicert.validation.mpic;
 
 import com.digicert.validation.DcvManager;
+import com.digicert.validation.client.dns.CaaValue;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
+import com.digicert.validation.client.dns.DnsValue;
 import com.digicert.validation.client.file.FileClient;
 import com.digicert.validation.client.file.FileClientResponse;
 import com.digicert.validation.enums.DcvError;
@@ -18,8 +20,6 @@ import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
 import com.digicert.validation.mpic.api.file.SecondaryFileResponse;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.xbill.DNS.*;
-import org.xbill.DNS.Record;
 
 import java.util.List;
 import java.util.Set;
@@ -61,38 +61,31 @@ public class MpicClientImpl implements MpicClientInterface {
     }
 
     private List<DnsRecord> mapToRecords(DnsData dnsData, DnsType dnsType) {
-        if (dnsData == null || dnsData.records() == null || dnsData.records().isEmpty()) {
+        if (dnsData == null || dnsData.values() == null || dnsData.values().isEmpty()) {
             return List.of();
         }
 
-        return dnsData.records().stream()
-                .map(this::mapRecordToDnsRecord)
+        return dnsData.values().stream()
+                .map(this::mapDnsValueToDnsRecord)
                 .toList();
     }
 
-    private DnsRecord mapRecordToDnsRecord(Record recordValue) {
-        DnsRecord.DnsRecordBuilder dnsRecordBuilder = DnsRecord.builder();
-
-        switch (recordValue) {
-            case TXTRecord txtRecord -> dnsRecordBuilder.value(txtRecord.rdataToString());
-            case CNAMERecord cnameRecord -> dnsRecordBuilder.value(cnameRecord.getTarget().toString());
-            case ARecord aRecord -> dnsRecordBuilder.value(aRecord.getAddress().toString());
-            case MXRecord mxRecord -> dnsRecordBuilder.value(mxRecord.getTarget().toString());
-            case CAARecord caaRecord -> {
-                dnsRecordBuilder.value(caaRecord.getValue());
-                dnsRecordBuilder.flag(caaRecord.getFlags());
-                dnsRecordBuilder.tag(caaRecord.getTag());
-            }
-            case DSRecord dsRecord -> dnsRecordBuilder.value(dsRecord.toString());
-            case RRSIGRecord rrsigRecord -> dnsRecordBuilder.value(rrsigRecord.toString());
-            default -> throw new IllegalStateException("Unexpected value: " + recordValue);
+    private DnsRecord mapDnsValueToDnsRecord(DnsValue dnsValue) {
+        if (dnsValue == null) {
+            return null;
         }
 
-        dnsRecordBuilder.name(recordValue.getName().toString());
-        dnsRecordBuilder.dnsType(DnsType.fromInt(recordValue.getType()));
-        dnsRecordBuilder.ttl(recordValue.getTTL());
+        int flag = 0;
+        String tag = null;
 
-        return dnsRecordBuilder.build();
+        if(dnsValue.getDnsType() == DnsType.CAA){
+            // For CAA records, we need to handle the tag and flag fields
+            flag = ((CaaValue)dnsValue).getFlag();
+            tag = ((CaaValue)dnsValue).getTag();
+
+        }
+
+        return new DnsRecord(dnsValue.getDnsType(), dnsValue.getName(), dnsValue.getValue(), dnsValue.getTtl(), flag, tag);
     }
 
     private AgentStatus mapDnsToAgentStatus(Set<DcvError> errors) {

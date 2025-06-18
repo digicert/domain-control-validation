@@ -48,12 +48,18 @@ public class CustomDnsResolver extends SystemDefaultDnsResolver {
     @Override
     public InetAddress[] resolve(String host) throws UnknownHostException {
         try {
+
             return dnsClient.getDnsData(List.of(host), DnsType.A)
-                    .records()
+                    .values()
                     .stream()
-                    .filter(ARecord.class::isInstance)
-                    .map(ARecord.class::cast)
-                    .map(ARecord::getAddress)
+                    .filter(value -> value.getDnsType() == DnsType.A)
+                    .map(value -> {
+                        try {
+                            return InetAddress.getByName(value.getValue());
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to convert DNS value to InetAddress: " + value.getValue(), e);
+                        }
+                    })
                     .toArray(InetAddress[]::new);
         } catch (Exception e) {
             throw new UnknownHostException("Failed to resolve host: " + host + " due to " + e.getMessage());

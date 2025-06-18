@@ -4,6 +4,7 @@ import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.LogEvents;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.ConnectTimeoutException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -95,7 +96,17 @@ public class FileClient implements Closeable {
             createHttpClient().execute(request, fileResponse -> {
                 try {
                     clientResponse.setStatusCode(fileResponse.getCode());
-                    clientResponse.setFileContent(EntityUtils.toString(fileResponse.getEntity(), maxBodyLength));
+                    String content = EntityUtils.toString(fileResponse.getEntity(), maxBodyLength);
+                    clientResponse.setFileContent(content);
+
+                    if (clientResponse.getStatusCode() == 404){
+                        clientResponse.setDcvError(DcvError.FILE_VALIDATION_NOT_FOUND);
+                    } else if (clientResponse.getStatusCode() >= 400 && clientResponse.getStatusCode() < 500) {
+                        clientResponse.setDcvError(DcvError.FILE_VALIDATION_CLIENT_ERROR);
+                    } else if (clientResponse.getStatusCode() >= 500) {
+                        clientResponse.setDcvError(DcvError.FILE_VALIDATION_SERVER_ERROR);
+                    }
+
                     log.info("event_id={} url={} status_code={} length={}", LogEvents.FILE_VALIDATION_RESPONSE, fileUrl, fileResponse.getCode(), clientResponse.getFileContent().length());
                 } catch (ParseException e) {
                     log.atLevel(logLevelForDcvErrors).log("event_id={} status_code={} exception_message={}", LogEvents.FILE_VALIDATION_BAD_RESPONSE, fileResponse.getCode(), e.getMessage());
@@ -104,9 +115,16 @@ public class FileClient implements Closeable {
                 }
                 return fileResponse;
             });
+        } catch (ConnectTimeoutException e) {
+            // socket and connection timeouts are handled here
+            log.atLevel(logLevelForDcvErrors).log("event_id={} exception_message={}", LogEvents.FILE_VALIDATION_CONNECTION_TIMEOUT_ERROR, e.getMessage());
+            clientResponse.setException(e);
+            clientResponse.setStatusCode(503);
+            clientResponse.setDcvError(DcvError.FILE_VALIDATION_TIMEOUT);
         } catch (Exception e) {
             log.atLevel(logLevelForDcvErrors).log("event_id={} exception_message={}", LogEvents.FILE_VALIDATION_CLIENT_ERROR, e.getMessage());
             clientResponse.setException(e);
+            clientResponse.setStatusCode(500);
             clientResponse.setDcvError(DcvError.FILE_VALIDATION_CLIENT_ERROR);
         }
         return clientResponse;
