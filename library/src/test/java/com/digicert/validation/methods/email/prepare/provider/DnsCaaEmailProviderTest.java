@@ -1,6 +1,7 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.client.dns.CaaValue;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DcvError;
@@ -38,9 +39,10 @@ public class DnsCaaEmailProviderTest {
         String domain = "example.com";
         String caaEmail = "dnscaaemail@example.com";
 
-        CAARecord caaRecord = mock(CAARecord.class);
+        CaaValue caaRecord = mock(CaaValue.class);
         when(caaRecord.getTag()).thenReturn(DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
         when(caaRecord.getValue()).thenReturn(caaEmail);
+        when(caaRecord.getDnsType()).thenReturn(DnsType.CAA);
 
         String host = "some-host";
         DnsData dnsData = new DnsData(List.of(host), "some-name", DnsType.CAA, List.of(caaRecord),
@@ -60,17 +62,20 @@ public class DnsCaaEmailProviderTest {
         String domain = "example.com";
         String caaEmail = "dnscaaemail@example.com";
 
-        CAARecord caaEmailRecord = mock(CAARecord.class);
+        CaaValue caaEmailRecord = mock(CaaValue.class);
         when(caaEmailRecord.getTag()).thenReturn(DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
         when(caaEmailRecord.getValue()).thenReturn(caaEmail);
+        when(caaEmailRecord.getDnsType()).thenReturn(DnsType.CAA);
 
-        CAARecord caaIssueRecord = mock(CAARecord.class);
+        CaaValue caaIssueRecord = mock(CaaValue.class);
         when(caaIssueRecord.getTag()).thenReturn("issue");
         when(caaIssueRecord.getValue()).thenReturn(domain);
+        when(caaIssueRecord.getDnsType()).thenReturn(DnsType.CAA);
 
-        CAARecord caaIssueWildRecord = mock(CAARecord.class);
+        CaaValue caaIssueWildRecord = mock(CaaValue.class);
         when(caaIssueWildRecord.getTag()).thenReturn("issueWild");
         when(caaIssueWildRecord.getValue()).thenReturn(domain);
+        when(caaIssueWildRecord.getDnsType()).thenReturn(DnsType.CAA);
 
         String host = "some-host";
         DnsData dnsData = new DnsData(List.of(host), "some-name", DnsType.CAA, List.of(caaEmailRecord, caaIssueRecord, caaIssueWildRecord),
