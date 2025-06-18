@@ -61,6 +61,15 @@ public enum DcvMethod {
     BR_3_2_2_4_7("3.2.2.4.7"),
 
     /**
+     * Email to DNS CAA Contact.
+     * <p>
+     * This method involves sending an email to an address specified in a DNS CAA record. The DNS CAA record must be
+     * located at &lt;domain&gt;, and use the contactemail tag. The email will contain a random value that the recipient
+     * can use to confirm control over the domain.
+     */
+    BR_3_2_2_4_13("3.2.2.4.13"),
+
+    /**
      * Email to DNS Txt Contact.
      * <p>
      * This method involves sending an email to an address specified in a DNS TXT record. The DNS TXT record must be

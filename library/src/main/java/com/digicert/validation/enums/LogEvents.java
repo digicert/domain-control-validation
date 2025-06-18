@@ -76,6 +76,9 @@ public enum LogEvents {
     /** Log event indicating that no properly formatted DNS TXT records containing a contact were found. */
     NO_DNS_TXT_CONTACT_FOUND,
 
+    /** Log event indicating that no properly formatted DNS CAA records containing a contact email were found. */
+    NO_DNS_CAA_CONTACT_FOUND,
+
     /** Security provider used for calculating hashes was unable to load. The default token validator will not be usable. */
     SECURITY_PROVIDER_LOAD_ERROR,
 

@@ -1,5 +1,6 @@
 package com.digicert.validation.client;
 
+import com.digicert.validation.methods.email.prepare.provider.DnsCaaEmailProvider;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,19 @@ public class PdnsClient {
         restTemplate.patchForObject(PDNS_BASE_URL + "/{domainId}", pndsPatchRequest, String.class, domainId);
     }
 
+    public void addCaaRecord(String domain, List<String> recordValues) {
+        String domainId = domain + ".";
+        ResponseEntity<String> zoneRecord = restTemplate.exchange(PDNS_BASE_URL + "/{domainId}", HttpMethod.GET, null, String.class, domainId);
+        if (zoneRecord.getStatusCode().is4xxClientError()) {
+            // If the zone does not exist, create it
+            PdnsZone pdnsZone = new PdnsZone(domainId, "Native");
+            restTemplate.postForObject(PDNS_BASE_URL, pdnsZone, String.class);
+        }
+
+        PdnsPatchRequest pndsPatchRequest = createPndsPatchRequest(domainId, recordValues, PdnsRecordType.CAA, "");
+        restTemplate.patchForObject(PDNS_BASE_URL + "/{domainId}", pndsPatchRequest, String.class, domainId);
+    }
+
     private PdnsPatchRequest createPndsPatchRequest(String domainId,
                                                     List<String> randomValues,
                                                     PdnsRecordType pdnsRecordType,
@@ -93,6 +107,7 @@ public class PdnsClient {
     private DnsRecord createDnsRecord(PdnsRecordType pdnsRecordType, String value, String domainId) {
         String content = switch (pdnsRecordType) {
             case TXT -> "\"" + value + "\"";
+            case CAA -> String.format("%d %s \"%s\"", 0, DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG, value);
             case CNAME -> String.format("%s.%s", value, domainId);
             case A -> value;
         };
@@ -144,6 +159,7 @@ public class PdnsClient {
 
     public enum PdnsRecordType {
         TXT,
+        CAA,
         CNAME,
         A,
     }
