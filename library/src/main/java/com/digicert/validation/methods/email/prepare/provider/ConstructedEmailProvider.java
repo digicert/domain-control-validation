@@ -45,8 +45,8 @@ public class ConstructedEmailProvider implements EmailProvider {
      * list with the provided domain.
      *
      * @param domain The domain to construct email addresses for.
-     * @return A record containning set of constructed email addresses that can be used for domain validation. No MPIC details are present
-     * because no DNS lookups are made.
+     * @return {@link MpicEmailDetails} containing a set of constructed email addresses that can be used for domain validation.
+     *         No MPIC details are present because no DNS lookups are made.
      */
     @Override
     public MpicEmailDetails findEmailsForDomain(String domain) {

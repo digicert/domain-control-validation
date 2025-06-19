@@ -14,7 +14,7 @@ import java.util.List;
  * which could be used to determine the authenticity and origin of the email for validation purposes. The emailWithRandomValue
  * field contains a list of emails along with their associated random values, which are used for validation purposes.
  * The validationState field represents the current state of the email preparation process, indicating whether the
- * validation was successful, failed, or is still in progress. The mpicDetails fields represents a summary of the lookups
+ * validation was successful, failed, or is still in progress. The mpicDetails field represents a summary of the lookups
  * performed by the MPIC service
  *
  * @param domain               The domain associated with the email preparation.

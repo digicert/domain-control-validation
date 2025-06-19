@@ -3,8 +3,6 @@ package com.digicert.validation.methods.email.prepare.provider;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.email.prepare.MpicEmailDetails;
 
-import java.util.Set;
-
 /**
  * EmailProvider is an interface for classes that provide email contacts for domain validation.
  * <p>
@@ -21,7 +19,7 @@ public interface EmailProvider {
      * should ensure that the email addresses returned are valid and relevant for the domain validation process.
      *
      * @param domain the domain to retrieve email contacts for
-     * @return A record containing the email contacts for the domain and the MPIC Details
+     * @return {@link MpicEmailDetails} containing the email contacts for the domain and the MPIC Details
      * @throws PreparationException if an error occurs while retrieving email contacts for the domain
      */
     MpicEmailDetails findEmailsForDomain(String domain) throws PreparationException;

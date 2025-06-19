@@ -1,9 +1,6 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.CaaValue;
-import com.digicert.validation.client.dns.DnsClient;
-import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
@@ -14,7 +11,6 @@ import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.xbill.DNS.CAARecord;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,11 +41,7 @@ public class DnsCaaEmailProviderTest {
         String domain = "example.com";
         String caaEmail = "dnscaaemail@example.com";
 
-        DnsRecord caaRecord = mock(DnsRecord.class);
-        when(caaRecord.tag()).thenReturn(DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
-        when(caaRecord.value()).thenReturn(caaEmail);
-        when(caaRecord.dnsType()).thenReturn(DnsType.CAA);
-
+        DnsRecord caaRecord = new DnsRecord(DnsType.CAA, domain, caaEmail, 0, 0, DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
 
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(caaRecord), null);
@@ -68,20 +60,9 @@ public class DnsCaaEmailProviderTest {
         String domain = "example.com";
         String caaEmail = "dnscaaemail@example.com";
 
-        DnsRecord caaEmailRecord = mock(DnsRecord.class);
-        when(caaEmailRecord.tag()).thenReturn(DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
-        when(caaEmailRecord.value()).thenReturn(caaEmail);
-        when(caaEmailRecord.dnsType()).thenReturn(DnsType.CAA);
-
-        DnsRecord caaIssueRecord = mock(DnsRecord.class);
-        when(caaIssueRecord.tag()).thenReturn("issue");
-        when(caaIssueRecord.value()).thenReturn(domain);
-        when(caaIssueRecord.dnsType()).thenReturn(DnsType.CAA);
-
-        DnsRecord caaIssueWildRecord = mock(DnsRecord.class);
-        when(caaIssueWildRecord.tag()).thenReturn("issueWild");
-        when(caaIssueWildRecord.value()).thenReturn(domain);
-        when(caaIssueWildRecord.dnsType()).thenReturn(DnsType.CAA);
+        DnsRecord caaEmailRecord = new DnsRecord(DnsType.CAA, domain, caaEmail, 0, 0, DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
+        DnsRecord caaIssueRecord = new DnsRecord(DnsType.CAA, domain, "somedomain.com", 0, 0, "issue");
+        DnsRecord caaIssueWildRecord = new DnsRecord(DnsType.CAA, domain, "somedomain.com", 0, 0, "issuewild");
 
         List<DnsRecord> dnsRecords = List.of(caaEmailRecord, caaIssueRecord, caaIssueWildRecord);
 

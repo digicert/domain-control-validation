@@ -67,7 +67,7 @@ public class DnsTxtEmailProvider implements EmailProvider {
      * BR specified "_validation-contactemail" prefix.
      *
      * @param domain the domain to retrieve email contacts for
-     * @return A record containing the email contacts for the domain and the MPIC Details
+     * @return {@link MpicEmailDetails} containing the email contacts for the domain and the MPIC Details
      * @throws PreparationException if an error occurs while retrieving email contacts for the domain
      */
     @Override

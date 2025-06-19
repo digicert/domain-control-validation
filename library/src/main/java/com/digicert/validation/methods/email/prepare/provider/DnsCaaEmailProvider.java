@@ -1,7 +1,6 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
@@ -36,7 +35,7 @@ public class DnsCaaEmailProvider implements EmailProvider {
     public static final String DNS_CAA_EMAIL_TAG = "contactemail";
 
     /** The MPIC service used to fetch DNS details. */
-    final MpicDnsService mpicDnsService;
+    private final MpicDnsService mpicDnsService;
 
     /**
      * Constructs a new EmailDnsCaaProvider with the given DcvContext.
@@ -57,7 +56,7 @@ public class DnsCaaEmailProvider implements EmailProvider {
      * results to the BR specified "contactemail" tag.
      *
      * @param domain the domain to retrieve email contacts for
-     * @return A record containing a set of email contacts for the domain and the MPIC details
+     * @return {@link MpicEmailDetails} containing a set of email contacts for the domain and the MPIC details
      * @throws PreparationException if an error occurs while retrieving email contacts for the domain
      */
     @Override
