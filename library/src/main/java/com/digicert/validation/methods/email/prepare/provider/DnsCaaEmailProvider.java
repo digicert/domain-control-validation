@@ -1,16 +1,15 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.CaaValue;
 import com.digicert.validation.client.dns.DnsClient;
-import com.digicert.validation.client.dns.DnsData;
-import com.digicert.validation.client.dns.DnsValue;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.utils.DomainNameUtils;
+import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.methods.email.prepare.MpicEmailDetails;
+import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import lombok.extern.slf4j.Slf4j;
-import org.xbill.DNS.CAARecord;
 
 import java.util.List;
 import java.util.Set;
@@ -36,10 +35,8 @@ public class DnsCaaEmailProvider implements EmailProvider {
      */
     public static final String DNS_CAA_EMAIL_TAG = "contactemail";
 
-    /**
-     * The DNS client used to query DNS records.
-     */
-    private final DnsClient dnsClient;
+    /** The MPIC service used to fetch DNS details. */
+    final MpicDnsService mpicDnsService;
 
     /**
      * Constructs a new EmailDnsCaaProvider with the given DcvContext.
@@ -50,7 +47,7 @@ public class DnsCaaEmailProvider implements EmailProvider {
      * @param dcvContext context where we can find the needed dependencies and configuration
      */
     public DnsCaaEmailProvider(DcvContext dcvContext) {
-        dnsClient = dcvContext.get(DnsClient.class);
+        this.mpicDnsService = dcvContext.get(MpicDnsService.class);
     }
 
     /**
@@ -60,24 +57,24 @@ public class DnsCaaEmailProvider implements EmailProvider {
      * results to the BR specified "contactemail" tag.
      *
      * @param domain the domain to retrieve email contacts for
-     * @return a set of email contacts for the domain
+     * @return A record containing a set of email contacts for the domain and the MPIC details
      * @throws PreparationException if an error occurs while retrieving email contacts for the domain
      */
     @Override
-    public Set<String> findEmailsForDomain(String domain) throws PreparationException {
-        DnsData dnsData = dnsClient.getDnsData(List.of(domain), DnsType.CAA);
+    public MpicEmailDetails findEmailsForDomain(String domain) throws PreparationException {
+        MpicDnsDetails dnsData = mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA);
 
-        Set<String> emails = dnsData.values().stream()
-                .filter(dnsValue -> dnsValue.getDnsType().equals(DnsType.CAA))
-                .filter(dnsRecord -> ((CaaValue) dnsRecord).getTag().equals(DNS_CAA_EMAIL_TAG))
-                .map(DnsValue::getValue)
+        Set<String> emails = dnsData.dnsRecords().stream()
+                .filter(dnsRecord -> dnsRecord.dnsType().equals(DnsType.CAA))
+                .filter(dnsRecord -> dnsRecord.tag().equals(DNS_CAA_EMAIL_TAG))
+                .map(DnsRecord::value)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (emails.isEmpty()) {
-            log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.values().size());
-            throw new PreparationException(dnsData.errors());
+            log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.dnsRecords().size());
+            throw new PreparationException(Set.of(dnsData.dcvError()));
         }
 
-        return emails;
+        return new MpicEmailDetails(emails, dnsData.mpicDetails());
     }
 }

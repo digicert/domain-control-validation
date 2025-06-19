@@ -6,10 +6,7 @@ import com.digicert.validation.common.ValidationState;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.exceptions.DcvException;
-import com.digicert.validation.methods.email.prepare.EmailPreparation;
-import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
-import com.digicert.validation.methods.email.prepare.EmailSource;
-import com.digicert.validation.methods.email.prepare.EmailWithRandomValue;
+import com.digicert.validation.methods.email.prepare.*;
 import com.digicert.validation.methods.email.prepare.provider.*;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
 import com.digicert.validation.random.RandomValueGenerator;
@@ -150,7 +147,8 @@ public class EmailValidator {
         domainNameUtils.validateDomainName(emailPreparation.domain());
 
         EmailProvider emailProvider = findEmailGenerator(emailPreparation.emailSource());
-        Set<String> emails = emailProvider.findEmailsForDomain(emailPreparation.domain())
+        MpicEmailDetails mpicEmailDetails = emailProvider.findEmailsForDomain(emailPreparation.domain());
+        Set<String> emails = mpicEmailDetails.emails()
                 .stream()
                 .filter(DomainNameUtils::isValidEmailAddress)
                 .collect(Collectors.toSet());
@@ -162,7 +160,7 @@ public class EmailValidator {
                 .toList();
 
         ValidationState validationState = new ValidationState(emailPreparation.domain(), Instant.now(), emailPreparation.emailSource().getDcvMethod());
-        return new EmailPreparationResponse(emailPreparation.domain(), emailPreparation.emailSource(), emailWithRandomValues, validationState);
+        return new EmailPreparationResponse(emailPreparation.domain(), emailPreparation.emailSource(), emailWithRandomValues, validationState, mpicEmailDetails.mpicDetails());
     }
 
     /**
