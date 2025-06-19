@@ -112,9 +112,9 @@ public class MpicDnsService {
     }
 
     private MpicDnsDetails mapToMpicDnsDetails(MpicDnsResponse mpicDnsResponse, String domain, DcvError dcvError) {
-        boolean corroborated = dcvError != null && MpicStatus.CORROBORATED.equals(mpicDnsResponse.mpicStatus());
+        boolean corroborated = MpicStatus.CORROBORATED.equals(mpicDnsResponse.mpicStatus());
         String primaryAgentId = mpicDnsResponse.primaryDnsResponse().agentId();
-        int serversChecked = mpicDnsResponse.secondaryDnsResponses().size() + 1;
+        int serversChecked = mpicDnsResponse.secondaryDnsResponses().size();
         long numCorroborated = mpicDnsResponse.secondaryDnsResponses().stream()
                 .filter(SecondaryDnsResponse::corroborates)
                 .count();
