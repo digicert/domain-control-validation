@@ -147,8 +147,8 @@ public class EmailValidator {
         domainNameUtils.validateDomainName(emailPreparation.domain());
 
         EmailProvider emailProvider = findEmailGenerator(emailPreparation.emailSource());
-        MpicEmailDetails mpicEmailDetails = emailProvider.findEmailsForDomain(emailPreparation.domain());
-        Set<String> emails = mpicEmailDetails.emails()
+        EmailDetails emailDetails = emailProvider.findEmailsForDomain(emailPreparation.domain());
+        Set<String> emails = emailDetails.emails()
                 .stream()
                 .filter(DomainNameUtils::isValidEmailAddress)
                 .collect(Collectors.toSet());
@@ -160,7 +160,7 @@ public class EmailValidator {
                 .toList();
 
         ValidationState validationState = new ValidationState(emailPreparation.domain(), Instant.now(), emailPreparation.emailSource().getDcvMethod());
-        return new EmailPreparationResponse(emailPreparation.domain(), emailPreparation.emailSource(), emailWithRandomValues, validationState, mpicEmailDetails.mpicDetails());
+        return new EmailPreparationResponse(emailPreparation.domain(), emailPreparation.emailSource(), emailWithRandomValues, validationState, emailDetails.mpicDetails());
     }
 
     /**

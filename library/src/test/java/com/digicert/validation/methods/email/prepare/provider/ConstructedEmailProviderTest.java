@@ -1,7 +1,7 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.methods.email.prepare.MpicEmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -37,9 +37,9 @@ class ConstructedEmailProviderTest {
                 "postmaster@example.com"
         );
 
-        MpicEmailDetails mpicEmailDetails = new MpicEmailDetails(expectedEmails, null);
+        EmailDetails emailDetails = new EmailDetails(expectedEmails, null);
 
-        when(emailProvider.findEmailsForDomain(domain)).thenReturn(mpicEmailDetails);
+        when(emailProvider.findEmailsForDomain(domain)).thenReturn(emailDetails);
 
         Set<String> emails = constructedEmailProvider.findEmailsForDomain(domain).emails();
 

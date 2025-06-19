@@ -15,6 +15,6 @@ import java.util.Set;
  * @param emails      The emails found at the target domain.
  * @param mpicDetails A summary of the MPIC lookup details.
  */
-public record MpicEmailDetails(Set<String> emails,
-                                MpicDetails mpicDetails){
+public record EmailDetails(Set<String> emails,
+                           MpicDetails mpicDetails){
 }

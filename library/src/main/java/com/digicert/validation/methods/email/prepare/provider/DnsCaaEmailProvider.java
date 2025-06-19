@@ -5,7 +5,7 @@ import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
-import com.digicert.validation.methods.email.prepare.MpicEmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import lombok.extern.slf4j.Slf4j;
@@ -56,11 +56,11 @@ public class DnsCaaEmailProvider implements EmailProvider {
      * results to the BR specified "contactemail" tag.
      *
      * @param domain the domain to retrieve email contacts for
-     * @return {@link MpicEmailDetails} containing a set of email contacts for the domain and the MPIC details
+     * @return {@link EmailDetails} containing a set of email contacts for the domain and the MPIC details
      * @throws PreparationException if an error occurs while retrieving email contacts for the domain
      */
     @Override
-    public MpicEmailDetails findEmailsForDomain(String domain) throws PreparationException {
+    public EmailDetails findEmailsForDomain(String domain) throws PreparationException {
         MpicDnsDetails dnsData = mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA);
 
         Set<String> emails = dnsData.dnsRecords().stream()
@@ -74,6 +74,6 @@ public class DnsCaaEmailProvider implements EmailProvider {
             throw new PreparationException(Set.of(dnsData.dcvError()));
         }
 
-        return new MpicEmailDetails(emails, dnsData.mpicDetails());
+        return new EmailDetails(emails, dnsData.mpicDetails());
     }
 }

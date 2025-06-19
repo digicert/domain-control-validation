@@ -10,7 +10,7 @@ import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.email.prepare.EmailPreparation;
 import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
 import com.digicert.validation.methods.email.prepare.EmailSource;
-import com.digicert.validation.methods.email.prepare.MpicEmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.methods.email.prepare.provider.EmailProvider;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
 import com.digicert.validation.mpic.MpicDetails;
@@ -134,7 +134,7 @@ class EmailValidatorTest {
         EmailPreparation emailPreparation = new EmailPreparation("example.com", emailSource);
         Set<String> emails = Set.of("test@example.com");
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Map.of());
-        when(emailProvider.findEmailsForDomain("example.com")).thenReturn(new MpicEmailDetails(emails, mpicDetails));
+        when(emailProvider.findEmailsForDomain("example.com")).thenReturn(new EmailDetails(emails, mpicDetails));
         return emailPreparation;
     }
 
