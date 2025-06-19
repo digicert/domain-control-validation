@@ -10,8 +10,10 @@ import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.email.prepare.EmailPreparation;
 import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
 import com.digicert.validation.methods.email.prepare.EmailSource;
+import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.methods.email.prepare.provider.EmailProvider;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
+import com.digicert.validation.mpic.MpicDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,6 +21,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -130,7 +133,8 @@ class EmailValidatorTest {
     private EmailPreparation getEmailPreparation(EmailSource emailSource, EmailProvider emailProvider) throws PreparationException{
         EmailPreparation emailPreparation = new EmailPreparation("example.com", emailSource);
         Set<String> emails = Set.of("test@example.com");
-        when(emailProvider.findEmailsForDomain("example.com")).thenReturn(emails);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Map.of());
+        when(emailProvider.findEmailsForDomain("example.com")).thenReturn(new EmailDetails(emails, mpicDetails));
         return emailPreparation;
     }
 

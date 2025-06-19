@@ -6,6 +6,7 @@ import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.utils.DomainNameUtils;
@@ -66,11 +67,11 @@ public class DnsTxtEmailProvider implements EmailProvider {
      * BR specified "_validation-contactemail" prefix.
      *
      * @param domain the domain to retrieve email contacts for
-     * @return a set of email contacts for the domain
+     * @return {@link EmailDetails} containing the email contacts for the domain and the MPIC Details
      * @throws PreparationException if an error occurs while retrieving email contacts for the domain
      */
     @Override
-    public Set<String> findEmailsForDomain(String domain) throws PreparationException {
+    public EmailDetails findEmailsForDomain(String domain) throws PreparationException {
         List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
         MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(domains, DnsType.TXT);
 
@@ -90,7 +91,7 @@ public class DnsTxtEmailProvider implements EmailProvider {
             throw new PreparationException(Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
         }
 
-        return emails;
+        return new EmailDetails(emails, mpicDnsDetails.mpicDetails());
     }
 
     public static String normalizeEmailAddress(String dnsValue) {

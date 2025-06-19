@@ -1,16 +1,18 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
-import com.digicert.validation.client.dns.CaaValue;
-import com.digicert.validation.client.dns.DnsClient;
-import com.digicert.validation.client.dns.DnsData;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
+import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.xbill.DNS.CAARecord;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -20,16 +22,16 @@ import static org.mockito.Mockito.when;
 
 public class DnsCaaEmailProviderTest {
 
-    private DnsClient dnsClient;
+    private MpicDnsService mpicDnsService;
 
     private DnsCaaEmailProvider dnsCaaEmailProvider;
 
     @BeforeEach
     public void setUp() {
-        dnsClient = mock(DnsClient.class);
+        mpicDnsService = mock(MpicDnsService.class);
 
         DcvContext dcvContext = mock(DcvContext.class);
-        when(dcvContext.get(DnsClient.class)).thenReturn(dnsClient);
+        when(dcvContext.get(MpicDnsService.class)).thenReturn(mpicDnsService);
 
         dnsCaaEmailProvider = new DnsCaaEmailProvider(dcvContext);
     }
@@ -39,18 +41,14 @@ public class DnsCaaEmailProviderTest {
         String domain = "example.com";
         String caaEmail = "dnscaaemail@example.com";
 
-        CaaValue caaRecord = mock(CaaValue.class);
-        when(caaRecord.getTag()).thenReturn(DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
-        when(caaRecord.getValue()).thenReturn(caaEmail);
-        when(caaRecord.getDnsType()).thenReturn(DnsType.CAA);
+        DnsRecord caaRecord = new DnsRecord(DnsType.CAA, domain, caaEmail, 0, 0, DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
 
-        String host = "some-host";
-        DnsData dnsData = new DnsData(List.of(host), "some-name", DnsType.CAA, List.of(caaRecord),
-                Set.of(), host);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(caaRecord), null);
+        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
-        when(dnsClient.getDnsData(List.of(domain), DnsType.CAA)).thenReturn(dnsData);
-
-        Set<String> emails = dnsCaaEmailProvider.findEmailsForDomain(domain);
+        EmailDetails emailDetails = dnsCaaEmailProvider.findEmailsForDomain(domain);
+        Set<String> emails = emailDetails.emails();
 
         assertTrue(emails.contains(caaEmail), "Expected email not found in the result set");
         assertEquals(1, emails.size());
@@ -62,28 +60,19 @@ public class DnsCaaEmailProviderTest {
         String domain = "example.com";
         String caaEmail = "dnscaaemail@example.com";
 
-        CaaValue caaEmailRecord = mock(CaaValue.class);
-        when(caaEmailRecord.getTag()).thenReturn(DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
-        when(caaEmailRecord.getValue()).thenReturn(caaEmail);
-        when(caaEmailRecord.getDnsType()).thenReturn(DnsType.CAA);
+        DnsRecord caaEmailRecord = new DnsRecord(DnsType.CAA, domain, caaEmail, 0, 0, DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
+        DnsRecord caaIssueRecord = new DnsRecord(DnsType.CAA, domain, "somedomain.com", 0, 0, "issue");
+        DnsRecord caaIssueWildRecord = new DnsRecord(DnsType.CAA, domain, "somedomain.com", 0, 0, "issuewild");
 
-        CaaValue caaIssueRecord = mock(CaaValue.class);
-        when(caaIssueRecord.getTag()).thenReturn("issue");
-        when(caaIssueRecord.getValue()).thenReturn(domain);
-        when(caaIssueRecord.getDnsType()).thenReturn(DnsType.CAA);
+        List<DnsRecord> dnsRecords = List.of(caaEmailRecord, caaIssueRecord, caaIssueWildRecord);
 
-        CaaValue caaIssueWildRecord = mock(CaaValue.class);
-        when(caaIssueWildRecord.getTag()).thenReturn("issueWild");
-        when(caaIssueWildRecord.getValue()).thenReturn(domain);
-        when(caaIssueWildRecord.getDnsType()).thenReturn(DnsType.CAA);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
 
-        String host = "some-host";
-        DnsData dnsData = new DnsData(List.of(host), "some-name", DnsType.CAA, List.of(caaEmailRecord, caaIssueRecord, caaIssueWildRecord),
-                Set.of(), host);
+        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
-        when(dnsClient.getDnsData(List.of(domain), DnsType.CAA)).thenReturn(dnsData);
-
-        Set<String> emails = dnsCaaEmailProvider.findEmailsForDomain(domain);
+        EmailDetails emailDetails = dnsCaaEmailProvider.findEmailsForDomain(domain);
+        Set<String> emails = emailDetails.emails();
 
         assertTrue(emails.contains(caaEmail), "Expected email not found in the result set");
         assertEquals(1, emails.size());
@@ -92,9 +81,11 @@ public class DnsCaaEmailProviderTest {
     @Test
     void testFindEmailsForDomainCaa_throwsPreparationException() {
         String domain = "example.com";
-        DnsData dnsData = new DnsData(List.of(), domain, DnsType.CAA, List.of(),
-                Set.of(DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION), "some-host");
-        when(dnsClient.getDnsData(List.of(domain), DnsType.CAA)).thenReturn(dnsData);
+
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(), DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION);
+
+        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         PreparationException exception = assertThrows(PreparationException.class, () -> dnsCaaEmailProvider.findEmailsForDomain(domain));
 
@@ -104,9 +95,11 @@ public class DnsCaaEmailProviderTest {
     @Test
     void testFindEmailsForDomainCaa_missingDnsData() {
         String domain = "example.com";
-        DnsData dnsData = new DnsData(List.of(), domain, DnsType.CAA, List.of(),
-                Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND), "some-host");
-        when(dnsClient.getDnsData(List.of(domain), DnsType.CAA)).thenReturn(dnsData);
+
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(), DcvError.DNS_LOOKUP_RECORD_NOT_FOUND);
+
+        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         PreparationException exception = assertThrows(PreparationException.class, () -> dnsCaaEmailProvider.findEmailsForDomain(domain));
 

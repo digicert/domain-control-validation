@@ -52,7 +52,7 @@ class DnsTxtEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
-        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain);
+        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
 
         // Verify the results
         assertTrue(emails.contains("test@example.com"));
@@ -74,7 +74,7 @@ class DnsTxtEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domains, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
-        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain);
+        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
 
         // Verify the results
         assertTrue(emails.contains("test@example.com"));

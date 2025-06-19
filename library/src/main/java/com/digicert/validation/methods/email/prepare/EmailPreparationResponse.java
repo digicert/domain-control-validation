@@ -1,6 +1,7 @@
 package com.digicert.validation.methods.email.prepare;
 
 import com.digicert.validation.common.ValidationState;
+import com.digicert.validation.mpic.MpicDetails;
 
 import java.util.List;
 
@@ -13,15 +14,18 @@ import java.util.List;
  * which could be used to determine the authenticity and origin of the email for validation purposes. The emailWithRandomValue
  * field contains a list of emails along with their associated random values, which are used for validation purposes.
  * The validationState field represents the current state of the email preparation process, indicating whether the
- * validation was successful, failed, or is still in progress.
+ * validation was successful, failed, or is still in progress. The mpicDetails field represents a summary of the lookups
+ * performed by the MPIC service
  *
  * @param domain               The domain associated with the email preparation.
  * @param emailSource          The source of the email.
  * @param emailWithRandomValue A list of emails with their associated random values.
  * @param validationState      The validation state of the email preparation.
+ * @param mpicDetails          The details of the MPIC lookup
  */
 public record EmailPreparationResponse(String domain,
                                        EmailSource emailSource,
                                        List<EmailWithRandomValue> emailWithRandomValue,
-                                       ValidationState validationState) {
+                                       ValidationState validationState,
+                                       MpicDetails mpicDetails) {
 }
