@@ -99,11 +99,12 @@ class MpicDnsServiceTest {
         MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
 
         assertNull(details.dcvError());
+        assertTrue(details.mpicDetails().corroborated());
         assertEquals(dnsRecords, details.dnsRecords());
         assertEquals("example.com", details.domain());
         assertNotNull(details.mpicDetails());
         assertEquals("agent1", details.mpicDetails().primaryAgentId());
-        assertEquals(2, details.mpicDetails().secondaryServersChecked());
+        assertEquals(1, details.mpicDetails().secondaryServersChecked());
         assertEquals(1, details.mpicDetails().secondaryServersCorroborated());
         assertTrue(details.mpicDetails().agentIdToCorroboration().get("agent2"));
     }
@@ -125,6 +126,7 @@ class MpicDnsServiceTest {
         MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("error.com", "valid.com"), DnsType.TXT);
         assertNull(details.dcvError());
         assertEquals(validDnsRecords, details.dnsRecords());
+        assertTrue(details.mpicDetails().corroborated());
 
         // Now, both error
         when(mpicClient.getMpicDnsResponse("valid.com", DnsType.TXT)).thenReturn(errorResponse);
@@ -145,6 +147,7 @@ class MpicDnsServiceTest {
 
         // Verify
         assertEquals(expectedError, details.dcvError());
+        assertTrue(details.mpicDetails().corroborated());
         assertEquals("example.com", details.domain());
         assertEquals(List.of(), details.dnsRecords());
     }
