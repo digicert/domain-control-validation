@@ -63,7 +63,7 @@ class DnsValidationHandlerTest {
         verify(mpicDnsService, never()).getDnsDetails(defaultDomain, DnsType.CNAME);
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
-        assertEquals(defaultDomainWithLabel, response.authorizationDomain());
+        assertEquals(defaultDomainWithLabel, response.dnsRecordName());
     }
 
     @Test
@@ -86,7 +86,7 @@ class DnsValidationHandlerTest {
         verify(mpicDnsService).getDnsDetails(defaultDomain, DnsType.CNAME);
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
-        assertEquals(defaultDomain, response.authorizationDomain());
+        assertEquals(defaultDomain, response.dnsRecordName());
     }
 
     @Test
@@ -108,7 +108,7 @@ class DnsValidationHandlerTest {
         assertEquals(DnsType.CNAME, response.dnsType());
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
-        assertEquals(defaultDomain, response.authorizationDomain());
+        assertEquals(defaultDomain, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isEmpty(response.validRequestToken()));
     }
@@ -133,7 +133,7 @@ class DnsValidationHandlerTest {
         assertEquals(DnsType.CNAME, response.dnsType());
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
-        assertEquals(defaultDomain, response.authorizationDomain());
+        assertEquals(defaultDomain, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isEmpty(response.validRequestToken()));
     }
@@ -158,7 +158,7 @@ class DnsValidationHandlerTest {
         assertEquals(DnsType.CNAME, response.dnsType());
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
-        assertEquals(defaultDomainWithLabel, response.authorizationDomain());
+        assertEquals(defaultDomainWithLabel, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isNotEmpty(response.validRequestToken()));
     }
@@ -185,7 +185,7 @@ class DnsValidationHandlerTest {
         assertEquals(DnsType.CNAME, response.dnsType());
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
-        assertEquals(defaultDomain, response.authorizationDomain());
+        assertEquals(defaultDomain, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isNotEmpty(response.validRequestToken()));
     }

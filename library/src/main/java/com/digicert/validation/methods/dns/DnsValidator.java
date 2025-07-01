@@ -159,7 +159,7 @@ public class DnsValidator {
                 // DNS Specific Values
                 .mpicDetails(dnsValidationResponse.mpicDetails())
                 .dnsType(dnsValidationRequest.getDnsType())
-                .dnsRecordName(dnsValidationResponse.authorizationDomain())
+                .dnsRecordName(dnsValidationResponse.dnsRecordName())
                 .randomValue(dnsValidationResponse.validRandomValue())
                 .requestToken(dnsValidationResponse.validRequestToken())
                 .build();
