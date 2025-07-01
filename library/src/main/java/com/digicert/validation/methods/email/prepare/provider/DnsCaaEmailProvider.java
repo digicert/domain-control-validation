@@ -61,7 +61,7 @@ public class DnsCaaEmailProvider implements EmailProvider {
      */
     @Override
     public EmailDetails findEmailsForDomain(String domain) throws PreparationException {
-        MpicDnsDetails dnsData = mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA);
+        MpicDnsDetails dnsData = mpicDnsService.getDnsDetails(domain, DnsType.CAA);
 
         Set<String> emails = dnsData.dnsRecords().stream()
                 .filter(dnsRecord -> dnsRecord.dnsType().equals(DnsType.CAA))

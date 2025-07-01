@@ -49,7 +49,7 @@ class MpicDnsServiceTest {
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(), DnsType.TXT, "example.com");
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.ERROR);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
         assertEquals(DcvError.MPIC_INVALID_RESPONSE, details.dcvError());
     }
 
@@ -59,7 +59,7 @@ class MpicDnsServiceTest {
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
 
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
         assertEquals(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND, details.dcvError());
     }
 
@@ -69,7 +69,7 @@ class MpicDnsServiceTest {
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
 
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
         assertEquals(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND, details.dcvError());
     }
 
@@ -81,7 +81,7 @@ class MpicDnsServiceTest {
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(true);
 
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
         assertEquals(DcvError.MPIC_CORROBORATION_ERROR, details.dcvError());
     }
 
@@ -96,7 +96,7 @@ class MpicDnsServiceTest {
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
 
         assertNull(details.dcvError());
         assertTrue(details.mpicDetails().corroborated());
@@ -109,31 +109,6 @@ class MpicDnsServiceTest {
         assertTrue(details.mpicDetails().agentIdToCorroboration().get("agent2"));
     }
 
-    @Test
-    void returnsFirstValidOrFirstErrorForMultipleDomains() {
-        // First domain returns error, second is valid
-        PrimaryDnsResponse errorPrimary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_TIMEOUT, List.of(), DnsType.TXT, "error.com");
-        MpicDnsResponse errorResponse = createMpicDnsResponse(errorPrimary, Collections.emptyList(), MpicStatus.CORROBORATED);
-
-        List<DnsRecord> validDnsRecords = List.of(new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, ""));
-        PrimaryDnsResponse validPrimary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, validDnsRecords, DnsType.TXT, "valid.com");
-        MpicDnsResponse validResponse = createMpicDnsResponse(validPrimary, Collections.emptyList(), MpicStatus.CORROBORATED);
-
-        when(mpicClient.getMpicDnsResponse("error.com", DnsType.TXT)).thenReturn(errorResponse);
-        when(mpicClient.getMpicDnsResponse("valid.com", DnsType.TXT)).thenReturn(validResponse);
-        when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
-
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("error.com", "valid.com"), DnsType.TXT);
-        assertNull(details.dcvError());
-        assertEquals(validDnsRecords, details.dnsRecords());
-        assertTrue(details.mpicDetails().corroborated());
-
-        // Now, both error
-        when(mpicClient.getMpicDnsResponse("valid.com", DnsType.TXT)).thenReturn(errorResponse);
-        MpicDnsDetails errorDetails = mpicDnsService.getDnsDetails(List.of("error.com", "valid.com"), DnsType.TXT);
-        assertEquals(DcvError.DNS_LOOKUP_TIMEOUT, errorDetails.dcvError());
-    }
-
     @ParameterizedTest
     @MethodSource("agentStatusToErrorMapping")
     void mapsDifferentAgentStatusesToCorrectDcvErrors(AgentStatus agentStatus, DcvError expectedError) {
@@ -143,7 +118,7 @@ class MpicDnsServiceTest {
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
 
         // Execute
-        MpicDnsDetails details = mpicDnsService.getDnsDetails(List.of("example.com"), DnsType.TXT);
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
 
         // Verify
         assertEquals(expectedError, details.dcvError());

@@ -16,6 +16,7 @@ import java.util.Set;
  * @param isValid Indicates whether the validation is successful.
  * @param mpicDetails The details of the MPIC (Multi-Purpose Internet Certificate) used in the validation.
  * @param domain The domain associated with the validation.
+ * @param dnsRecordName The DNS name used when finding the DNS Details
  * @param dnsType The type of DNS used in the validation.
  * @param validRandomValue The valid random value used in the validation.
  * @param validRequestToken The valid request token found in the validation.
@@ -24,6 +25,7 @@ import java.util.Set;
 public record DnsValidationResponse(boolean isValid,
                                     MpicDetails mpicDetails,
                                     String domain,
+                                    String dnsRecordName,
                                     DnsType dnsType,
                                     String validRandomValue,
                                     String validRequestToken,

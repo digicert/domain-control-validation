@@ -78,7 +78,7 @@ class DnsValidatorTest {
 
     @Test
     void testDnsValidator_validate_HappyPath() throws DcvException {
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(true, getMpicDetails(), domain,
+        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(true, getMpicDetails(), domain, domain,
                                                         dnsType, randomValue, null, Set.of());
 
         when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
@@ -99,7 +99,7 @@ class DnsValidatorTest {
 
     @Test
     void testDnsValidator_validate_FalseDnsValidation() {
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, getMpicDetails(), domain,
+        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, getMpicDetails(), domain, domain,
                                                         dnsType, randomValue, null, Set.of(DcvError.INVALID_DNS_TYPE));
 
         when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);

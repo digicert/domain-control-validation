@@ -45,7 +45,7 @@ public class DnsCaaEmailProviderTest {
 
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(caaRecord), null);
-        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
+        when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         EmailDetails emailDetails = dnsCaaEmailProvider.findEmailsForDomain(domain);
         Set<String> emails = emailDetails.emails();
@@ -69,7 +69,7 @@ public class DnsCaaEmailProviderTest {
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
 
-        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
+        when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         EmailDetails emailDetails = dnsCaaEmailProvider.findEmailsForDomain(domain);
         Set<String> emails = emailDetails.emails();
@@ -85,7 +85,7 @@ public class DnsCaaEmailProviderTest {
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(), DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION);
 
-        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
+        when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         PreparationException exception = assertThrows(PreparationException.class, () -> dnsCaaEmailProvider.findEmailsForDomain(domain));
 
@@ -99,7 +99,7 @@ public class DnsCaaEmailProviderTest {
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(), DcvError.DNS_LOOKUP_RECORD_NOT_FOUND);
 
-        when(mpicDnsService.getDnsDetails(List.of(domain), DnsType.CAA)).thenReturn(mpicDnsDetailsData);
+        when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         PreparationException exception = assertThrows(PreparationException.class, () -> dnsCaaEmailProvider.findEmailsForDomain(domain));
 

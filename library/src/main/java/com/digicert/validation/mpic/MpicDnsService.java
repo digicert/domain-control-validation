@@ -10,10 +10,7 @@ import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
 import com.digicert.validation.mpic.api.dns.SecondaryDnsResponse;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.digicert.validation.mpic.api.AgentStatus.DNS_LOOKUP_SUCCESS;
 
@@ -35,28 +32,13 @@ public class MpicDnsService {
      * Retrieves MPIC DNS details for a list of domains.
      * It will return the first valid and corroborated MPIC response or the first MPIC response with an error.
      *
-     * @param domains  List of domain names to validate
-     * @param dnsType  The type of DNS records to retrieve (e.g., TXT, CNAME)
-     * @return MpicDnsDetails containing the MPIC details, domain, DNS records, and any errors encountered
+     * @param domain  List of domain names to validate
+     * @param dnsType The type of DNS records to retrieve (e.g., TXT, CNAME)
+     * @return List of MpicDnsDetails containing the MPIC details, domain, DNS records, and any errors encountered
      */
-    public MpicDnsDetails getDnsDetails(List<String> domains, DnsType dnsType) {
-        MpicDnsDetails firstMpicDnsDetails = null;
-        for (String domain : domains) {
-            MpicDnsResponse mpicDnsResponse = mpicClient.getMpicDnsResponse(domain, dnsType);
-            MpicDnsDetails mpicDnsDetails = mapToMpicDnsDetailsWithErrorCheck(mpicDnsResponse, domain);
-            if (mpicDnsDetails.dcvError() == null) {
-                // We have a valid and corroborated MPIC response
-                // we can return it immediately
-                return mpicDnsDetails;
-            } else {
-                // Remember the first MPIC details with an dcvError to return later
-                firstMpicDnsDetails = firstMpicDnsDetails == null ? mpicDnsDetails : firstMpicDnsDetails;
-            }
-        }
-
-        // If we are here, there is no valid MPIC response for any of the domains
-        // return the first MPIC details with an error if available
-        return firstMpicDnsDetails;
+    public MpicDnsDetails getDnsDetails(String domain, DnsType dnsType) {
+        MpicDnsResponse mpicDnsResponse = mpicClient.getMpicDnsResponse(domain, dnsType);
+        return mapToMpicDnsDetailsWithErrorCheck(mpicDnsResponse, domain);
     }
 
     private MpicDnsDetails mapToMpicDnsDetailsWithErrorCheck(MpicDnsResponse mpicDnsResponse, String domain) {
