@@ -72,8 +72,8 @@ public class DnsTxtEmailProvider implements EmailProvider {
      */
     @Override
     public EmailDetails findEmailsForDomain(String domain) throws PreparationException {
-        List<String> domains = List.of(String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain));
-        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(domains, DnsType.TXT);
+        String domainWithPrefix = String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT);
 
         if (mpicDnsDetails.dcvError() != null) {
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain);

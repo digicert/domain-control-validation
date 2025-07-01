@@ -48,6 +48,47 @@ class DnsRandomValueMethodIT {
     }
 
     @Test
+    void verifyDnsTxtSubmitFlow_withNoDomainLabel() {
+        DcvRequest dcvRequest = createDcvRequest(DomainUtils.getRandomDomainName(2, "com"), DcvRequestType.DNS_TXT);
+
+        DomainResource createdDomain = submitDnsDomain(dcvRequest);
+        assertCreatedDomain(dcvRequest, createdDomain);
+
+        // Create PDNS DNS Text Entry for the domain with the random value
+        String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
+        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
+
+        // Validate the domain
+        ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
+        validateDomain(validateRequest, createdDomain.getId());
+
+        // Get and assert that the domain is now valid
+        DomainResource verifiedDomain = getDomainResource(createdDomain.getId());
+        assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+    }
+
+    @Test
+    void verifyDnsTxtSubmitFlow_withDomainLabelAndRootDomain() {
+        DcvRequest dcvRequest = createDcvRequest(DomainUtils.getRandomDomainName(2, "com"), DcvRequestType.DNS_TXT);
+
+        DomainResource createdDomain = submitDnsDomain(dcvRequest);
+        assertCreatedDomain(dcvRequest, createdDomain);
+
+        // Create PDNS DNS Text Entry for the domain with the random value
+        String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
+        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of("some-other-value"), PdnsClient.PdnsRecordType.TXT, "_dnsauth");
+        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
+
+        // Validate the domain
+        ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
+        validateDomain(validateRequest, createdDomain.getId());
+
+        // Get and assert that the domain is now valid
+        DomainResource verifiedDomain = getDomainResource(createdDomain.getId());
+        assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+    }
+
+    @Test
     void verifyDnsTxtSubmitFlow_withExtraCharsInTxtEntry() {
         DcvRequest dcvRequest = createDcvRequest(DomainUtils.getRandomDomainName(2, "com"), DcvRequestType.DNS_TXT);
 
