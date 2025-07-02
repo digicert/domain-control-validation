@@ -28,11 +28,12 @@ public record ChallengeValidationResponse(Optional<String> challengeValue,
      * @return a new ChallengeValidationResponse containing the merged results
      */
     public ChallengeValidationResponse merge(ChallengeValidationResponse other) {
-        if (challengeValue().isPresent()) {
-            return this;
-        } else if (other.challengeValue().isPresent()) {
-            return other;
-        }
+        if (challengeValue().isPresent()) return this;
+        if (other.challengeValue().isPresent()) return other;
+        if (errors == null && other.errors() == null) return this;
+        if (errors == null) return other;
+        if (other.errors() == null) return this;
+        // Combine errors from both responses
         Set<DcvError> allErrors = EnumSet.copyOf(errors);
         allErrors.addAll(other.errors());
         return new ChallengeValidationResponse(challengeValue, allErrors);
