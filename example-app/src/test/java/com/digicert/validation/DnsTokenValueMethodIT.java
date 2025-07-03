@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,6 +56,39 @@ class DnsTokenValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         pdnsClient.addRandomValueToRecord(domainName, dnsTxtTokenValue, PdnsClient.PdnsRecordType.TXT);
+
+        // Validate the domain
+        ValidateRequest validateRequest = getValidateRequest(dcvRequest.domain(), hashingValue);
+        exampleAppClient.validateDomain(validateRequest, createdDomain.getId());
+
+        // Get and assert that the domain is now valid
+        DomainResource verifiedDomain = getDomainResource(createdDomain.getId());
+        assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+    }
+
+    @Test
+    void verifyDnsTokenTxt_HappyPath_multipleTokenResponses() throws Exception {
+        String domainName = DomainUtils.getRandomDomainName(2, "com");
+
+        String hashingKey = "token-key";
+        // Set the token key for the account
+        exampleAppClient.submitAccountTokenKey(defaultAccountId, hashingKey);
+
+        String hashingValue = csrGenerator.generateCSR(domainName);
+        ZonedDateTime zonedDateTime = Instant.now().atZone(ZoneId.of("UTC"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String formattedDate = zonedDateTime.format(formatter);
+
+        BasicRequestTokenUtils basicRequestTokenUtils = new BasicRequestTokenUtils();
+        String dnsTxtTokenValue = basicRequestTokenUtils.generateRequestToken(new BasicRequestTokenData(hashingKey, hashingValue), formattedDate).orElseThrow();
+
+        DcvRequest dcvRequest = createDcvRequest(domainName);
+        DomainResource createdDomain = submitDnsDomain(dcvRequest);
+        assertCreatedDomain(dcvRequest, createdDomain);
+
+        // Create PDNS DNS Text Entry for the domain with the random value
+        List<String> randomValues = List.of("some-other-token-value", "some-other-token-value2", dnsTxtTokenValue, "some-other-token-value3", "some-other-token-value4");
+        pdnsClient.addRandomValueToRecord(domainName, randomValues, PdnsClient.PdnsRecordType.TXT, "");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(dcvRequest.domain(), hashingValue);
