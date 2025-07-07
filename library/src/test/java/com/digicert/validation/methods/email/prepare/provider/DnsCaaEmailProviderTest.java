@@ -105,4 +105,17 @@ public class DnsCaaEmailProviderTest {
 
         assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
     }
+
+    @Test
+    void testFindEmailsForDomainCaa_dnsData_noEmail() {
+        String domain = "example.com";
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap());
+        DnsRecord caaIssueRecord = new DnsRecord(DnsType.CAA, domain, "somedomain.com", 0, 0, "issue");
+        MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(caaIssueRecord), null);
+        when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
+
+        PreparationException exception = assertThrows(PreparationException.class, () -> dnsCaaEmailProvider.findEmailsForDomain(domain));
+
+        assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
+    }
 }
