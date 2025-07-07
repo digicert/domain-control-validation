@@ -1,6 +1,7 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
@@ -71,7 +72,8 @@ public class DnsCaaEmailProvider implements EmailProvider {
 
         if (emails.isEmpty()) {
             log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.dnsRecords().size());
-            throw new PreparationException(Set.of(dnsData.dcvError()));
+            Set<DcvError> errors = dnsData.dcvError() == null ? Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND) : Set.of(dnsData.dcvError());
+            throw new PreparationException(errors);
         }
 
         return new EmailDetails(emails, dnsData.mpicDetails());
