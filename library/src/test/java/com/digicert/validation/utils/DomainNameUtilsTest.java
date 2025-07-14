@@ -57,7 +57,12 @@ class DomainNameUtilsTest {
         return Stream.of(
                 Arguments.of("example.com"),
                 Arguments.of("a.b.c.d.e.co.uk"),
-                Arguments.of("xn--tda.example.com")
+                Arguments.of("xn--tda.example.com"),
+                Arguments.of("stuff.zapto.org"),
+                Arguments.of("zapto.org"),
+                Arguments.of("stuff.code.run"),
+                Arguments.of("blogspot.com"),
+                Arguments.of("foo.blogspot.com")
         );
     }
     @ParameterizedTest
@@ -71,7 +76,6 @@ class DomainNameUtilsTest {
                 Arguments.of("a".repeat(64) + ".example.com", DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN), // label too long
                 Arguments.of("aaa.".repeat(64) + "example.com", DcvError.DOMAIN_INVALID_TOO_LONG), // domain too long
                 Arguments.of("foo.bd", DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX), // *.bd is in the PSL
-                Arguments.of("blogspot.com", DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX), // private TLD
                 Arguments.of("example.invalid", DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX), // invalid TLD
                 Arguments.of("invalid", DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN) // invalid TLD
         );
@@ -147,7 +151,7 @@ class DomainNameUtilsTest {
 
     static Stream<Arguments> provideGetDomainAndParentsTestData() {
         return Stream.of(
-                Arguments.of("foo.blogspot.com", List.of("foo.blogspot.com")),
+                Arguments.of("foo.blogspot.com", List.of("foo.blogspot.com", "blogspot.com")),
                 Arguments.of("sub.example.com", List.of("sub.example.com", "example.com")),
                 Arguments.of("a.b.c.d.e.co.uk", List.of("a.b.c.d.e.co.uk", "b.c.d.e.co.uk", "c.d.e.co.uk", "d.e.co.uk", "e.co.uk"))
         );
@@ -178,7 +182,7 @@ class DomainNameUtilsTest {
 
     static Stream<Arguments> provideGetBaseDomainTestData() {
         return Stream.of(
-                Arguments.of("foo.blogspot.com", "foo.blogspot.com"),
+                Arguments.of("foo.blogspot.com", "blogspot.com"),
                 Arguments.of("example.com", "example.com"),
                 Arguments.of("www.google.co.uk", "google.co.uk"),
                 Arguments.of("a.b.c.d.e.example.com", "example.com")
@@ -189,19 +193,6 @@ class DomainNameUtilsTest {
     @MethodSource("provideGetBaseDomainTestData")
     void getBaseDomain_happyDay(String domain, String expected) throws InputException {
         assertEquals(expected, domainNameUtils.getBaseDomain(domain));
-    }
-
-    static Stream<Arguments> provideGetBaseDomainInvalidTestData() {
-        return Stream.of(
-                Arguments.of("blogspot.com"),
-                Arguments.of("example.invalid")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideGetBaseDomainInvalidTestData")
-    void getBaseDomain_invalidDomain(String domain) {
-        assertThrows(InputException.class, () -> domainNameUtils.getBaseDomain(domain));
     }
 
     static Stream<Arguments> providePslOverridesTestData() {
