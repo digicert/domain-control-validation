@@ -111,23 +111,18 @@ class DnsValidatorTest {
 
     static Stream<Arguments> provideInvalidDnsValidationResponse() {
         return Stream.of(
-                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(),
-                        List.of("Domain is required", "Challenge Type is required", "Domain in Validation State is required")),
-                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now(),
-                        List.of("Challenge Type is required")),
-                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now(),
-                        List.of("DNS Record Type is required", "Challenge Type is required")),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now(),
-                        List.of("Challenge Type is required", "Invalid DCV Method")),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null),
-                        List.of("Challenge Type is required", "Prepare Time is required"))
+                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now()),
+                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now()),
+                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now()),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now()),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null))
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideInvalidDnsValidationResponse")
     void testDnsValidator_validate_InvalidDnsValidationResponse(String domain, String randomValue, DnsType dnsType,
-                                                                DcvMethod dcvMethod, Instant prepareTime, List<String> errors) {
+                                                                DcvMethod dcvMethod, Instant prepareTime) {
         ValidationState invalidValidationState = new ValidationState(domain, prepareTime, dcvMethod);
         DnsValidationRequest invalidDnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)

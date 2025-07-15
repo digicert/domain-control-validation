@@ -58,16 +58,16 @@ class DnsClientTest {
 
     static Stream<Arguments> provideDoubleTypeDnsData() {
         return Stream.of(
-                Arguments.of("example.com.", DnsType.TXT, Type.TXT),
-                Arguments.of("example.com.", DnsType.CNAME, Type.CNAME),
-                Arguments.of("example.com.", DnsType.CAA, Type.CAA),
-                Arguments.of("example.com.", DnsType.A, Type.A)
+                Arguments.of("example.com.", DnsType.TXT),
+                Arguments.of("example.com.", DnsType.CNAME),
+                Arguments.of("example.com.", DnsType.CAA),
+                Arguments.of("example.com.", DnsType.A)
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideDoubleTypeDnsData")
-    void testGetDnsData_withDataReturned_happyPath(String domain, DnsType dnsType, int type) throws Exception {
+    void testGetDnsData_withDataReturned_happyPath(String domain, DnsType dnsType) throws Exception {
         Record dnsRecord = getDnsRecordFromType(domain, dnsType);
 
         Message responseMessage = mock(Message.class);
