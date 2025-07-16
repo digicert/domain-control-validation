@@ -209,7 +209,7 @@ public class DcvService {
 
         // Validate the random values
         switch (validateRequest.dcvRequestType) {
-            case DNS_TXT, DNS_CNAME -> {
+            case DNS_TXT, DNS_CNAME, FILE_VALIDATION -> {
                 if (domainEntity.domainRandomValues.stream().noneMatch(randomValue -> randomValue.randomValue.equals(validateRequest.randomValue))) {
                     throw new InvalidDcvRequestException("Supplied random value is invalid for domain");
                 }
@@ -220,7 +220,7 @@ public class DcvService {
                     throw new InvalidDcvRequestException("Supplied email, random value pair are invalid for domain");
                 }
             }
-            case DNS_TXT_TOKEN, FILE_VALIDATION -> {} // No random value to check
+            case DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN -> {} // No random value to check
         }
     }
 
