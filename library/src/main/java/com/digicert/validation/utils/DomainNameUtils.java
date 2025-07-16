@@ -267,7 +267,13 @@ public class DomainNameUtils {
             }
         }
         try {
-            return DcvDomainName.from(domainName).topPrivateDomain().toString();
+            DcvDomainName dcvDomainName = DcvDomainName.from(domainName);
+            if (dcvDomainName.hasRegistrySuffix()) {
+                return dcvDomainName.topDomainUnderRegistrySuffix().toString();
+            }
+            else {
+                throw new InputException(DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX);
+            }
         } catch (IllegalStateException e) {
             throw new InputException(DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX, e);
         }
