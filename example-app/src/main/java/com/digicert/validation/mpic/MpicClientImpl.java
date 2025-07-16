@@ -45,7 +45,7 @@ public class MpicClientImpl implements MpicClientInterface {
 
     private MpicDnsResponse mapToMpicDnsResponse(DnsData dnsData, DnsType dnsType, String domain) {
         AgentStatus agentStatus = mapDnsToAgentStatus(dnsData.errors());
-        List<DnsRecord> dnsRecords = mapToRecords(dnsData, dnsType);
+        List<DnsRecord> dnsRecords = mapToRecords(dnsData);
 
         // Note: In a real implementation, you would have separate requests from different sources
         // For this example, we are simulating a primary response and two secondary responses with the same data.
@@ -60,7 +60,7 @@ public class MpicClientImpl implements MpicClientInterface {
                 null);
     }
 
-    private List<DnsRecord> mapToRecords(DnsData dnsData, DnsType dnsType) {
+    private List<DnsRecord> mapToRecords(DnsData dnsData) {
         if (dnsData == null || dnsData.values() == null || dnsData.values().isEmpty()) {
             return List.of();
         }

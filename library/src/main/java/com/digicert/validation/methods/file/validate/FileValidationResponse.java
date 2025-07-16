@@ -19,6 +19,7 @@ import java.util.Set;
  * @param challengeType     The type of challenge used in the validation (RANDOM_VALUE or REQUEST_TOKEN).
  * @param validRandomValue  The valid random value used in the validation (null if not RANDOM_VALUE).
  * @param validRequestToken The valid request token used in the validation (null if not REQUEST_TOKEN).
+ * @param mpicDetails       A summary of the MPIC lookup details.
  * @param errors            The errors found during the validation process (null if no errors).
  */
 @Builder
