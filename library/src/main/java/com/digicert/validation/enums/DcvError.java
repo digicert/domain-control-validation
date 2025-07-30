@@ -309,7 +309,17 @@ public enum DcvError {
     MPIC_CORROBORATION_ERROR,
 
     /** Error indicating that the MPIC response is invalid. */
-    MPIC_INVALID_RESPONSE;
+    MPIC_INVALID_RESPONSE,
+
+    /** Error indicating that the ACME type is empty. */
+    ACME_TYPE_REQUIRED,
+
+    /** Error indicating that the ACME thumbprint is empty. */
+    ACME_THUMBPRINT_REQUIRED,
+
+    /** Error indicating an issue when creating the ACME DNS key */
+    ACME_DNS_KEY_ERROR
+    ;
 
 
 

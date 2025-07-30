@@ -53,7 +53,7 @@ class FileTokenMethodIT {
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(domainName);
         // Write random value to file
-        FileUtils.writeNginxStaticFileWithContent("fileauth.txt", dnsTxtTokenValue);
+        FileUtils.writeFileAuthFileWithContent("fileauth.txt", dnsTxtTokenValue);
 
         DcvRequest dcvRequest = new DcvRequest(domainName, defaultAccountId, DcvRequestType.FILE_VALIDATION_TOKEN);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
@@ -86,7 +86,7 @@ class FileTokenMethodIT {
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(domainName);
         // Write random value to file
-        FileUtils.writeNginxStaticFileWithContent("customlocation.txt", dnsTxtTokenValue);
+        FileUtils.writeFileAuthFileWithContent("customlocation.txt", dnsTxtTokenValue);
 
         DcvRequest dcvRequest = new DcvRequest(domainName, "customlocation", defaultAccountId, DcvRequestType.FILE_VALIDATION_TOKEN);
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);

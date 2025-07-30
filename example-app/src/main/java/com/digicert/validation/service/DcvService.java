@@ -4,6 +4,11 @@ import java.util.List;
 import java.util.Objects;
 
 import com.digicert.validation.challenges.BasicRequestTokenData;
+import com.digicert.validation.common.DomainValidationEvidence;
+import com.digicert.validation.enums.AcmeType;
+import com.digicert.validation.methods.acme.prepare.AcmePreparation;
+import com.digicert.validation.methods.acme.prepare.AcmePreparationResponse;
+import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
 import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
 import com.digicert.validation.methods.file.validate.FileValidationRequest;
 import org.springframework.stereotype.Component;
@@ -52,7 +57,9 @@ public class DcvService {
     private final ObjectMapper objectMapper;
 
 
-    public DcvService(DcvManager dcvManager, DomainsRepository domainsRepository, AccountsRepository accountsRepository,
+    public DcvService(DcvManager dcvManager,
+                      DomainsRepository domainsRepository,
+                      AccountsRepository accountsRepository,
                       ObjectMapper objectMapper) {
         this.dcvManager = dcvManager;
         this.domainsRepository = domainsRepository;
@@ -68,6 +75,7 @@ public class DcvService {
                 case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> createdEntity = submitDnsDomain(dcvRequest);
                 case EMAIL_CONSTRUCTED, EMAIL_DNS_TXT, EMAIL_DNS_CAA -> createdEntity = submitEmailDomain(dcvRequest);
                 case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
+                case ACME_DNS, ACME_HTTP -> createdEntity = submitAcmeDomain(dcvRequest);
             }
         } catch(DcvException ex){
             log.info("Failed submitting domain", ex);
@@ -83,15 +91,27 @@ public class DcvService {
         ValidationState validationState = getValidationState(domainEntity);
         long accountId = domainEntity.getAccountId();
 
-        switch (validateRequest.dcvRequestType) {
+        DomainValidationEvidence evidence = switch (validateRequest.dcvRequestType) {
             case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> validateDnsDomain(accountId, validationState, validateRequest);
             case EMAIL_CONSTRUCTED, EMAIL_DNS_TXT, EMAIL_DNS_CAA ->
                     validateEmailDomain(validationState, validateRequest);
-            case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> validateFileDomain(accountId, validationState, validateRequest);
-        }
+            case FILE_VALIDATION, FILE_VALIDATION_TOKEN ->
+                    validateFileDomain(accountId, validationState, validateRequest);
+            case ACME_DNS, ACME_HTTP -> validateAcmeDomain(accountId, validationState, validateRequest);
+        };
 
         domainEntity.status = DcvRequestStatus.VALID.name();
+        domainEntity.validationEvidence = getValidationEvidenceAsString(evidence);
         domainsRepository.save(domainEntity);
+    }
+
+    private String getValidationEvidenceAsString(DomainValidationEvidence evidence) throws ValidationStateParsingException {
+        try {
+            return objectMapper.writeValueAsString(evidence);
+        } catch (JsonProcessingException e) {
+            log.error("Error parsing validation state", e);
+            throw new ValidationStateParsingException("Error parsing validation state returned from dcv library");
+        }
     }
 
     public DomainEntity getDomainEntity(Long domainId) throws DcvBaseException{
@@ -101,6 +121,17 @@ public class DcvService {
     }
 
     private DomainEntity saveDnsValidationState(DcvRequest request, DnsPreparationResponse prepare) throws DcvBaseException {
+        DomainEntity domainEntity = new DomainEntity(request);
+        if (prepare.getRandomValue() != null) {
+            DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity, null);
+            randomValue.domain = domainEntity;
+            domainEntity.setDomainRandomValues(List.of(randomValue));
+        }
+
+        return saveValidationState(domainEntity, prepare.getValidationState());
+    }
+
+    private DomainEntity saveAcmeValidationState(DcvRequest request, AcmePreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
         if (prepare.getRandomValue() != null) {
             DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity, null);
@@ -197,6 +228,19 @@ public class DcvService {
         return saveFileValidationState(dcvRequest, prepare);
     }
 
+    private DomainEntity submitAcmeDomain(DcvRequest dcvRequest) throws DcvBaseException {
+        AcmePreparation acmePreparation = new AcmePreparation(dcvRequest.domain());
+
+        try {
+            AcmePreparationResponse prepare = dcvManager.getAcmeValidator().prepare(acmePreparation);
+
+            // Save the validation state to the database
+            return saveAcmeValidationState(dcvRequest, prepare);
+        } catch(DcvException e) {
+            log.warn("Error preparing DNS validation", e);
+            throw new ValidationFailedException("Error preparing DNS validation");
+        }
+    }
 
     private void validateDomainMatchesRequest(DomainEntity domainEntity, ValidateRequest validateRequest)
             throws DcvBaseException {
@@ -237,7 +281,7 @@ public class DcvService {
         }
     }
 
-    private void validateDnsDomain(long accountId, ValidationState validationState, ValidateRequest validateRequest)
+    private DomainValidationEvidence validateDnsDomain(long accountId, ValidationState validationState, ValidateRequest validateRequest)
             throws DcvBaseException {
 
         DnsType dnsType = mapToDnsType(validateRequest.dcvRequestType);
@@ -260,7 +304,7 @@ public class DcvService {
         DnsValidationRequest dnsValidationRequest = requestBuilder.build();
 
         try {
-            dcvManager.getDnsValidator().validate(dnsValidationRequest);
+            return dcvManager.getDnsValidator().validate(dnsValidationRequest);
         } catch (DcvException e) {
             throw new ValidationFailedException(e.getMessage());
         }
@@ -274,7 +318,7 @@ public class DcvService {
         };
     }
 
-    private void validateEmailDomain(ValidationState validationState, ValidateRequest validateRequest) throws DcvBaseException {
+    private DomainValidationEvidence validateEmailDomain(ValidationState validationState, ValidateRequest validateRequest) throws DcvBaseException {
         EmailSource emailSource = mapToEmailSource(validateRequest.dcvRequestType);
         EmailValidationRequest emailVerification = EmailValidationRequest.builder()
                 .domain(validateRequest.domain)
@@ -285,14 +329,14 @@ public class DcvService {
                 .build();
 
         try {
-            dcvManager.getEmailValidator().validate(emailVerification);
+            return dcvManager.getEmailValidator().validate(emailVerification);
         } catch(DcvException e) {
             log.warn("Failed validating email", e);
             throw new ValidationFailedException(e.getMessage());
         }
     }
 
-    private void validateFileDomain(Long accountId, ValidationState validationState, ValidateRequest validateRequest)
+    private DomainValidationEvidence validateFileDomain(Long accountId, ValidationState validationState, ValidateRequest validateRequest)
             throws DcvBaseException {
 
         FileValidationRequest.FileValidationRequestBuilder requestBuilder = FileValidationRequest.builder()
@@ -312,10 +356,38 @@ public class DcvService {
         }
 
         try {
-            dcvManager.getFileValidator().validate(requestBuilder.build());
+            return dcvManager.getFileValidator().validate(requestBuilder.build());
         } catch (DcvException e) {
             throw new ValidationFailedException(e.getMessage());
         }
+    }
+
+    private DomainValidationEvidence validateAcmeDomain(Long accountId, ValidationState validationState, ValidateRequest validateRequest)
+            throws DcvBaseException {
+
+        String acmeThumbprint = accountsRepository.findById(accountId).map(accountsEntity -> accountsEntity.tokenKey)
+                .orElseThrow(() -> new InvalidDcvRequestException("Account not set up for ACME validation"));
+
+        AcmeValidationRequest.AcmeValidationRequestBuilder requestBuilder = AcmeValidationRequest.builder()
+                .domain(validateRequest.domain)
+                .randomValue(validateRequest.randomValue)
+                .acmeType(getAcmeType(validateRequest))
+                .acmeThumbprint(acmeThumbprint)
+                .validationState(validationState);
+
+        try {
+            return dcvManager.getAcmeValidator().validate(requestBuilder.build());
+        } catch (DcvException e) {
+            throw new ValidationFailedException(e.getMessage());
+        }
+    }
+
+    private static AcmeType getAcmeType(ValidateRequest validateRequest) {
+        return switch (validateRequest.dcvRequestType) {
+            case ACME_DNS -> AcmeType.ACME_DNS_01;
+            case ACME_HTTP -> AcmeType.ACME_HTTP_01;
+            default -> throw new IllegalStateException("Unexpected value: " + validateRequest.dcvRequestType);
+        };
     }
 
     private EmailSource mapToEmailSource(DcvRequestType dcvRequestType) throws DcvBaseException {
