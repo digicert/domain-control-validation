@@ -7,10 +7,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.exceptions.DcvException;
 import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.methods.email.prepare.EmailPreparation;
-import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
-import com.digicert.validation.methods.email.prepare.EmailSource;
-import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.methods.email.prepare.*;
 import com.digicert.validation.methods.email.prepare.provider.EmailProvider;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
 import com.digicert.validation.mpic.MpicDetails;
@@ -132,19 +129,21 @@ class EmailValidatorTest {
 
     private EmailPreparation getEmailPreparation(EmailSource emailSource, EmailProvider emailProvider) throws PreparationException{
         EmailPreparation emailPreparation = new EmailPreparation("example.com", emailSource);
-        Set<String> emails = Set.of("test@example.com");
+        Set<EmailDnsRecordName> emails = Set.of(new EmailDnsRecordName("test@example.com", "example.com"));
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Map.of());
         when(emailProvider.findEmailsForDomain("example.com")).thenReturn(new EmailDetails(emails, mpicDetails));
         return emailPreparation;
     }
 
-    private void assertEmailPreparationResponse(EmailPreparationResponse response, EmailSource emailSource,
+    private void assertEmailPreparationResponse(EmailPreparationResponse response,
+                                                EmailSource emailSource,
                                                 EmailProvider emailProvider) throws PreparationException{
         assertEquals("example.com", response.domain());
         assertEquals(emailSource, response.emailSource());
         assertEquals(1, response.emailWithRandomValue().size());
         assertEquals("test@example.com", response.emailWithRandomValue().getFirst().email());
-
+        assertEquals("example.com", response.emailWithRandomValue().getFirst().dnsRecordName());
+        assertFalse(response.emailWithRandomValue().getFirst().randomValue().isEmpty());
         verify(emailProvider).findEmailsForDomain("example.com");
     }
 }

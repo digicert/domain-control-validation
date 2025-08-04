@@ -6,6 +6,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.methods.email.prepare.EmailDnsRecordName;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
@@ -52,11 +53,14 @@ class DnsTxtEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
-        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
+        Set<EmailDnsRecordName> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
 
         // Verify the results
-        assertTrue(emails.contains("test@example.com"));
-        assertFalse(emails.contains("invalid-email"));
+        assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, "test@example.com", "example.com"),
+                "Expected email not found in the result set");
+
+        assertFalse(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, "invalid-email", "example.com"),
+                "Invalid email should not be included in the result set");
         assertEquals(1, emails.size());
     }
 
@@ -74,11 +78,13 @@ class DnsTxtEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
-        Set<String> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
+        Set<EmailDnsRecordName> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
 
         // Verify the results
-        assertTrue(emails.contains("test@example.com"));
-        assertTrue(emails.contains("another@example.com"));
+        assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, "test@example.com", domain),
+                "Expected email not found in the result set.");
+        assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, "another@example.com", domain),
+                "Expected email not found in the result set.");
         assertEquals(2, emails.size());
     }
 

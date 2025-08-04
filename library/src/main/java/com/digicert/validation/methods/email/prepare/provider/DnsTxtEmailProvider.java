@@ -7,6 +7,7 @@ import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDnsRecordName;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.utils.DomainNameUtils;
@@ -80,18 +81,17 @@ public class DnsTxtEmailProvider implements EmailProvider {
             throw new PreparationException(Set.of(mpicDnsDetails.dcvError()));
         }
 
-        Set<String> emails = mpicDnsDetails.dnsRecords().stream()
-                .map(DnsRecord::value)
-                .map(DnsTxtEmailProvider::normalizeEmailAddress)
-                .filter(DomainNameUtils::isValidEmailAddress)
+        Set<EmailDnsRecordName> emailDnsRecordNames = mpicDnsDetails.dnsRecords().stream()
+                .map(m -> new EmailDnsRecordName(DnsTxtEmailProvider.normalizeEmailAddress(m.value()), m.name()))
+                .filter(f -> DomainNameUtils.isValidEmailAddress(f.email()))
                 .collect(Collectors.toUnmodifiableSet());
 
-        if (emails.isEmpty()) {
+        if (emailDnsRecordNames.isEmpty()) {
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} records={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain, mpicDnsDetails.dnsRecords().size());
             throw new PreparationException(Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
         }
 
-        return new EmailDetails(emails, mpicDnsDetails.mpicDetails());
+        return new EmailDetails(emailDnsRecordNames, mpicDnsDetails.mpicDetails());
     }
 
     public static String normalizeEmailAddress(String dnsValue) {

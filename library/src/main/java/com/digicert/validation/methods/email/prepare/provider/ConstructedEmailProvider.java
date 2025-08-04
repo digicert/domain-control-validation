@@ -1,6 +1,7 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDnsRecordName;
 
 import java.util.Arrays;
 import java.util.List;
@@ -46,13 +47,14 @@ public class ConstructedEmailProvider implements EmailProvider {
      *
      * @param domain The domain to construct email addresses for.
      * @return {@link EmailDetails} containing a set of constructed email addresses that can be used for domain validation.
-     *         No MPIC details are present because no DNS lookups are made.
+     *         No MPIC details are present because no DNS lookups are made. No DnsRecordName is present because no DNS lookups are made.
      */
     @Override
     public EmailDetails findEmailsForDomain(String domain) {
-        Set<String> emails = BASE_EMAIL_ADDRESS_PREFIXES.stream()
-                .map(prefix -> prefix + domain)
+        Set<EmailDnsRecordName> EmailDnsRecordName = BASE_EMAIL_ADDRESS_PREFIXES.stream()
+                .map(prefix -> new EmailDnsRecordName(prefix + domain, ""))
                 .collect(Collectors.toUnmodifiableSet());
-        return new EmailDetails(emails, null);
+
+        return new EmailDetails(EmailDnsRecordName, null);
     }
 }
