@@ -114,7 +114,7 @@ public class DcvService {
     private DomainEntity saveEmailValidationState(DcvRequest request, EmailPreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
 
-        List<DomainRandomValue> randomValues = prepare.emailWithRandomValue().stream()
+        List<DomainRandomValue> randomValues = prepare.emailResults().stream()
                 .map(emailWithRandomValue -> new DomainRandomValue(emailWithRandomValue.randomValue(), emailWithRandomValue.email(), domainEntity))
                 .toList();
         domainEntity.setDomainRandomValues(randomValues);
@@ -168,12 +168,12 @@ public class DcvService {
             throw new EmailFailedException("Error preparing email validation");
         }
 
-        if (preparationResponse.emailWithRandomValue().isEmpty()) {
+        if (preparationResponse.emailResults().isEmpty()) {
             throw new EmailFailedException("No usable email addresses found");
         }
 
         // Send the email
-        log.info("Email sent to: {}", preparationResponse.emailWithRandomValue());
+        log.info("Email sent to: {}", preparationResponse.emailResults());
 
         // Save the validation state to the database
         return saveEmailValidationState(dcvRequest, preparationResponse);

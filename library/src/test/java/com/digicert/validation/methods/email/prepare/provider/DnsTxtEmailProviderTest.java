@@ -6,7 +6,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
-import com.digicert.validation.methods.email.prepare.EmailDnsRecordName;
+import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
@@ -53,7 +53,7 @@ class DnsTxtEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
-        Set<EmailDnsRecordName> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
+        Set<EmailDnsDetails> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
 
         // Verify the results
         assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, "test@example.com", "example.com"),
@@ -78,7 +78,7 @@ class DnsTxtEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
 
         // Call the method under test
-        Set<EmailDnsRecordName> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
+        Set<EmailDnsDetails> emails = dnsTxtEmailProvider.findEmailsForDomain(domain).emails();
 
         // Verify the results
         assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, "test@example.com", domain),

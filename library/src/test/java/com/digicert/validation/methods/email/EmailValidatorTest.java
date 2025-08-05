@@ -129,7 +129,7 @@ class EmailValidatorTest {
 
     private EmailPreparation getEmailPreparation(EmailSource emailSource, EmailProvider emailProvider) throws PreparationException{
         EmailPreparation emailPreparation = new EmailPreparation("example.com", emailSource);
-        Set<EmailDnsRecordName> emails = Set.of(new EmailDnsRecordName("test@example.com", "example.com"));
+        Set<EmailDnsDetails> emails = Set.of(new EmailDnsDetails("test@example.com", "example.com"));
         MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Map.of());
         when(emailProvider.findEmailsForDomain("example.com")).thenReturn(new EmailDetails(emails, mpicDetails));
         return emailPreparation;
@@ -140,10 +140,10 @@ class EmailValidatorTest {
                                                 EmailProvider emailProvider) throws PreparationException{
         assertEquals("example.com", response.domain());
         assertEquals(emailSource, response.emailSource());
-        assertEquals(1, response.emailWithRandomValue().size());
-        assertEquals("test@example.com", response.emailWithRandomValue().getFirst().email());
-        assertEquals("example.com", response.emailWithRandomValue().getFirst().dnsRecordName());
-        assertFalse(response.emailWithRandomValue().getFirst().randomValue().isEmpty());
+        assertEquals(1, response.emailResults().size());
+        assertEquals("test@example.com", response.emailResults().getFirst().email());
+        assertEquals("example.com", response.emailResults().getFirst().dnsRecordName());
+        assertFalse(response.emailResults().getFirst().randomValue().isEmpty());
         verify(emailProvider).findEmailsForDomain("example.com");
     }
 }

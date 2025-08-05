@@ -1,7 +1,7 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.methods.email.prepare.EmailDetails;
-import com.digicert.validation.methods.email.prepare.EmailDnsRecordName;
+import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,10 +51,10 @@ public class ConstructedEmailProvider implements EmailProvider {
      */
     @Override
     public EmailDetails findEmailsForDomain(String domain) {
-        Set<EmailDnsRecordName> EmailDnsRecordName = BASE_EMAIL_ADDRESS_PREFIXES.stream()
-                .map(prefix -> new EmailDnsRecordName(prefix + domain, ""))
+        Set<EmailDnsDetails> EmailDnsDetails = BASE_EMAIL_ADDRESS_PREFIXES.stream()
+                .map(prefix -> new EmailDnsDetails(prefix + domain, ""))
                 .collect(Collectors.toUnmodifiableSet());
 
-        return new EmailDetails(EmailDnsRecordName, null);
+        return new EmailDetails(EmailDnsDetails, null);
     }
 }

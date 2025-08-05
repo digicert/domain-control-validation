@@ -15,6 +15,6 @@ import java.util.Set;
  * @param emails      The emails found at the target domain and the DNS record name used to retrieve the email.
  * @param mpicDetails A summary of the MPIC lookup details.
  */
-public record EmailDetails(Set<EmailDnsRecordName> emails,
+public record EmailDetails(Set<EmailDnsDetails> emails,
                            MpicDetails mpicDetails){
 }

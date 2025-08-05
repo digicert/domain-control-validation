@@ -6,5 +6,5 @@ package com.digicert.validation.methods.email.prepare;
  * @param dnsRecordName When present this is the DNS record name that was used to retrieve the email address.
  *                      Applicable when using DNS TXT or DNS CAA based emails.
  */
-public record EmailDnsRecordName (String email, String dnsRecordName){
+public record EmailDnsDetails(String email, String dnsRecordName){
 }

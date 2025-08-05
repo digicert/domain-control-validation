@@ -6,7 +6,7 @@ import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
-import com.digicert.validation.methods.email.prepare.EmailDnsRecordName;
+import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
@@ -49,7 +49,7 @@ public class DnsCaaEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         EmailDetails emailDetails = dnsCaaEmailProvider.findEmailsForDomain(domain);
-        Set<EmailDnsRecordName> emails = emailDetails.emails();
+        Set<EmailDnsDetails> emails = emailDetails.emails();
 
         assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, caaEmail, domain),
                 "Expected email not found in the result set");
@@ -73,7 +73,7 @@ public class DnsCaaEmailProviderTest {
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
         EmailDetails emailDetails = dnsCaaEmailProvider.findEmailsForDomain(domain);
-        Set<EmailDnsRecordName> emails = emailDetails.emails();
+        Set<EmailDnsDetails> emails = emailDetails.emails();
 
         assertTrue(EmailProviderTestUtil.containsEmailDnsRecordDomain(emails, caaEmail, domain),
                 "Expected email not found in the result set");

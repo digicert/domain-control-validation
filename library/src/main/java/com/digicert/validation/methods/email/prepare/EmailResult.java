@@ -20,4 +20,4 @@ package com.digicert.validation.methods.email.prepare;
  *
  * @param dnsRecordName The DNS record name that was used to retrieve the email address.
  */
-public record EmailWithRandomValue(String email, String randomValue, String dnsRecordName) { }
+public record EmailResult(String email, String randomValue, String dnsRecordName) { }

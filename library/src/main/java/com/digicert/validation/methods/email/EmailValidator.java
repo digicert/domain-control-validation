@@ -149,7 +149,7 @@ public class EmailValidator {
         EmailProvider emailProvider = findEmailGenerator(emailPreparation.emailSource());
         EmailDetails emailDetails = emailProvider.findEmailsForDomain(emailPreparation.domain());
 
-        Set<EmailDnsRecordName> emailsDnsRecordNames = emailDetails.emails()
+        Set<EmailDnsDetails> emailsDnsRecordNames = emailDetails.emails()
                 .stream()
                 .filter(e -> DomainNameUtils.isValidEmailAddress(e.email()))
                 .collect(Collectors.toSet());
@@ -157,8 +157,8 @@ public class EmailValidator {
 
         // The BRs require that each email address have a distinct random value (See for example BR 3.2.2.4.4):
         //      "The Random Value SHALL be unique in each email."
-        List<EmailWithRandomValue> emailWithRandomValues = emailsDnsRecordNames.stream()
-                .map(email -> new EmailWithRandomValue(email.email(),
+        List<EmailResult> emailResults = emailsDnsRecordNames.stream()
+                .map(email -> new EmailResult(email.email(),
                         randomValueGenerator.generateRandomString(),
                         email.dnsRecordName()
                 ))
@@ -167,7 +167,7 @@ public class EmailValidator {
         ValidationState validationState = new ValidationState(emailPreparation.domain(), Instant.now(), emailPreparation.emailSource().getDcvMethod());
         return new EmailPreparationResponse(emailPreparation.domain(),
                 emailPreparation.emailSource(),
-                emailWithRandomValues,
+                emailResults,
                 validationState,
                 emailDetails.mpicDetails());
     }
