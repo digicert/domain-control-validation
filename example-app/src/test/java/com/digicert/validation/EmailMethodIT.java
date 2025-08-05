@@ -8,7 +8,6 @@ import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainRandomValueDetails;
 import com.digicert.validation.controller.resource.response.DomainResource;
-import com.digicert.validation.methods.email.prepare.provider.DnsCaaEmailProvider;
 import com.digicert.validation.methods.email.prepare.provider.DnsTxtEmailProvider;
 import com.digicert.validation.utils.DomainUtils;
 import org.junit.jupiter.api.Test;
@@ -208,6 +207,7 @@ class EmailMethodIT {
         createdDomain.getRandomValueDetails().forEach(domainRandomValueResource -> {
             assertNotNull(domainRandomValueResource.getRandomValue());
             assertNotNull(domainRandomValueResource.getEmail());
+            assertNotNull(domainRandomValueResource.getDnsRecordName());
         });
     }
 }

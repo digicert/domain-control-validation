@@ -103,7 +103,7 @@ public class DcvService {
     private DomainEntity saveDnsValidationState(DcvRequest request, DnsPreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
         if (prepare.getRandomValue() != null) {
-            DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity);
+            DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity, null);
             randomValue.domain = domainEntity;
             domainEntity.setDomainRandomValues(List.of(randomValue));
         }
@@ -115,7 +115,11 @@ public class DcvService {
         DomainEntity domainEntity = new DomainEntity(request);
 
         List<DomainRandomValue> randomValues = prepare.emailResults().stream()
-                .map(emailWithRandomValue -> new DomainRandomValue(emailWithRandomValue.randomValue(), emailWithRandomValue.email(), domainEntity))
+                .map(emailWithRandomValue -> new DomainRandomValue(emailWithRandomValue.randomValue(),
+                        emailWithRandomValue.email(),
+                        domainEntity,
+                        emailWithRandomValue.dnsRecordName()
+                ))
                 .toList();
         domainEntity.setDomainRandomValues(randomValues);
 
@@ -124,7 +128,7 @@ public class DcvService {
 
     private DomainEntity saveFileValidationState(DcvRequest request, FilePreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
-        DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity);
+        DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity, null);
         domainEntity.setDomainRandomValues(List.of(randomValue));
 
         return saveValidationState(domainEntity, prepare.getValidationState());

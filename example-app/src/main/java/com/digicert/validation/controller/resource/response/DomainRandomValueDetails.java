@@ -11,9 +11,11 @@ import lombok.NoArgsConstructor;
 public class DomainRandomValueDetails {
     private String randomValue;
     private String email;
+    private String dnsRecordName;
 
     public DomainRandomValueDetails(DomainRandomValue domainRandomValue) {
         this.randomValue = domainRandomValue.randomValue;
         this.email = domainRandomValue.email;
+        this.dnsRecordName = domainRandomValue.dnsRecordName;
     }
 }
