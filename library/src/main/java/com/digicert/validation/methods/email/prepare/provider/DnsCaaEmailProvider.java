@@ -7,11 +7,10 @@ import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDnsService;
-import com.digicert.validation.mpic.api.dns.DnsRecord;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -64,18 +63,18 @@ public class DnsCaaEmailProvider implements EmailProvider {
     public EmailDetails findEmailsForDomain(String domain) throws PreparationException {
         MpicDnsDetails dnsData = mpicDnsService.getDnsDetails(domain, DnsType.CAA);
 
-        Set<String> emails = dnsData.dnsRecords().stream()
+        Set<EmailDnsDetails> emailDnsDetails = dnsData.dnsRecords().stream()
                 .filter(dnsRecord -> dnsRecord.dnsType().equals(DnsType.CAA))
                 .filter(dnsRecord -> dnsRecord.tag().equals(DNS_CAA_EMAIL_TAG))
-                .map(DnsRecord::value)
+                .map(m -> new EmailDnsDetails(m.value(), m.name()))
                 .collect(Collectors.toUnmodifiableSet());
 
-        if (emails.isEmpty()) {
+        if (emailDnsDetails.isEmpty()) {
             log.info("event_id={} domain={} records={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.dnsRecords().size());
             Set<DcvError> errors = dnsData.dcvError() == null ? Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND) : Set.of(dnsData.dcvError());
             throw new PreparationException(errors);
         }
 
-        return new EmailDetails(emails, dnsData.mpicDetails());
+        return new EmailDetails(emailDnsDetails, dnsData.mpicDetails());
     }
 }

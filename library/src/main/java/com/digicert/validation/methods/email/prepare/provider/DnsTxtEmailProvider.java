@@ -7,13 +7,12 @@ import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDnsService;
-import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.utils.DomainNameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,18 +79,17 @@ public class DnsTxtEmailProvider implements EmailProvider {
             throw new PreparationException(Set.of(mpicDnsDetails.dcvError()));
         }
 
-        Set<String> emails = mpicDnsDetails.dnsRecords().stream()
-                .map(DnsRecord::value)
-                .map(DnsTxtEmailProvider::normalizeEmailAddress)
-                .filter(DomainNameUtils::isValidEmailAddress)
+        Set<EmailDnsDetails> emailDnsDetails = mpicDnsDetails.dnsRecords().stream()
+                .map(m -> new EmailDnsDetails(DnsTxtEmailProvider.normalizeEmailAddress(m.value()), m.name()))
+                .filter(f -> DomainNameUtils.isValidEmailAddress(f.email()))
                 .collect(Collectors.toUnmodifiableSet());
 
-        if (emails.isEmpty()) {
+        if (emailDnsDetails.isEmpty()) {
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} records={}", LogEvents.NO_DNS_TXT_CONTACT_FOUND, domain, mpicDnsDetails.dnsRecords().size());
             throw new PreparationException(Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
         }
 
-        return new EmailDetails(emails, mpicDnsDetails.mpicDetails());
+        return new EmailDetails(emailDnsDetails, mpicDnsDetails.mpicDetails());
     }
 
     public static String normalizeEmailAddress(String dnsValue) {

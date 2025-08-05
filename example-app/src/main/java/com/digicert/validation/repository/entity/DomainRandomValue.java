@@ -16,13 +16,17 @@ public class DomainRandomValue {
     @Column(name = "email")
     public String email;
 
+    @Column(name = "dnsRecordName")
+    public String dnsRecordName;
+
     @ManyToOne
     @JoinColumn(name = "domain_id", referencedColumnName = "id")
     public DomainEntity domain;
 
-    public DomainRandomValue(String randomValue, String email, DomainEntity domain) {
+    public DomainRandomValue(String randomValue, String email, DomainEntity domain, String dnsRecordName) {
         this.randomValue = randomValue;
         this.email = email;
         this.domain = domain;
+        this.dnsRecordName = dnsRecordName;
     }
 }

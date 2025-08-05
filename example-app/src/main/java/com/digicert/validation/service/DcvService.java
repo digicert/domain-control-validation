@@ -103,7 +103,7 @@ public class DcvService {
     private DomainEntity saveDnsValidationState(DcvRequest request, DnsPreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
         if (prepare.getRandomValue() != null) {
-            DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity);
+            DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity, null);
             randomValue.domain = domainEntity;
             domainEntity.setDomainRandomValues(List.of(randomValue));
         }
@@ -114,8 +114,12 @@ public class DcvService {
     private DomainEntity saveEmailValidationState(DcvRequest request, EmailPreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
 
-        List<DomainRandomValue> randomValues = prepare.emailWithRandomValue().stream()
-                .map(emailWithRandomValue -> new DomainRandomValue(emailWithRandomValue.randomValue(), emailWithRandomValue.email(), domainEntity))
+        List<DomainRandomValue> randomValues = prepare.emailResults().stream()
+                .map(emailWithRandomValue -> new DomainRandomValue(emailWithRandomValue.randomValue(),
+                        emailWithRandomValue.email(),
+                        domainEntity,
+                        emailWithRandomValue.dnsRecordName()
+                ))
                 .toList();
         domainEntity.setDomainRandomValues(randomValues);
 
@@ -124,7 +128,7 @@ public class DcvService {
 
     private DomainEntity saveFileValidationState(DcvRequest request, FilePreparationResponse prepare) throws DcvBaseException {
         DomainEntity domainEntity = new DomainEntity(request);
-        DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity);
+        DomainRandomValue randomValue = new DomainRandomValue(prepare.getRandomValue(), null, domainEntity, null);
         domainEntity.setDomainRandomValues(List.of(randomValue));
 
         return saveValidationState(domainEntity, prepare.getValidationState());
@@ -168,12 +172,12 @@ public class DcvService {
             throw new EmailFailedException("Error preparing email validation");
         }
 
-        if (preparationResponse.emailWithRandomValue().isEmpty()) {
+        if (preparationResponse.emailResults().isEmpty()) {
             throw new EmailFailedException("No usable email addresses found");
         }
 
         // Send the email
-        log.info("Email sent to: {}", preparationResponse.emailWithRandomValue());
+        log.info("Email sent to: {}", preparationResponse.emailResults());
 
         // Save the validation state to the database
         return saveEmailValidationState(dcvRequest, preparationResponse);

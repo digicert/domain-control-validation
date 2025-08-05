@@ -19,13 +19,13 @@ import java.util.List;
  *
  * @param domain               The domain associated with the email preparation.
  * @param emailSource          The source of the email.
- * @param emailWithRandomValue A list of emails with their associated random values.
+ * @param emailResults A list of emails with their associated random values.
  * @param validationState      The validation state of the email preparation.
  * @param mpicDetails          The details of the MPIC lookup
  */
 public record EmailPreparationResponse(String domain,
                                        EmailSource emailSource,
-                                       List<EmailWithRandomValue> emailWithRandomValue,
+                                       List<EmailResult> emailResults,
                                        ValidationState validationState,
                                        MpicDetails mpicDetails) {
 }

@@ -2,6 +2,7 @@ package com.digicert.validation.methods.email.prepare.provider;
 
 import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
+import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -11,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 class ConstructedEmailProviderTest {
@@ -29,20 +31,21 @@ class ConstructedEmailProviderTest {
     @Test
     void testFindEmailsForDomain() throws PreparationException {
         String domain = "example.com";
-        Set<String> expectedEmails = Set.of(
-                "admin@example.com",
-                "administrator@example.com",
-                "webmaster@example.com",
-                "hostmaster@example.com",
-                "postmaster@example.com"
+
+        Set<EmailDnsDetails> expectedEmailDnsDetails = Set.of(
+                new EmailDnsDetails("admin@example.com", ""),
+                new EmailDnsDetails("administrator@example.com", ""),
+                new EmailDnsDetails("webmaster@example.com", ""),
+                new EmailDnsDetails("hostmaster@example.com", ""),
+                new EmailDnsDetails("postmaster@example.com", "")
         );
 
-        EmailDetails emailDetails = new EmailDetails(expectedEmails, null);
+        EmailDetails emailDetails = new EmailDetails(expectedEmailDnsDetails, null);
 
         when(emailProvider.findEmailsForDomain(domain)).thenReturn(emailDetails);
 
-        Set<String> emails = constructedEmailProvider.findEmailsForDomain(domain).emails();
+        Set<EmailDnsDetails> emails = constructedEmailProvider.findEmailsForDomain(domain).emails();
 
-        assertEquals(expectedEmails, emails);
+        assertEquals(expectedEmailDnsDetails, emails);
     }
 }
