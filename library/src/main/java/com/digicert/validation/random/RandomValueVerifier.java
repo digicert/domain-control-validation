@@ -24,7 +24,7 @@ public class RandomValueVerifier {
      * The value is based on the Baseline Requirements (BR) version 1.3.8, which mandates a minimum of 112 bits
      * of entropy for cryptographic security.
      */
-    private static final int MIN_ALLOWED_ENTROPY_VALUE = 112;
+    private static final int MIN_ALLOWED_ENTROPY_VALUE = 128;
 
     /**
      * Calculate and cache the entropy per character in the constructor

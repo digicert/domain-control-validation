@@ -71,7 +71,7 @@ public class AcmeValidationHandler {
         }
 
         String keyAuthorization = request.getRandomValue() + "." + request.getAcmeThumbprint();
-        if (!mpicFileDetails.fileContents().trim().equals(keyAuthorization)) {
+        if (!mpicFileDetails.fileContents().stripTrailing().equals(keyAuthorization)) {
             // If the file contents do not match the key authorization, we will throw an exception
             log.atLevel(logLevelForDcvErrors).log("event_id={} acme_url={} domain={} key_authorization={} reason={}",
                     LogEvents.ACME_VALIDATION_FAILED, acmeUrl, request.getDomain(), keyAuthorization, DcvError.RANDOM_VALUE_NOT_FOUND);
@@ -94,9 +94,12 @@ public class AcmeValidationHandler {
         }
 
         boolean isValid = mpicDnsDetails.dnsRecords().stream()
+                .filter(dnsRecord -> DnsType.TXT.equals(dnsRecord.dnsType()))
                 .map(DnsRecord::value)
                 .filter(dnsValue -> !StringUtils.isEmpty(dnsValue))
-                .anyMatch(dnsValue -> dnsValue.contains(computedDnsTxtValue));
+                // Some DNS providers return the TXT record value with surrounding quotes
+                .map(dnsValue -> StringUtils.strip(dnsValue, "\""))
+                .anyMatch(dnsValue -> dnsValue.equals(computedDnsTxtValue));
         if (!isValid) {
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} reason={}",
                     LogEvents.ACME_VALIDATION_FAILED, request.getDomain(), DcvError.RANDOM_VALUE_NOT_FOUND);

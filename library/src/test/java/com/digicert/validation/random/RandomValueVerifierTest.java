@@ -61,7 +61,7 @@ class RandomValueVerifierTest {
     }
 
     @Test
-    void testEntropyCalculationWithExactly112Bits() {
+    void testEntropyCalculationWithExactly128Bits() {
         randomValueGenerator = new RandomValueGenerator() {
             @Override
             public String getCharset() {
@@ -70,7 +70,7 @@ class RandomValueVerifierTest {
 
             @Override
             public String generateRandomString() {
-                return "ABCDEFGHIJKLMNOPQRSTUVWXYZab"; // 28 characters
+                return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"; // 32 characters
             }
         };
 
@@ -94,7 +94,7 @@ class RandomValueVerifierTest {
 
             @Override
             public String generateRandomString() {
-                return "ABCDEFGHIJKLMNOPQRSTUVWXYZa"; // 27 characters
+                return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcde"; // 31 characters
             }
         };
 

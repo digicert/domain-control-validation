@@ -64,7 +64,7 @@ class AcmeValidationHandlerTest {
                 .build();
 
         String calculatedDnsTxtValue = computeDnsTxtValue(defaultRandomValue + "." + defaultAcmeThumbprint);
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.TXT, true, defaultDomainWithLabel, calculatedDnsTxtValue);
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(true, defaultDomainWithLabel, calculatedDnsTxtValue);
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
 
         AcmeValidationResponse response = acmeValidationHandler.validate(request);
@@ -76,6 +76,52 @@ class AcmeValidationHandlerTest {
     }
 
     @Test
+    void testAcmeDnsValidationHandler_validate_HasMultipleTxtRecords() throws ValidationException {
+        AcmeValidationRequest request = AcmeValidationRequest.builder()
+                .domain(defaultDomain)
+                .randomValue(defaultRandomValue)
+                .acmeThumbprint(defaultAcmeThumbprint)
+                .acmeType(AcmeType.ACME_DNS_01)
+                .build();
+
+        String calculatedDnsTxtValue = computeDnsTxtValue(defaultRandomValue + "." + defaultAcmeThumbprint);
+        MpicDetails mpicDetails = new MpicDetails(true,
+                "primary-agent",
+                3,
+                3,
+                Map.of("secondary-1", true, "secondary-2", true));
+        MpicDnsDetails mpicDnsDetails = new MpicDnsDetails(mpicDetails,
+                defaultDomainWithLabel,
+                List.of(getDnsTxtRecord(calculatedDnsTxtValue, defaultDomainWithLabel), getDnsTxtRecord("some-other-value", defaultDomainWithLabel)),
+                null);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
+
+        AcmeValidationResponse response = acmeValidationHandler.validate(request);
+
+        verify(mpicDnsService).getDnsDetails(defaultDomainWithLabel, DnsType.TXT);
+        verify(mpicDnsService, never()).getDnsDetails(defaultDomain, DnsType.TXT);
+        assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
+        assertEquals(defaultDomainWithLabel, response.dnsRecordName());
+    }
+
+    @Test
+    void testAcmeDnsValidationHandler_validate_HasExtraCharacters() throws ValidationException {
+        AcmeValidationRequest request = AcmeValidationRequest.builder()
+                .domain(defaultDomain)
+                .randomValue(defaultRandomValue)
+                .acmeThumbprint(defaultAcmeThumbprint)
+                .acmeType(AcmeType.ACME_DNS_01)
+                .build();
+
+        String calculatedDnsTxtValue = computeDnsTxtValue(defaultRandomValue + "." + defaultAcmeThumbprint);
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(true, defaultDomainWithLabel, calculatedDnsTxtValue + " some-extra-characters");
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
+
+        AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
+        assertTrue(exception.getErrors().contains(DcvError.RANDOM_VALUE_NOT_FOUND));
+    }
+
+    @Test
     void testAcmeDnsValidationHandler_validate_NonMatchingRecord() throws ValidationException {
         AcmeValidationRequest request = AcmeValidationRequest.builder()
                 .domain(defaultDomain)
@@ -84,7 +130,7 @@ class AcmeValidationHandlerTest {
                 .acmeType(AcmeType.ACME_DNS_01)
                 .build();
 
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.TXT, true, defaultDomainWithLabel, "some-other-value");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(true, defaultDomainWithLabel, "some-other-value");
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
         when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.TXT))).thenReturn(getNotFoundMpicDnsDetails(defaultDomain));
 
@@ -130,7 +176,7 @@ class AcmeValidationHandlerTest {
     }
 
     @Test
-    void testAcmeHttpValidationHandler_validate_NonMatchingRecord() {
+    void testAcmeHttpValidationHandler_validate_NonMatchingRecord_extraChars() {
         AcmeValidationRequest request = AcmeValidationRequest.builder()
                 .domain(defaultDomain)
                 .randomValue(defaultRandomValue)
@@ -147,7 +193,7 @@ class AcmeValidationHandlerTest {
    }
 
     @Test
-    void testAcmeHttpValidationHandler_validate_extraContent() {
+    void testAcmeHttpValidationHandler_validate_NonMatchingRecord_missingValue() {
         AcmeValidationRequest request = AcmeValidationRequest.builder()
                 .domain(defaultDomain)
                 .randomValue(defaultRandomValue)
@@ -178,14 +224,7 @@ class AcmeValidationHandlerTest {
         assertTrue(exception.getErrors().contains(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE));
     }
 
-    private static MpicDnsDetails getMpicDnsDetails(DnsType dnsType, boolean corroborated, String domainName, String dnsValue) {
-        DnsRecord dnsRecord = new DnsRecord(
-                dnsType,
-                domainName,
-                dnsValue,
-                3600,
-                0,
-                "");
+    private MpicDnsDetails getMpicDnsDetails(boolean corroborated, String domainName, String dnsValue) {
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 "primary-agent",
                 3,
@@ -193,11 +232,11 @@ class AcmeValidationHandlerTest {
                 Map.of("secondary-1", corroborated, "secondary-2", corroborated));
         return new MpicDnsDetails(mpicDetails,
                 domainName,
-                List.of(dnsRecord),
+                List.of(getDnsTxtRecord(dnsValue, defaultDomainWithLabel)),
                 null);
     }
 
-    private static MpicDnsDetails getNotFoundMpicDnsDetails(String domain) {
+    private MpicDnsDetails getNotFoundMpicDnsDetails(String domain) {
         MpicDetails mpicDetails = new MpicDetails(true,
                 "primary-agent",
                 3,
@@ -209,7 +248,7 @@ class AcmeValidationHandlerTest {
                 null);
     }
 
-    private static MpicDnsDetails getErrorMpicDnsDetails(String domain) {
+    private MpicDnsDetails getErrorMpicDnsDetails(String domain) {
         MpicDetails mpicDetails = new MpicDetails(true,
                 "primary-agent",
                 3,
@@ -221,7 +260,7 @@ class AcmeValidationHandlerTest {
                 DcvError.DNS_LOOKUP_IO_EXCEPTION);
     }
 
-    private static MpicFileDetails getMpicFileDetails(boolean corroborated, DcvError dcvError, int statusCode, String fileContents) {
+    private MpicFileDetails getMpicFileDetails(boolean corroborated, DcvError dcvError, int statusCode, String fileContents) {
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 "primary-agent",
                 3,
@@ -233,6 +272,16 @@ class AcmeValidationHandlerTest {
                 fileContents,
                 statusCode,
                 dcvError);
+    }
+
+    private DnsRecord getDnsTxtRecord(String dnsTxtValue, String domainName) {
+        return new DnsRecord(
+                DnsType.TXT,
+                domainName,
+                "\"" + dnsTxtValue + "\"",
+                3600,
+                0,
+                "");
     }
 
     @SneakyThrows
