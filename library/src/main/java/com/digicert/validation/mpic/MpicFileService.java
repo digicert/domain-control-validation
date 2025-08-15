@@ -112,9 +112,9 @@ public class MpicFileService {
     }
 
     private MpicFileDetails mapToMpicFileDetails(MpicFileResponse mpicFileResponse, String fileUrl, DcvError dcvError) {
-        boolean corroborated = dcvError != null && MpicStatus.CORROBORATED.equals(mpicFileResponse.mpicStatus());
+        boolean corroborated = MpicStatus.CORROBORATED.equals(mpicFileResponse.mpicStatus());
         String primaryAgentId = mpicFileResponse.primaryFileResponse().agentId();
-        int serversChecked = mpicFileResponse.secondaryFileResponses().size() + 1;
+        int numSecondariesChecked = mpicFileResponse.secondaryFileResponses().size();
         long numCorroborated = mpicFileResponse.secondaryFileResponses().stream()
                 .filter(SecondaryFileResponse::corroborates)
                 .count();
@@ -125,7 +125,7 @@ public class MpicFileService {
 
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 primaryAgentId,
-                serversChecked,
+                numSecondariesChecked,
                 numCorroborated,
                 agentIdToCorroboration);
 

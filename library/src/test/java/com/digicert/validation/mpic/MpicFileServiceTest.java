@@ -123,8 +123,9 @@ class MpicFileServiceTest {
         assertEquals("url", details.fileUrl());
         assertEquals(200, details.statusCode());
         assertNotNull(details.mpicDetails());
+        assertTrue(details.mpicDetails().corroborated());
         assertEquals("agent1", details.mpicDetails().primaryAgentId());
-        assertEquals(2, details.mpicDetails().secondaryServersChecked());
+        assertEquals(1, details.mpicDetails().secondaryServersChecked());
         assertEquals(1, details.mpicDetails().secondaryServersCorroborated());
         assertTrue(details.mpicDetails().agentIdToCorroboration().get("agent2"));
     }
