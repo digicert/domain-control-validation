@@ -49,8 +49,9 @@ public enum DcvError {
     /**
      * Error indicating that the random value has insufficient entropy.
      * <p>
-     * The baseline requirements require that random values must have at least 128 bits of entropy. This error occurs
-     * when the library can determine that the provided random value does not meet that requirement. High entropy is
+     * The baseline requirements require that random values must have at least 112.
+     * RFC-8555, however, requires 128 bits of entropy. This error occurs when the library can determine
+     * that the provided random value does not meet that requirement. High entropy is
      * necessary to ensure the unpredictability of the value, which is crucial for security purposes.
      */
     RANDOM_VALUE_INSUFFICIENT_ENTROPY,
