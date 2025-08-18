@@ -40,7 +40,7 @@ class FileMethodIT {
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(dcvRequest.domain());
         // Write random value to file
-        FileUtils.writeNginxStaticFileWithContent("fileauth.txt", createdDomain.getRandomValueDetails().getFirst().getRandomValue());
+        FileUtils.writeFileAuthFileWithContent("fileauth.txt", createdDomain.getRandomValueDetails().getFirst().getRandomValue());
 
         exampleAppClient.validateDomain(createValidateRequest(createdDomain, "fileauth.txt"), createdDomain.getId());
 
@@ -59,7 +59,7 @@ class FileMethodIT {
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(dcvRequest.domain());
         // Write random value to file
-        FileUtils.writeNginxStaticFileWithContent("customfilename.txt", createdDomain.getRandomValueDetails().getFirst().getRandomValue());
+        FileUtils.writeFileAuthFileWithContent("customfilename.txt", createdDomain.getRandomValueDetails().getFirst().getRandomValue());
 
         exampleAppClient.validateDomain(createValidateRequest(createdDomain, "customfilename.txt"), createdDomain.getId());
 
@@ -80,7 +80,7 @@ class FileMethodIT {
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(dcvRequest.domain());
         // Write random value to file
-        FileUtils.writeNginxStaticFileWithContent(fileName, createdDomain.getRandomValueDetails().getFirst().getRandomValue());
+        FileUtils.writeFileAuthFileWithContent(fileName, createdDomain.getRandomValueDetails().getFirst().getRandomValue());
 
         exampleAppClient.validateDomain(createValidateRequest(createdDomain, fileName), createdDomain.getId());
 
@@ -99,7 +99,7 @@ class FileMethodIT {
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(dcvRequest.domain());
         // Write random value to file
-        FileUtils.writeNginxStaticFileWithContent("fileauth.txt", createdDomain.getRandomValueDetails().getFirst().getRandomValue());
+        FileUtils.writeFileAuthFileWithContent("fileauth.txt", createdDomain.getRandomValueDetails().getFirst().getRandomValue());
 
         exampleAppClient.validateDomain(createValidateRequest(createdDomain, null), createdDomain.getId());
 

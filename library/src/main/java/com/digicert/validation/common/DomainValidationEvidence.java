@@ -85,6 +85,18 @@ public class DomainValidationEvidence {
     private final String randomValue;
 
     /**
+     * ACME Thumbprint: The thumbprint of the ACME account key.
+     * <p>
+     * ACME validation requires the user to establish an account key.
+     * The thumbprint (constructed by hashing) of that key is used in combination
+     * with the random value for determining the value to place in a file or DNS TXT
+     * record.
+     * <p>
+     * Only populated for ACME DCV methods; otherwise NULL.
+     */
+    private final String acmeThumbprint;
+
+    /**
      * MPIC Details: The details of the MultiPerspective results used in the validation.
      * <p>
      * This field contains additional information about the MPIC results, such as whether
@@ -110,7 +122,17 @@ public class DomainValidationEvidence {
      * @param randomValue    The random value used for validation, if applicable.
      * @param mpicDetails    The details of the MultiPerspective results used in the validation.
      */
-    private DomainValidationEvidence(String domain, DcvMethod dcvMethod, Instant validationDate, String emailAddress, String fileUrl, DnsType dnsType, String dnsRecordName, String requestToken, String randomValue, MpicDetails mpicDetails) {
+    private DomainValidationEvidence(String domain,
+                                     DcvMethod dcvMethod,
+                                     Instant validationDate,
+                                     String emailAddress,
+                                     String fileUrl,
+                                     DnsType dnsType,
+                                     String dnsRecordName,
+                                     String requestToken,
+                                     String randomValue,
+                                     String acmeThumbprint,
+                                     MpicDetails mpicDetails) {
         this.domain = domain;
         this.dcvMethod = dcvMethod;
         this.validationDate = validationDate;
@@ -120,6 +142,7 @@ public class DomainValidationEvidence {
         this.dnsRecordName = dnsRecordName;
         this.requestToken = requestToken;
         this.randomValue = randomValue;
+        this.acmeThumbprint = acmeThumbprint;
         this.mpicDetails = mpicDetails;
     }
 }

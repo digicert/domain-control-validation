@@ -49,8 +49,9 @@ public enum DcvError {
     /**
      * Error indicating that the random value has insufficient entropy.
      * <p>
-     * The baseline requirements require that random values must have at least 112 bits of entropy. This error occurs
-     * when the library can determine that the provided random value does not meet that requirement. High entropy is
+     * The baseline requirements require that random values must have at least 112.
+     * RFC-8555, however, requires 128 bits of entropy. This error occurs when the library can determine
+     * that the provided random value does not meet that requirement. High entropy is
      * necessary to ensure the unpredictability of the value, which is crucial for security purposes.
      */
     RANDOM_VALUE_INSUFFICIENT_ENTROPY,
@@ -309,7 +310,17 @@ public enum DcvError {
     MPIC_CORROBORATION_ERROR,
 
     /** Error indicating that the MPIC response is invalid. */
-    MPIC_INVALID_RESPONSE;
+    MPIC_INVALID_RESPONSE,
+
+    /** Error indicating that the ACME type is empty. */
+    ACME_TYPE_REQUIRED,
+
+    /** Error indicating that the ACME thumbprint is empty. */
+    ACME_THUMBPRINT_REQUIRED,
+
+    /** Error indicating an issue when creating the ACME DNS key */
+    ACME_DNS_KEY_ERROR
+    ;
 
 
 

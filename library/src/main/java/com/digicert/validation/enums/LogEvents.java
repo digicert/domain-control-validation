@@ -67,6 +67,12 @@ public enum LogEvents {
     /** Log event indicating that there was an issue with the response from the mpic service */
     MPIC_INVALID_RESPONSE,
 
+    /** Log event indicating that the ACME validation was successful. */
+    ACME_VALIDATION_SUCCESSFUL,
+
+    /** Log event indicating that the ACME validation failed due to some error. */
+    ACME_VALIDATION_FAILED,
+
     /**
      * Reserved labels, which are two alphanumeric characters followed by two hyphens, must follow a specific
      * standards which this domain does not follow.

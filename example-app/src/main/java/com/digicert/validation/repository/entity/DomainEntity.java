@@ -36,6 +36,9 @@ public class DomainEntity {
     @Column(name = "validation_state")
     public String validationState;
 
+    @Column(name = "validation_evidence", columnDefinition = "LONGTEXT")
+    public String validationEvidence;
+
     public DomainEntity(DcvRequest request) {
         this.domainName = request.domain();
         this.accountId = request.accountId();

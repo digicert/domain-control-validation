@@ -39,16 +39,30 @@ public class StateValidationUtils {
             throw new InputException(DcvError.VALIDATION_STATE_DOMAIN_REQUIRED);
         }
 
+        if (validationState.prepareTime() == null) {
+            throw new InputException(DcvError.VALIDATION_STATE_PREPARE_TIME_REQUIRED);
+        }
+
+        verifyDcvMethod(validationState, expectedMethod);
+    }
+
+    private static void verifyDcvMethod(ValidationState validationState, DcvMethod expectedMethod) throws InputException {
         if (validationState.dcvMethod() == null) {
             throw new InputException(DcvError.VALIDATION_STATE_DCV_METHOD_REQUIRED);
         }
 
         if (!validationState.dcvMethod().equals(expectedMethod)) {
+            // If the expected method is ACME, we allow the validation state to be UNKNOWN
+            // This is because the ACME protocol doesn't require a specific type to be set when the "prepare" step is called.
+            if (isACME(validationState, expectedMethod)) {
+                return;
+            }
             throw new InputException(DcvError.INVALID_DCV_METHOD);
         }
+    }
 
-        if (validationState.prepareTime() == null) {
-            throw new InputException(DcvError.VALIDATION_STATE_PREPARE_TIME_REQUIRED);
-        }
+    private static boolean isACME(ValidationState validationState, DcvMethod expectedMethod) {
+        return (expectedMethod == DcvMethod.BR_3_2_2_4_7 || expectedMethod == DcvMethod.BR_3_2_2_4_19)
+                && validationState.dcvMethod() == DcvMethod.UNKNOWN;
     }
 }

@@ -1,8 +1,7 @@
-package com.digicert.validation.methods.dns.validate;
+package com.digicert.validation.mpic.api.dns;
 
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.mpic.MpicDetails;
-import com.digicert.validation.mpic.api.dns.DnsRecord;
 
 import java.util.List;
 

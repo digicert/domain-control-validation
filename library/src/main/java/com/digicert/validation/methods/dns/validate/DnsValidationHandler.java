@@ -9,6 +9,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
+import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;

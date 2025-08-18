@@ -2,6 +2,7 @@ package com.digicert.validation;
 
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.client.file.FileClient;
+import com.digicert.validation.methods.acme.AcmeValidator;
 import com.digicert.validation.methods.dns.DnsValidator;
 import com.digicert.validation.methods.email.EmailValidator;
 import com.digicert.validation.methods.file.FileValidator;
@@ -55,6 +56,17 @@ public class DcvManager {
     private final FileValidator fileValidator;
 
     /**
+     * The ACME Validation validator used for DCV.
+     * <p>
+     * This validator is responsible for performing acme-based domain control validation. It checks for the presence
+     * of a random value combined with an acmeThumbprint in a file or DNS record to verify domain ownership.
+     * <p>
+     * Handles 3.2.2.4.7 DNS Change
+     * Handles 3.2.2.4.19 Agreed-Upon Change to Website v2
+     */
+    private final AcmeValidator acmeValidator;
+
+    /**
      * The DNS client used for DNS queries. Exposed to allow for use outside the library.
      */
     private final DnsClient dnsClient;
@@ -75,6 +87,7 @@ public class DcvManager {
         this.dnsValidator = dcvContext.get(DnsValidator.class);
         this.emailValidator = dcvContext.get(EmailValidator.class);
         this.fileValidator = dcvContext.get(FileValidator.class);
+        this.acmeValidator = dcvContext.get(AcmeValidator.class);
         this.dnsClient = dcvContext.get(DnsClient.class);
         this.fileClient = dcvContext.get(FileClient.class);
     }

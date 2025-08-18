@@ -5,6 +5,7 @@ target/
 
 /example-app/.sql-data/
 /example-app/nginx/www/.well-known/pki-validation/*
+/example-app/nginx/www/.well-known/acme-challenge/*
 
 ### IntelliJ IDEA ###
 .idea/*

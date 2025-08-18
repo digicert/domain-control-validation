@@ -3,7 +3,7 @@ package com.digicert.validation.mpic;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
-import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.MpicStatus;
 import com.digicert.validation.mpic.api.dns.DnsRecord;

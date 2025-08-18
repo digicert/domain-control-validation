@@ -2,16 +2,17 @@ package com.digicert.validation.methods.dns.validate;
 
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.challenges.*;
+import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
-import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
+import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.xbill.DNS.*;
+import org.xbill.DNS.TextParseException;
 
 import java.util.List;
 import java.util.Map;

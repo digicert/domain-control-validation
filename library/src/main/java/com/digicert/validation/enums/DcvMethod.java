@@ -24,7 +24,7 @@ import lombok.Getter;
  *     <li><b>3.2.2.4.14 -> Email to DNS TXT Contact</b></li>
  *     <li>3.2.2.4.15 / 16 / 17 -> Phone Contact - Not Supported</li>
  *     <li><b>3.2.2.4.18 -> File Validation</b></li>
- *     <li>3.2.2.4.19 -> ACME details - Not Supported</li>
+ *     <li><b>3.2.2.4.19 -> ACME HTTP Validation</b></li>
  *     <li>3.2.2.4.20 -> TLS</li>
  *   </ul>
  *
@@ -85,7 +85,23 @@ public enum DcvMethod {
      * predetermined location on their web server. The presence of this file containing the given random value or
      * request token confirms control over the FQDN.
      */
-    BR_3_2_2_4_18("3.2.2.4.18");
+    BR_3_2_2_4_18("3.2.2.4.18"),
+
+    /**
+     * ACME HTTP Challenge.
+     * <p>
+     * This method involves using the ACME protocol to validate domain control. It requires the domain owner to
+     * respond to a challenge issued by an ACME server, typically by placing a specific file or token at a known
+     * location on their web server.
+     */
+    BR_3_2_2_4_19("3.2.2.4.19"),
+
+    /**
+     * Represents an unknown or unsupported DCV method.
+     * <p>
+     * It should only be used as a placeholder when the DCV Method is not yet known, e.g., for the ACME "prepare" step.
+     */
+    UNKNOWN("unknown");
 
     /** The DCV method string.
      */

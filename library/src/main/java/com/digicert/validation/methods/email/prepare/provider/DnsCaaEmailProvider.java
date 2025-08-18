@@ -5,7 +5,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.methods.dns.validate.MpicDnsDetails;
+import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDnsService;

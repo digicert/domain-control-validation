@@ -19,12 +19,12 @@ public class RandomValueVerifier {
 
     /**
      * BR version 1.3.8 requires 112 bits of entropy
+     * RFC-8555 (ACME) requires a minimum of 128 bits of entropy
      * <p>
      * This constant defines the minimum entropy value required for a random value to be considered secure.
-     * The value is based on the Baseline Requirements (BR) version 1.3.8, which mandates a minimum of 112 bits
-     * of entropy for cryptographic security.
+     * The value is based on the stricter of the two requirements.
      */
-    private static final int MIN_ALLOWED_ENTROPY_VALUE = 112;
+    private static final int MIN_ALLOWED_ENTROPY_VALUE = 128;
 
     /**
      * Calculate and cache the entropy per character in the constructor
