@@ -5,11 +5,12 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +38,9 @@ public class DnsCaaEmailProvider implements EmailProvider {
     /** The MPIC service used to fetch DNS details. */
     private final MpicDnsService mpicDnsService;
 
+    /** The log level used for logging errors related to domain control validation (DCV). */
+    private final Level logLevelForDcvErrors;
+
     /**
      * Constructs a new EmailDnsCaaProvider with the given DcvContext.
      * <p>
@@ -47,6 +51,7 @@ public class DnsCaaEmailProvider implements EmailProvider {
      */
     public DnsCaaEmailProvider(DcvContext dcvContext) {
         this.mpicDnsService = dcvContext.get(MpicDnsService.class);
+        this.logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
     }
 
     /**
@@ -62,6 +67,11 @@ public class DnsCaaEmailProvider implements EmailProvider {
     @Override
     public EmailDetails findEmailsForDomain(String domain) throws PreparationException {
         MpicDnsDetails dnsData = mpicDnsService.getDnsDetails(domain, DnsType.CAA);
+
+        if (dnsData.dcvError() != null) {
+            log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} reason={}", LogEvents.NO_DNS_CAA_CONTACT_FOUND, domain, dnsData.dcvError());
+            throw new PreparationException(Set.of(dnsData.dcvError()));
+        }
 
         Set<EmailDnsDetails> emailDnsDetails = dnsData.dnsRecords().stream()
                 .filter(dnsRecord -> dnsRecord.dnsType().equals(DnsType.CAA))

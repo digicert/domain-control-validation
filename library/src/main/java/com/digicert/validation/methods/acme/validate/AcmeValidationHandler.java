@@ -60,8 +60,9 @@ public class AcmeValidationHandler {
     }
 
     private AcmeValidationResponse validateUsingAcmeHttp(AcmeValidationRequest request) throws ValidationException {
+        String keyAuthorization = request.getRandomValue() + "." + request.getAcmeThumbprint();
         String acmeUrl = String.format(ACME_HTTP_URL_TEMPLATE, request.getDomain(), request.getRandomValue());
-        MpicFileDetails mpicFileDetails = mpicFileService.getMpicFileDetails(List.of(acmeUrl));
+        MpicFileDetails mpicFileDetails = mpicFileService.getMpicFileDetails(List.of(acmeUrl), keyAuthorization);
 
         if (mpicFileDetails.dcvError() != null) {
             // If the MPIC file details contain an error, we will throw an exception
@@ -70,7 +71,6 @@ public class AcmeValidationHandler {
             throw new AcmeValidationException(mpicFileDetails.dcvError(), request);
         }
 
-        String keyAuthorization = request.getRandomValue() + "." + request.getAcmeThumbprint();
         if (!mpicFileDetails.fileContents().stripTrailing().equals(keyAuthorization)) {
             // If the file contents do not match the key authorization, we will throw an exception
             log.atLevel(logLevelForDcvErrors).log("event_id={} acme_url={} domain={} key_authorization={} reason={}",
@@ -85,7 +85,7 @@ public class AcmeValidationHandler {
         String computedDnsTxtValue = calculateDnsTxtValue(request);
         String dnsRecordName = ACME_DNS_PREFIX + request.getDomain();
 
-        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(dnsRecordName, DnsType.TXT);
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(dnsRecordName, DnsType.TXT, computedDnsTxtValue);
         if (mpicDnsDetails.dcvError() != null) {
             // If the MPIC file details contain an error, we will not throw an exception
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} reason={}",

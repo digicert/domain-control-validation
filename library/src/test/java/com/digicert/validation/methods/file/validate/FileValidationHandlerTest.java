@@ -2,6 +2,7 @@ package com.digicert.validation.methods.file.validate;
 
 import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.challenges.ChallengeValidationResponse;
 import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
@@ -9,6 +10,8 @@ import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicFileService;
+import com.digicert.validation.mpic.api.AgentStatus;
+import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,9 +56,8 @@ class FileValidationHandlerTest {
         // Arrange
         DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
         initializeMocks(dcvConfiguration);
-        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         // Act
-        List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
+        List<String> fileUrls = fileValidationHandler.getFileUrls((getRandomValueFileValidationRequest()));
         // Assert
         assertNotNull(fileUrls);
         assertEquals(1, fileUrls.size());
@@ -66,9 +67,8 @@ class FileValidationHandlerTest {
     @Test
     void testGetFileUrls_usingHttps() {
         // Arrange
-        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         // Act
-        List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
+        List<String> fileUrls = fileValidationHandler.getFileUrls(getRandomValueFileValidationRequest());
         // Assert
         assertNotNull(fileUrls);
         assertEquals(2, fileUrls.size());
@@ -79,7 +79,7 @@ class FileValidationHandlerTest {
     @Test
     void testGetFileUrls_CustomFilename() {
         // Arrange
-        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
+        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequestBuilder();
         fileValidationRequestBuilder.filename("customFilename.txt");
         // Act
         List<String> fileUrls = fileValidationHandler.getFileUrls(fileValidationRequestBuilder.build());
@@ -94,12 +94,11 @@ class FileValidationHandlerTest {
     @Test
     void testValidate_validResponse() {
         // Arrange
-        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
-        when(mpicFileService.getMpicFileDetails(anyList())).thenReturn(getMpicFileDetails(true, null, 200, "randomValue"));
+        when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(getMpicFileDetails(true, null, 200, "randomValue"));
         ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.of("randomValue"), null);
         when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
 
-        FileValidationResponse response = fileValidationHandler.validate(fileValidationRequestBuilder.build());
+        FileValidationResponse response = fileValidationHandler.validate(getRandomValueFileValidationRequest());
         // Assert
         assertNotNull(response);
         assertTrue(response.isValid());
@@ -111,13 +110,132 @@ class FileValidationHandlerTest {
     }
 
     @Test
+    void testValidate_validResponse_requestToken() {
+        // Arrange
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_SUCCESS);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.of("some-token-value"), null);
+        when(requestTokenValidator.validate(any(), eq("some-token-value"))).thenReturn(challengeValidationResponse);
+        when(mpicFileService.getMpicFileDetails(eq(primaryFileResponse.fileUrl()), eq("some-token-value")))
+                .thenReturn(getMpicFileDetails(true, null, 200, "some-token-value"));
+
+        FileValidationResponse response = fileValidationHandler.validate(getRequestTokenFileValidationRequest());
+        // Assert
+        assertNotNull(response);
+        assertTrue(response.isValid());
+        assertEquals("example.com", response.domain());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
+        assertNull(response.validRandomValue());
+        assertEquals("some-token-value", response.validRequestToken());
+        assertNotNull(response.mpicDetails());
+    }
+
+    @Test
+    void testValidate_validPrimaryResponse_missingToken_requestToken() {
+        // Arrange
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_SUCCESS);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.REQUEST_TOKEN_ERROR_NOT_FOUND));
+        when(requestTokenValidator.validate(any(), eq("some-token-value"))).thenReturn(challengeValidationResponse);
+
+        FileValidationResponse response = fileValidationHandler.validate(getRequestTokenFileValidationRequest());
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.isValid());
+        assertEquals("example.com", response.domain());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
+        assertNull(response.validRandomValue());
+        assertNull(response.validRequestToken());
+        assertNull(response.mpicDetails());
+    }
+
+    @Test
+    void testValidate_validPrimaryResponse_nonCorroborated_requestToken() {
+        // Arrange
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_SUCCESS);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.of("some-token-value"), null);
+        when(requestTokenValidator.validate(any(), eq("some-token-value"))).thenReturn(challengeValidationResponse);
+        when(mpicFileService.getMpicFileDetails(eq(primaryFileResponse.fileUrl()), eq("some-token-value")))
+                .thenReturn(getMpicFileDetails(false, DcvError.MPIC_CORROBORATION_ERROR, 200, "some-token-value"));
+
+        FileValidationResponse response = fileValidationHandler.validate(getRequestTokenFileValidationRequest());
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.isValid());
+        assertEquals("example.com", response.domain());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
+        assertNull(response.validRandomValue());
+        assertNull(response.validRequestToken());
+        assertNotNull(response.mpicDetails());
+    }
+
+    @Test
+    void testValidate_validPrimaryResponse_missingMpicResponse_requestToken() {
+        // Arrange
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_SUCCESS);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        when(requestTokenValidator.validate(any(), eq("some-token-value"))).thenReturn(new ChallengeValidationResponse(Optional.of("some-token-value"), Set.of()));
+
+        when(mpicFileService.getMpicFileDetails(eq(primaryFileResponse.fileUrl()), eq("some-token-value")))
+                .thenReturn(getMpicFileDetails(true, null, 200, "some-other-token-value"));
+        when(requestTokenValidator.validate(any(), eq("some-other-token-value"))).thenReturn(new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.REQUEST_TOKEN_ERROR_NOT_FOUND)));
+
+        FileValidationResponse response = fileValidationHandler.validate(getRequestTokenFileValidationRequest());
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.isValid());
+        assertEquals("example.com", response.domain());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
+        assertNull(response.validRandomValue());
+        assertNull(response.validRequestToken());
+        assertNotNull(response.mpicDetails());
+    }
+
+    @Test
+    void testValidate_invalidPrimaryResponse_requestToken() {
+        // Arrange
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_NOT_FOUND);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.of("some-token-value"), null);
+        when(requestTokenValidator.validate(any(), eq("some-token-value"))).thenReturn(challengeValidationResponse);
+
+        FileValidationResponse response = fileValidationHandler.validate(getRequestTokenFileValidationRequest());
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.isValid());
+        assertEquals("example.com", response.domain());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", response.fileUrl());
+        assertNull(response.validRandomValue());
+        assertNull(response.validRequestToken());
+        assertNull(response.mpicDetails());
+    }
+
+    @Test
+    void testValidate_nullPrimaryResponse_requestToken() {
+        // Arrange
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(null);
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.of("some-token-value"), null);
+        when(requestTokenValidator.validate(any(), eq("some-token-value"))).thenReturn(challengeValidationResponse);
+
+        FileValidationResponse response = fileValidationHandler.validate(getRequestTokenFileValidationRequest());
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.isValid());
+        assertEquals("example.com", response.domain());
+        assertNull(response.fileUrl());
+        assertNull(response.validRandomValue());
+        assertNull(response.validRequestToken());
+        assertNull(response.mpicDetails());
+    }
+
+    @Test
     void testValidate_InvalidResponse_ExceptionFromClient() {
         // Arrange
-        FileValidationRequest.FileValidationRequestBuilder fileValidationRequestBuilder = getRandomValueFileValidationRequest();
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, DcvError.FILE_VALIDATION_CLIENT_ERROR, 200, "randomValue");
-        when(mpicFileService.getMpicFileDetails(anyList())).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(mpicFileDetails);
 
-        FileValidationResponse response = fileValidationHandler.validate(fileValidationRequestBuilder.build());
+        FileValidationResponse response = fileValidationHandler.validate(getRandomValueFileValidationRequest());
         // Assert
         assertNotNull(response);
         assertFalse(response.isValid());
@@ -133,9 +251,9 @@ class FileValidationHandlerTest {
     @Test
     void testValidate_InvalidResponse_InvalidStatusCode() {
         // Arrange
-        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        FileValidationRequest request = getRandomValueFileValidationRequest();
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, DcvError.FILE_VALIDATION_INVALID_STATUS_CODE, 400, "randomValue");
-        when(mpicFileService.getMpicFileDetails(anyList())).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(mpicFileDetails);
 
         // Act
         FileValidationResponse response = fileValidationHandler.validate(request);
@@ -155,9 +273,11 @@ class FileValidationHandlerTest {
     @Test
     void testValidate_InvalidResponse_EmptyFileContent() {
         // Arrange
-        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        FileValidationRequest request = getRandomValueFileValidationRequest();
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, "");
-        when(mpicFileService.getMpicFileDetails(anyList())).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(mpicFileDetails);
+        ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.FILE_VALIDATION_EMPTY_RESPONSE));
+        when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
 
         // Act
         FileValidationResponse response = fileValidationHandler.validate(request);
@@ -177,9 +297,9 @@ class FileValidationHandlerTest {
     @Test
     void testValidate_TokenValidatorErrors() {
         // Arrange
-        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        FileValidationRequest request = getRandomValueFileValidationRequest();
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, "file content");
-        when(mpicFileService.getMpicFileDetails(anyList())).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(mpicFileDetails);
 
         ChallengeValidationResponse challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.REQUEST_TOKEN_EMPTY_TEXT_BODY));
         when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
@@ -199,11 +319,29 @@ class FileValidationHandlerTest {
         assertNotNull(response.mpicDetails());
     }
 
-    private FileValidationRequest.FileValidationRequestBuilder getRandomValueFileValidationRequest() {
+    private FileValidationRequest getRandomValueFileValidationRequest() {
+        return getRandomValueFileValidationRequestBuilder()
+                .build();
+    }
+
+
+    private FileValidationRequest.FileValidationRequestBuilder getRandomValueFileValidationRequestBuilder() {
         return FileValidationRequest.builder()
-            .domain("example.com")
-            .randomValue("randomValue").challengeType(ChallengeType.RANDOM_VALUE)
-            .challengeType(ChallengeType.RANDOM_VALUE);
+                .domain("example.com")
+                .randomValue("randomValue")
+                .challengeType(ChallengeType.RANDOM_VALUE);
+    }
+
+    private FileValidationRequest getRequestTokenFileValidationRequest() {
+        return getRequestTokenFileValidationRequestBuilder()
+                .build();
+    }
+
+    private FileValidationRequest.FileValidationRequestBuilder getRequestTokenFileValidationRequestBuilder() {
+        return FileValidationRequest.builder()
+                .domain("example.com")
+                .requestTokenData(new BasicRequestTokenData("hashing-key", "hashing-value"))
+                .challengeType(ChallengeType.REQUEST_TOKEN);
     }
 
     private static MpicFileDetails getMpicFileDetails(boolean corroborated, DcvError dcvError, int statusCode, String fileContents) {
@@ -218,5 +356,14 @@ class FileValidationHandlerTest {
                 fileContents,
                 statusCode,
                 dcvError);
+    }
+
+    private static PrimaryFileResponse getPrimaryFileResponse(AgentStatus agentStatus) {
+        return new PrimaryFileResponse("agent-id",
+                200,
+                agentStatus,
+                "http://example.com/.well-known/pki-validation/fileauth.txt",
+                "http://example.com/.well-known/pki-validation/fileauth.txt",
+                "some-token-value");
     }
 }

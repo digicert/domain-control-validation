@@ -7,9 +7,11 @@ import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
+import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -56,29 +58,107 @@ public class DnsValidationHandler {
      * @return the DNS validation response
      */
     public DnsValidationResponse validate(DnsValidationRequest request) {
+        switch (request.getChallengeType()) {
+            case RANDOM_VALUE -> {
+                return performValidationForRandomValue(request);
+            }
+            case REQUEST_TOKEN -> {
+                return performValidationForRequestToken(request);
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + request.getChallengeType());
+        }
+    }
 
+    private DnsValidationResponse performValidationForRandomValue(DnsValidationRequest request) {
         // First attempt to validate the request using the domain with the DNS domain label.
-        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(dnsDomainLabel + request.getDomain(), request.getDnsType());
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(dnsDomainLabel + request.getDomain(), request.getDnsType(), request.getRandomValue());
         ChallengeValidationResponse challengeValidationResponse = null;
         if (mpicDnsDetails.dcvError() == null) {
-            challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails);
+            challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
         }
 
         // If the DNS entry with the domain label fails, then we will
         // try validating the request using the domain without the DNS domain label.
         if (challengeValidationResponse == null || challengeValidationResponse.challengeValue().isEmpty()) {
-            mpicDnsDetails = mpicDnsService.getDnsDetails(request.getDomain(), request.getDnsType());
+            mpicDnsDetails = mpicDnsService.getDnsDetails(request.getDomain(), request.getDnsType(), request.getRandomValue());
             if (mpicDnsDetails.dcvError() == null) {
                 // If the domain without the DNS domain label is valid, validate it.
-                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails);
+                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
             }
         }
 
-        return buildDnsValidationResponse(request.getDomain(), challengeValidationResponse, mpicDnsDetails, request.getDnsType(), request.getChallengeType());
+        return buildDnsValidationResponse(request.getDomain(), challengeValidationResponse, request.getDnsType(), request.getChallengeType(), mpicDnsDetails.mpicDetails(), mpicDnsDetails.domain());
     }
 
-    private ChallengeValidationResponse getChallengeValidationResponse(DnsValidationRequest request, MpicDnsDetails mpicDnsDetails) {
-        List<String> dnsValues = mpicDnsDetails.dnsRecords().stream()
+    private DnsValidationResponse performValidationForRequestToken(DnsValidationRequest request) {
+        // Find the request token first in the primary DNS details and then perform the corroborated lookup if found.
+        ChallengeValidationResponse challengeValidationResponse = getPrimaryChallengeResponse(request, dnsDomainLabel + request.getDomain(), request.getDnsType());
+
+        if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
+            // If we found a valid request token in the primary DNS details, perform the corroborated lookup.
+            MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(
+                    dnsDomainLabel + request.getDomain(),
+                    request.getDnsType(),
+                    challengeValidationResponse.challengeValue().get());
+            if (mpicDnsDetails.dcvError() == null) {
+                // If the corroborated lookup is successful, validate it.
+                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
+            }
+            if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
+                return buildDnsValidationResponse(request.getDomain(),
+                        challengeValidationResponse,
+                        request.getDnsType(),
+                        request.getChallengeType(),
+                        mpicDnsDetails.mpicDetails(),
+                        mpicDnsDetails.domain());
+            }
+        }
+
+        // If we did not find a valid request token in the DNS details with the domain label, try without the domain label.
+        challengeValidationResponse = getPrimaryChallengeResponse(request, request.getDomain(), request.getDnsType());
+        if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
+            // If we found a valid request token in the primary DNS details, perform the corroborated lookup.
+            MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(request.getDomain(), request.getDnsType(), challengeValidationResponse.challengeValue().get());
+            if (mpicDnsDetails.dcvError() == null) {
+                // If the corroborated lookup is successful, validate it.
+                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
+            }
+            if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
+                return buildDnsValidationResponse(request.getDomain(),
+                        challengeValidationResponse,
+                        request.getDnsType(),
+                        request.getChallengeType(),
+                        mpicDnsDetails.mpicDetails(),
+                        mpicDnsDetails.domain());
+            }
+        }
+
+        // If we are here, it means we did not find a valid request token in either the DNS details with or without the domain label.
+        return buildDnsValidationResponse(request.getDomain(),
+                challengeValidationResponse,
+                request.getDnsType(),
+                request.getChallengeType(),
+                null,
+                null);
+    }
+
+    private ChallengeValidationResponse getPrimaryChallengeResponse(DnsValidationRequest request, String domain, DnsType dnsType) {
+        PrimaryDnsResponse primaryDnsDetails = mpicDnsService.getPrimaryDnsDetails(domain, dnsType);
+        ChallengeValidationResponse challengeValidationResponse;
+        if (primaryDnsDetails == null || primaryDnsDetails.dnsRecords() == null || primaryDnsDetails.dnsRecords().isEmpty()) {
+            challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
+        } else {
+            challengeValidationResponse = getChallengeValidationResponse(request, primaryDnsDetails.dnsRecords());
+        }
+        return challengeValidationResponse;
+    }
+
+    private ChallengeValidationResponse getChallengeValidationResponse(DnsValidationRequest request, List<DnsRecord> dnsRecords) {
+        if (dnsRecords == null || dnsRecords.isEmpty()) {
+            return new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
+        }
+
+        List<String> dnsValues = dnsRecords.stream()
                 .map(DnsRecord::value)
                 .toList();
 
@@ -136,27 +216,28 @@ public class DnsValidationHandler {
      *
      * @param domain
      * @param challengeValidationResponse the token validator response
-     * @param mpicDnsDetails              the DNS data
      * @param dnsType                     the DNS type (CNAME, TXT, or CAA)
      * @param challengeType               the challenge type (RANDOM_VALUE or REQUEST_TOKEN)
+     * @param mpicDetails                 the MPIC details
+     * @param dnsRecordName               the DNS name used when finding the DNS Details
      * @return the DNS validation response
      */
     DnsValidationResponse buildDnsValidationResponse(String domain,
                                                      ChallengeValidationResponse challengeValidationResponse,
-                                                     MpicDnsDetails mpicDnsDetails,
                                                      DnsType dnsType,
-                                                     ChallengeType challengeType) {
+                                                     ChallengeType challengeType,
+                                                     MpicDetails mpicDetails,
+                                                     String dnsRecordName) {
         if (challengeValidationResponse == null) {
             // If the challenge validation response is null, it means there was an error in the DNS lookup
-            DcvError dcvError = mpicDnsDetails.dcvError() == null ? DcvError.DNS_LOOKUP_RECORD_NOT_FOUND : mpicDnsDetails.dcvError();
             return new DnsValidationResponse(false,
-                    mpicDnsDetails.mpicDetails(),
+                    mpicDetails,
                     domain,
-                    mpicDnsDetails.domain(),
+                    dnsRecordName,
                     dnsType,
                     null,
                     null,
-                    Set.of(dcvError));
+                    Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
         }
 
         String validRandomValue = null;
@@ -169,9 +250,9 @@ public class DnsValidationHandler {
         }
 
         return new DnsValidationResponse(challengeValidationResponse.challengeValue().isPresent(),
-                mpicDnsDetails.mpicDetails(),
+                mpicDetails,
                 domain,
-                mpicDnsDetails.domain(),
+                dnsRecordName,
                 dnsType,
                 validRandomValue,
                 validRequestToken,

@@ -1,15 +1,16 @@
 package com.digicert.validation.methods.email.prepare.provider;
 
+import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
+import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,7 @@ public class DnsCaaEmailProviderTest {
 
         DcvContext dcvContext = mock(DcvContext.class);
         when(dcvContext.get(MpicDnsService.class)).thenReturn(mpicDnsService);
+        when(dcvContext.getDcvConfiguration()).thenReturn(new DcvConfiguration.DcvConfigurationBuilder().build());
 
         dnsCaaEmailProvider = new DnsCaaEmailProvider(dcvContext);
     }

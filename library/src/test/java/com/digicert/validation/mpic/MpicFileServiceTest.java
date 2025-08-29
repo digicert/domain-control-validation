@@ -45,8 +45,8 @@ class MpicFileServiceTest {
 
     @Test
     void returnsInvalidResponseWhenMpicFileResponseIsNull() {
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(null);
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(null);
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.MPIC_INVALID_RESPONSE, details.dcvError());
         assertEquals("url", details.fileUrl());
     }
@@ -54,8 +54,8 @@ class MpicFileServiceTest {
     @Test
     void returnsInvalidResponseWhenPrimaryFileResponseIsNull() {
         MpicFileResponse response = createMpicFileResponse(null, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.MPIC_INVALID_RESPONSE, details.dcvError());
     }
 
@@ -63,8 +63,8 @@ class MpicFileServiceTest {
     void returnsInvalidResponseWhenMpicStatusIsError() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.ERROR);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.MPIC_INVALID_RESPONSE, details.dcvError());
     }
 
@@ -72,9 +72,9 @@ class MpicFileServiceTest {
     void returnsMappedErrorWhenAgentStatusIsNotFileSuccess() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 400, FILE_CLIENT_ERROR, "abc", "abc", "file-contents");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
 
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.FILE_VALIDATION_CLIENT_ERROR, details.dcvError());
     }
 
@@ -82,9 +82,9 @@ class MpicFileServiceTest {
     void returnsEmptyResponseErrorWhenFileContentsIsNull() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", null);
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
 
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.FILE_VALIDATION_EMPTY_RESPONSE, details.dcvError());
     }
 
@@ -92,9 +92,9 @@ class MpicFileServiceTest {
     void returnsEmptyResponseErrorWhenFileContentsIsEmpty() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
 
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.FILE_VALIDATION_EMPTY_RESPONSE, details.dcvError());
     }
 
@@ -102,10 +102,10 @@ class MpicFileServiceTest {
     void returnsCorroborationErrorWhenShouldEnforceCorroborationAndStatusNonCorroborated() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.NON_CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(true);
 
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.MPIC_CORROBORATION_ERROR, details.dcvError());
     }
 
@@ -114,10 +114,10 @@ class MpicFileServiceTest {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
         SecondaryFileResponse secondary = new SecondaryFileResponse("agent2", 200, FILE_SUCCESS, true);
         MpicFileResponse response = createMpicFileResponse(primary, List.of(secondary), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertNull(details.dcvError());
         assertEquals("file-contents", details.fileContents());
         assertEquals("url", details.fileUrl());
@@ -139,17 +139,17 @@ class MpicFileServiceTest {
         PrimaryFileResponse validPrimary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
         MpicFileResponse validResponse = createMpicFileResponse(validPrimary, Collections.emptyList(), MpicStatus.CORROBORATED);
 
-        when(mpicClient.getMpicFileResponse("url1")).thenReturn(errorResponse);
-        when(mpicClient.getMpicFileResponse("url2")).thenReturn(validResponse);
+        when(mpicClient.getMpicFileResponse("url1", "randomValue")).thenReturn(errorResponse);
+        when(mpicClient.getMpicFileResponse("url2", "randomValue")).thenReturn(validResponse);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url1", "url2"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url1", "url2"), "randomValue");
         assertNull(details.dcvError());
         assertEquals("file-contents", details.fileContents());
 
         // Now, both error
-        when(mpicClient.getMpicFileResponse("url2")).thenReturn(errorResponse);
-        MpicFileDetails errorDetails = mpicFileService.getMpicFileDetails(List.of("url1", "url2"));
+        when(mpicClient.getMpicFileResponse("url2", "randomValue")).thenReturn(errorResponse);
+        MpicFileDetails errorDetails = mpicFileService.getMpicFileDetails(List.of("url1", "url2"), "randomValue");
         assertEquals(DcvError.FILE_VALIDATION_CLIENT_ERROR, errorDetails.dcvError());
     }
 
@@ -159,15 +159,78 @@ class MpicFileServiceTest {
         // Setup
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 400, agentStatus, "abc", "abc", "file-contents");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicFileResponse("url")).thenReturn(response);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
 
         // Execute
-        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"));
+        MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
 
         // Verify
         assertEquals(expectedError, details.dcvError());
         assertEquals("url", details.fileUrl());
         assertEquals("file-contents", details.fileContents());
+    }
+
+    @Test
+    void getMpicFileSingleUrlSuccess(){
+        PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
+        SecondaryFileResponse secondary = new SecondaryFileResponse("agent2", 200, FILE_SUCCESS, true);
+        MpicFileResponse response = createMpicFileResponse(primary, List.of(secondary), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
+        when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
+
+        MpicFileDetails details = mpicFileService.getMpicFileDetails("url", "randomValue");
+        assertNull(details.dcvError());
+        assertEquals("file-contents", details.fileContents());
+        assertEquals("url", details.fileUrl());
+        assertEquals(200, details.statusCode());
+        assertNotNull(details.mpicDetails());
+        assertTrue(details.mpicDetails().corroborated());
+        assertEquals("agent1", details.mpicDetails().primaryAgentId());
+        assertEquals(1, details.mpicDetails().secondaryServersChecked());
+        assertEquals(1, details.mpicDetails().secondaryServersCorroborated());
+        assertTrue(details.mpicDetails().agentIdToCorroboration().get("agent2"));
+    }
+
+    @Test
+    void getMpicFileSingleUrlErrorValueNotFound(){
+        PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
+        MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.VALUE_NOT_FOUND);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
+
+        MpicFileDetails details = mpicFileService.getMpicFileDetails("url", "randomValue");
+        assertEquals(DcvError.FILE_VALIDATION_NOT_FOUND, details.dcvError());
+        assertEquals("url", details.fileUrl());
+    }
+
+    @Test
+    void getPrimaryOnlyFileResponseFileSuccess(){
+        PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
+        when(mpicClient.getPrimaryOnlyFileResponse("url")).thenReturn(primary);
+
+        PrimaryFileResponse response = mpicFileService.getPrimaryOnlyFileResponse(List.of("url"));
+        assertEquals(primary, response);
+    }
+
+    @Test
+    void getPrimaryOnlyFileResponseFileFirstResultIsError(){
+        PrimaryFileResponse primary1 = new PrimaryFileResponse("agent1", 500, FILE_CLIENT_ERROR, "abc", "abc", "bad-contents");
+        when(mpicClient.getPrimaryOnlyFileResponse("url1")).thenReturn(primary1);
+        PrimaryFileResponse primary2 = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
+        when(mpicClient.getPrimaryOnlyFileResponse("url2")).thenReturn(primary2);
+
+        PrimaryFileResponse response = mpicFileService.getPrimaryOnlyFileResponse(List.of("url1", "url2"));
+        assertEquals(primary2, response);
+    }
+
+    @Test
+    void getPrimaryOnlyFileResponseAllResultsAreErrors(){
+        PrimaryFileResponse primary1 = new PrimaryFileResponse("agent1", 500, FILE_CLIENT_ERROR, "abc", "abc", "bad-contents");
+        when(mpicClient.getPrimaryOnlyFileResponse("url1")).thenReturn(primary1);
+        PrimaryFileResponse primary2 = new PrimaryFileResponse("agent1", 400, FILE_BAD_REQUEST, "abc", "abc", "worse-contents");
+        when(mpicClient.getPrimaryOnlyFileResponse("url2")).thenReturn(primary2);
+
+        PrimaryFileResponse response = mpicFileService.getPrimaryOnlyFileResponse(List.of("url1", "url2"));
+        assertEquals(primary1, response);
     }
 
     static Stream<Arguments> agentStatusToErrorMapping() {
