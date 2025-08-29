@@ -77,7 +77,7 @@ public class MpicDnsService {
                     DcvError.MPIC_INVALID_RESPONSE);
         }
 
-        DcvError dcvError = mapToDcvErrorOrNull(mpicDnsResponse, domain);
+        DcvError dcvError = mapToDcvErrorOrNull(mpicDnsResponse);
         log.info("event_id={} agent_status={} domain={} mpic_status={} dcv_error={}",
                 LogEvents.DNS_LOOKUP_STATUS,
                 mpicDnsResponse.primaryDnsResponse().agentStatus(),
@@ -87,7 +87,7 @@ public class MpicDnsService {
         return mapToMpicDnsDetails(mpicDnsResponse, domain, dcvError);
     }
 
-    private DcvError mapToDcvErrorOrNull(MpicDnsResponse mpicDnsResponse, String domain) {
+    private DcvError mapToDcvErrorOrNull(MpicDnsResponse mpicDnsResponse) {
         DcvError dcvError = null;
         if (mpicDnsResponse.primaryDnsResponse().agentStatus() != DNS_LOOKUP_SUCCESS) {
             dcvError = switch (mpicDnsResponse.primaryDnsResponse().agentStatus()) {

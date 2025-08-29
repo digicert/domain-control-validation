@@ -131,7 +131,6 @@ class DnsValidationHandlerTest {
                 .build();
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
-        List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.CNAME, defaultDomain, "randomValue", 3600, 0, ""));
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(null);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomain), eq(DnsType.CNAME))).thenReturn(null);
 
