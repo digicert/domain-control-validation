@@ -22,7 +22,7 @@ public enum LogEvents {
     /** Log event indicating that the system failed to generate a hash value. */
     CANNOT_GENERATE_HASH,
 
-    /** This log event indicates that the system successfully retrieved the DNS data for a domain. */
+    /** Log event indicating that a DNS lookup was performed. The result of the lookup can be found in the accompanying log data. */
     DNS_LOOKUP_STATUS,
 
     /** Log event indicates that the DNS lookup was unable to find the host or the data returned was not parseable. */
