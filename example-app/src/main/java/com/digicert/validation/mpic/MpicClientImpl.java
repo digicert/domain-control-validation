@@ -36,11 +36,16 @@ public class MpicClientImpl implements MpicClientInterface {
     }
 
     @Override
-    public MpicDnsResponse getMpicDnsResponse(String domain, DnsType dnsType) {
+    public MpicDnsResponse getMpicDnsResponse(String domain, DnsType dnsType, String challengeValue) {
         // Implementation for fetching DNS response from MPIC
         DnsData dnsData = getDnsClient().getDnsData(List.of(domain), dnsType);
 
         return mapToMpicDnsResponse(dnsData, dnsType, domain);
+    }
+
+    @Override
+    public PrimaryDnsResponse getPrimaryOnlyDnsResponse(String domain, DnsType dnsType) {
+        return getMpicDnsResponse(domain, dnsType, null).primaryDnsResponse();
     }
 
     private MpicDnsResponse mapToMpicDnsResponse(DnsData dnsData, DnsType dnsType, String domain) {
@@ -114,10 +119,15 @@ public class MpicClientImpl implements MpicClientInterface {
     }
 
     @Override
-    public MpicFileResponse getMpicFileResponse(String fileUrl) {
+    public MpicFileResponse getMpicFileResponse(String fileUrl, String challengeValue) {
         FileClientResponse fileClientResponse = getFileClient().executeRequest(fileUrl);
 
         return mapToMpicFileResponse(fileClientResponse, fileUrl);
+    }
+
+    @Override
+    public PrimaryFileResponse getPrimaryOnlyFileResponse(String fileUrl) {
+        return getMpicFileResponse(fileUrl, null).primaryFileResponse();
     }
 
     private MpicFileResponse mapToMpicFileResponse(FileClientResponse fileClientResponse, String fileUrl) {

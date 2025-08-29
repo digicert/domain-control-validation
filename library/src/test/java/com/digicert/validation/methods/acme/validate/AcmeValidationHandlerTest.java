@@ -65,12 +65,12 @@ class AcmeValidationHandlerTest {
 
         String calculatedDnsTxtValue = computeDnsTxtValue(defaultRandomValue + "." + defaultAcmeThumbprint);
         MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(true, defaultDomainWithLabel, calculatedDnsTxtValue);
-        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT), eq(calculatedDnsTxtValue))).thenReturn(mpicDnsDetails);
 
         AcmeValidationResponse response = acmeValidationHandler.validate(request);
 
-        verify(mpicDnsService).getDnsDetails(defaultDomainWithLabel, DnsType.TXT);
-        verify(mpicDnsService, never()).getDnsDetails(defaultDomain, DnsType.TXT);
+        verify(mpicDnsService).getDnsDetails(defaultDomainWithLabel, DnsType.TXT, calculatedDnsTxtValue);
+        verify(mpicDnsService, never()).getDnsDetails(defaultDomain, DnsType.TXT, calculatedDnsTxtValue);
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomainWithLabel, response.dnsRecordName());
     }
@@ -94,12 +94,12 @@ class AcmeValidationHandlerTest {
                 defaultDomainWithLabel,
                 List.of(getDnsTxtRecord(calculatedDnsTxtValue, defaultDomainWithLabel), getDnsTxtRecord("some-other-value", defaultDomainWithLabel)),
                 null);
-        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT), eq(calculatedDnsTxtValue))).thenReturn(mpicDnsDetails);
 
         AcmeValidationResponse response = acmeValidationHandler.validate(request);
 
-        verify(mpicDnsService).getDnsDetails(defaultDomainWithLabel, DnsType.TXT);
-        verify(mpicDnsService, never()).getDnsDetails(defaultDomain, DnsType.TXT);
+        verify(mpicDnsService).getDnsDetails(defaultDomainWithLabel, DnsType.TXT, calculatedDnsTxtValue);
+        verify(mpicDnsService, never()).getDnsDetails(defaultDomain, DnsType.TXT, calculatedDnsTxtValue);
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomainWithLabel, response.dnsRecordName());
     }
@@ -115,7 +115,7 @@ class AcmeValidationHandlerTest {
 
         String calculatedDnsTxtValue = computeDnsTxtValue(defaultRandomValue + "." + defaultAcmeThumbprint);
         MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(true, defaultDomainWithLabel, calculatedDnsTxtValue + " some-extra-characters");
-        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT), eq(calculatedDnsTxtValue))).thenReturn(mpicDnsDetails);
 
         AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
         assertTrue(exception.getErrors().contains(DcvError.RANDOM_VALUE_NOT_FOUND));
@@ -131,8 +131,8 @@ class AcmeValidationHandlerTest {
                 .build();
 
         MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(true, defaultDomainWithLabel, "some-other-value");
-        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT))).thenReturn(mpicDnsDetails);
-        when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.TXT))).thenReturn(getNotFoundMpicDnsDetails(defaultDomain));
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT), anyString())).thenReturn(mpicDnsDetails);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.TXT), anyString())).thenReturn(getNotFoundMpicDnsDetails(defaultDomain));
 
         AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
         assertTrue(exception.getErrors().contains(DcvError.RANDOM_VALUE_NOT_FOUND));
@@ -147,7 +147,7 @@ class AcmeValidationHandlerTest {
                 .acmeType(AcmeType.ACME_DNS_01)
                 .build();
 
-        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT)))
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT), anyString()))
                 .thenReturn(getErrorMpicDnsDetails(defaultDomainWithLabel));
 
         AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
@@ -165,11 +165,11 @@ class AcmeValidationHandlerTest {
 
         String calculatedFileContents = defaultRandomValue + "." + defaultAcmeThumbprint;
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, calculatedFileContents);
-        when(mpicFileService.getMpicFileDetails(List.of(defaultFileUrl))).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(List.of(defaultFileUrl), calculatedFileContents)).thenReturn(mpicFileDetails);
 
         AcmeValidationResponse response = acmeValidationHandler.validate(request);
 
-        verify(mpicFileService).getMpicFileDetails(List.of(defaultFileUrl));
+        verify(mpicFileService).getMpicFileDetails(List.of(defaultFileUrl), calculatedFileContents);
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultFileUrl, response.fileUrl());
         assertNull(response.dnsRecordName());
@@ -186,7 +186,7 @@ class AcmeValidationHandlerTest {
 
         String calculatedFileContents = defaultRandomValue + "." + defaultAcmeThumbprint;
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, calculatedFileContents + " some-other-value");
-        when(mpicFileService.getMpicFileDetails(List.of(defaultFileUrl))).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(List.of(defaultFileUrl), calculatedFileContents)).thenReturn(mpicFileDetails);
 
         AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
         assertTrue(exception.getErrors().contains(DcvError.RANDOM_VALUE_NOT_FOUND));
@@ -202,7 +202,7 @@ class AcmeValidationHandlerTest {
                 .build();
 
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, "some-other-value");
-        when(mpicFileService.getMpicFileDetails(List.of(defaultFileUrl))).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(eq(List.of(defaultFileUrl)), anyString())).thenReturn(mpicFileDetails);
 
         AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
         assertTrue(exception.getErrors().contains(DcvError.RANDOM_VALUE_NOT_FOUND));
@@ -218,7 +218,7 @@ class AcmeValidationHandlerTest {
                 .build();
 
         MpicFileDetails mpicFileDetails = getMpicFileDetails(true, DcvError.FILE_VALIDATION_INVALID_STATUS_CODE, 400, "randomValue");
-        when(mpicFileService.getMpicFileDetails(List.of(defaultFileUrl))).thenReturn(mpicFileDetails);
+        when(mpicFileService.getMpicFileDetails(eq(List.of(defaultFileUrl)), anyString())).thenReturn(mpicFileDetails);
 
         AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
         assertTrue(exception.getErrors().contains(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE));

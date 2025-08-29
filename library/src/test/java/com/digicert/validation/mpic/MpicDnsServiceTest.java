@@ -3,13 +3,9 @@ package com.digicert.validation.mpic;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
-import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.MpicStatus;
-import com.digicert.validation.mpic.api.dns.DnsRecord;
-import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
-import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
-import com.digicert.validation.mpic.api.dns.SecondaryDnsResponse;
+import com.digicert.validation.mpic.api.dns.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,7 +18,8 @@ import java.util.stream.Stream;
 
 import static com.digicert.validation.mpic.api.AgentStatus.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MpicDnsServiceTest {
 
@@ -48,7 +45,7 @@ class MpicDnsServiceTest {
     void returnsInvalidResponseWhenMpicStatusIsError() {
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(), DnsType.TXT, "example.com");
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.ERROR);
-        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
         assertEquals(DcvError.MPIC_INVALID_RESPONSE, details.dcvError());
     }
@@ -57,9 +54,19 @@ class MpicDnsServiceTest {
     void returnsRecordNotFoundErrorWhenDnsRecordsIsNull() {
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, null, DnsType.TXT, "example.com");
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
 
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
+        assertEquals(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND, details.dcvError());
+    }
+
+    @Test
+    void returnsRecordNotFoundErrorWhenMpicStatusIsValueNotFound() {
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, "")), DnsType.TXT, "example.com");
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.VALUE_NOT_FOUND);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, "some-value")).thenReturn(response);
+
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT, "some-value");
         assertEquals(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND, details.dcvError());
     }
 
@@ -67,7 +74,7 @@ class MpicDnsServiceTest {
     void returnsRecordNotFoundErrorWhenDnsRecordsIsEmpty() {
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, Collections.emptyList(), DnsType.TXT, "example.com");
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
 
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
         assertEquals(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND, details.dcvError());
@@ -78,7 +85,7 @@ class MpicDnsServiceTest {
         List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, ""));
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.TXT, "example.com");
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.NON_CORROBORATED);
-        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(true);
 
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
@@ -93,7 +100,7 @@ class MpicDnsServiceTest {
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.TXT, "example.com");
         SecondaryDnsResponse secondary = new SecondaryDnsResponse("agent2", DNS_LOOKUP_SUCCESS, true, dnsRecords);
         MpicDnsResponse response = createMpicDnsResponse(primary, List.of(secondary), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
@@ -115,7 +122,7 @@ class MpicDnsServiceTest {
         // Setup
         PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", agentStatus, List.of(), DnsType.TXT, "example.com");
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
-        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT)).thenReturn(response);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
 
         // Execute
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);

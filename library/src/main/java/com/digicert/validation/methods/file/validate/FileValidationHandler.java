@@ -6,11 +6,15 @@ import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
+import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicFileService;
+import com.digicert.validation.mpic.api.AgentStatus;
+import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -72,51 +76,118 @@ public class FileValidationHandler {
      * @return the file validation response
      */
     public FileValidationResponse validate(FileValidationRequest validationRequest) {
-        List<String> fileUrls = getFileUrls(validationRequest);
-        ChallengeType challengeType = validationRequest.getChallengeType();
+        switch (validationRequest.getChallengeType()) {
+            case RANDOM_VALUE -> {
+                return performValidationForRandomValue(validationRequest);
+            }
+            case REQUEST_TOKEN -> {
+                return performValidationForRequestToken(validationRequest);
+            }
+        }
 
-        MpicFileDetails mpicFileDetails = mpicFileService.getMpicFileDetails(fileUrls);
-        ChallengeValidationResponse challengeValidationResponse = null;
+        // We should never get here because the challenge type is validated before this method is called
+        return buildFileValidationResponse(
+                new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.CHALLENGE_TYPE_REQUIRED)),
+                null,
+                validationRequest,
+                null,
+                null);
+    }
+
+    private FileValidationResponse performValidationForRandomValue(FileValidationRequest validationRequest) {
+        List<String> fileUrls = getFileUrls(validationRequest);
+
+        MpicFileDetails mpicFileDetails = mpicFileService.getMpicFileDetails(fileUrls, validationRequest.getRandomValue());
+        ChallengeValidationResponse challengeResponse;
 
         if (mpicFileDetails.dcvError() == null) {
             String fileContent = mpicFileDetails.fileContents();
-            challengeValidationResponse = getValidChallengeResponse(validationRequest, fileContent);
+            challengeResponse = getValidChallengeResponse(validationRequest, fileContent);
+        } else {
+            challengeResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(mpicFileDetails.dcvError()));
         }
 
-        return buildFileValidationResponse(challengeValidationResponse, mpicFileDetails, challengeType, validationRequest);
+        return buildFileValidationResponse(challengeResponse,
+                validationRequest.getChallengeType(),
+                validationRequest,
+                mpicFileDetails.mpicDetails(),
+                mpicFileDetails.fileUrl());
     }
 
-    private FileValidationResponse buildFileValidationResponse(ChallengeValidationResponse challengeValidationResponse, MpicFileDetails mpicFileDetails, ChallengeType challengeType, FileValidationRequest validationRequest) {
-        if (challengeValidationResponse == null) {
-            DcvError dcvError = mpicFileDetails.dcvError() == null ? DcvError.FILE_VALIDATION_EMPTY_RESPONSE : mpicFileDetails.dcvError();
-            return FileValidationResponse.builder()
-                    .isValid(false)
-                    .mpicDetails(mpicFileDetails.mpicDetails())
-                    .domain(validationRequest.getDomain())
-                    .fileUrl(mpicFileDetails.fileUrl())
-                    .challengeType(challengeType)
-                    .errors(Set.of(dcvError))
-                    .build();
+    private FileValidationResponse performValidationForRequestToken(FileValidationRequest validationRequest) {
+        // First, get the primary file response to see if we can find a valid request token
+        List<String> fileUrls = getFileUrls(validationRequest);
+        PrimaryFileResponse primaryFileResponse = mpicFileService.getPrimaryOnlyFileResponse(fileUrls);
+
+        if (primaryFileResponse == null) {
+            DcvError dcvError = DcvError.FILE_VALIDATION_INVALID_STATUS_CODE;
+            return buildFileValidationResponse(
+                    new ChallengeValidationResponse(Optional.empty(), Set.of(dcvError)),
+                    validationRequest.getChallengeType(),
+                    validationRequest,
+                    null,
+                    null);
         }
 
+        String foundFileUrl = primaryFileResponse.fileUrl();
+        if (primaryFileResponse.agentStatus() != AgentStatus.FILE_SUCCESS) {
+            DcvError dcvError = MpicFileService.mapAgentStatusToDcvError(primaryFileResponse.agentStatus());
+            return buildFileValidationResponse(
+                    new ChallengeValidationResponse(Optional.empty(), Set.of(dcvError)),
+                    validationRequest.getChallengeType(),
+                    validationRequest,
+                    null,
+                    foundFileUrl);
+        }
+
+        // Validate the primary file response for a valid request token
+        ChallengeValidationResponse challengeResponse = getValidChallengeResponse(validationRequest, primaryFileResponse.fileContents());
+        if (challengeResponse.challengeValue().isPresent()) {
+            // We have a valid request token in the primary file response
+            // Make another call to MPIC to get the corroborated response
+            MpicFileDetails mpicFileDetails = mpicFileService.getMpicFileDetails(foundFileUrl, challengeResponse.challengeValue().get());
+            if (mpicFileDetails.dcvError() == null) {
+                challengeResponse = getValidChallengeResponse(validationRequest, mpicFileDetails.fileContents());
+            } else {
+                challengeResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(mpicFileDetails.dcvError()));
+            }
+            return buildFileValidationResponse(challengeResponse,
+                    validationRequest.getChallengeType(),
+                    validationRequest,
+                    mpicFileDetails.mpicDetails(),
+                    mpicFileDetails.fileUrl());
+        }
+
+        return buildFileValidationResponse(challengeResponse,
+                validationRequest.getChallengeType(),
+                validationRequest,
+                null,
+                foundFileUrl);
+    }
+
+    private FileValidationResponse buildFileValidationResponse(ChallengeValidationResponse challengeResponse,
+                                                               ChallengeType challengeType,
+                                                               FileValidationRequest validationRequest,
+                                                               MpicDetails mpicDetails,
+                                                               String fileUrl) {
         String validRandomValue = null;
         String validRequestToken = null;
 
-        if (challengeType == ChallengeType.RANDOM_VALUE) {
-            validRandomValue = challengeValidationResponse.challengeValue().orElse(null);
+        if (ChallengeType.RANDOM_VALUE.equals(challengeType)) {
+            validRandomValue = challengeResponse.challengeValue().orElse(null);
         } else {
-            validRequestToken = challengeValidationResponse.challengeValue().orElse(null);
+            validRequestToken = challengeResponse.challengeValue().orElse(null);
         }
 
         return FileValidationResponse.builder()
-                .isValid(challengeValidationResponse.challengeValue().isPresent())
-                .mpicDetails(mpicFileDetails.mpicDetails())
+                .isValid(challengeResponse.challengeValue().isPresent())
+                .mpicDetails(mpicDetails)
                 .domain(validationRequest.getDomain())
-                .fileUrl(mpicFileDetails.fileUrl())
+                .fileUrl(fileUrl)
                 .challengeType(challengeType)
                 .validRandomValue(validRandomValue)
                 .validRequestToken(validRequestToken)
-                .errors(challengeValidationResponse.errors())
+                .errors(challengeResponse.errors())
                 .build();
     }
 
