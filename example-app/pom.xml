@@ -17,15 +17,15 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <spring.boot.version>3.4.5</spring.boot.version>
+        <spring.boot.version>3.5.5</spring.boot.version>
         <slf4j.version>2.0.17</slf4j.version>
         <h2.version>2.3.232</h2.version>
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
-        <projectreactor.version>3.7.5</projectreactor.version>
-        <jackson.version>2.19.0</jackson.version>
+        <projectreactor.version>3.7.9</projectreactor.version>
+        <jackson.version>2.20.0</jackson.version>
         <httpclient5.version>5.4.3</httpclient5.version>
-        <bouncycastle.version>1.80</bouncycastle.version>
-        <mysql-connector.version>9.3.0</mysql-connector.version>
+        <bouncycastle.version>1.81</bouncycastle.version>
+        <mysql-connector.version>9.4.0</mysql-connector.version>
     </properties>
 
     <dependencyManagement>
