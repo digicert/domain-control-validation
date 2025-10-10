@@ -218,4 +218,55 @@ class FileValidatorTest {
                 .requestTokenData(new BasicRequestTokenData("someHashingKey", "someHashingValue"))
                 .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_18));
     }
+
+    @Test
+    void testGetFileLookupUrls_SimpleDomain() {
+        String testDomain = "example.com";
+        var locations = fileValidator.getFileLookupUrls(testDomain);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs
+        assertTrue(locations.contains("http://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+    }
+
+    @Test
+    void testGetFileLookupUrls_SubdomainWithHierarchy() {
+        String subdomain = "api.app.example.com";
+        var locations = fileValidator.getFileLookupUrls(subdomain);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs for the specific subdomain
+        assertTrue(locations.contains("http://" + subdomain + "/.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https://" + subdomain + "/.well-known/pki-validation/fileauth.txt"));
+    }
+
+    @Test
+    void testGetFileLookupUrls_EmptyDomain() {
+        var locations = fileValidator.getFileLookupUrls("");
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should handle empty domain gracefully
+        assertTrue(locations.contains("http:///.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https:///.well-known/pki-validation/fileauth.txt"));
+    }
+
+    @Test
+    void testGetFileLookupUrls_SingleLevelDomain() {
+        String tld = "localhost";
+        var locations = fileValidator.getFileLookupUrls(tld);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs
+        assertTrue(locations.contains("http://" + tld + "/.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https://" + tld + "/.well-known/pki-validation/fileauth.txt"));
+    }
 }

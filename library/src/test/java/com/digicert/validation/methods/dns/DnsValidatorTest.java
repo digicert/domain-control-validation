@@ -192,4 +192,63 @@ class DnsValidatorTest {
                 3,
                 Map.of("secondary-agent-id", true));
     }
+
+    @Test
+    void testGetDnsLookupNames_SimpleDomain() {
+        String testDomain = "example.com";
+        List<String> locations = dnsValidator.getDnsLookupNames(testDomain);
+        
+        assertNotNull(locations);
+        assertFalse(locations.isEmpty());
+        
+        // Should contain _dnsauth. prefixed domains and direct domains
+        assertTrue(locations.stream().anyMatch(loc -> loc.startsWith("_dnsauth.")));
+        assertTrue(locations.contains(testDomain));
+        
+        // Should contain the specific prefixed domain
+        assertTrue(locations.contains("_dnsauth." + testDomain));
+    }
+
+    @Test
+    void testGetDnsLookupNames_SubdomainWithHierarchy() {
+        String subdomain = "api.app.example.com";
+        List<String> locations = dnsValidator.getDnsLookupNames(subdomain);
+        
+        assertNotNull(locations);
+        assertTrue(locations.size() > 2, "Should include domain hierarchy");
+        
+        // Should contain both prefixed and direct domains
+        assertTrue(locations.stream().anyMatch(loc -> loc.startsWith("_dnsauth.")));
+        assertTrue(locations.contains(subdomain));
+        
+        // Should contain the specific prefixed subdomain
+        assertTrue(locations.contains("_dnsauth." + subdomain));
+        
+        // Should handle domain hierarchy (getDomainAndParents functionality)
+        assertTrue(locations.size() >= 4, "Should have at least subdomain + parent domains with prefixes");
+    }
+
+    @Test
+    void testGetDnsLookupNames_EmptyDomain() {
+        // Test with empty domain - should use fallback logic
+        List<String> locations = dnsValidator.getDnsLookupNames("");
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        assertTrue(locations.contains("_dnsauth."));
+        assertTrue(locations.contains(""));
+    }
+
+    @Test
+    void testGetDnsLookupNames_SingleLevelDomain() {
+        String tld = "localhost";
+        List<String> locations = dnsValidator.getDnsLookupNames(tld);
+        
+        assertNotNull(locations);
+        assertFalse(locations.isEmpty());
+        
+        // Should contain both prefixed and direct domain
+        assertTrue(locations.contains("_dnsauth." + tld));
+        assertTrue(locations.contains(tld));
+    }
 }

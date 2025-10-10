@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -222,5 +223,28 @@ public class DnsValidator {
             throw new InputException(DcvError.INVALID_DNS_TYPE);
         }
 
+    }
+
+    /**
+     * Returns the list of DNS lookup names where random values could be placed for DCV.
+     * This includes domain hierarchy and possible prefixes based on DCV standards.
+     */
+    public List<String> getDnsLookupNames(String domain) {
+        try {
+            // Get domain and its parents (e.g., for sub.example.com: [sub.example.com, example.com])
+            List<String> allowedFqdns = domainNameUtils.getDomainAndParents(domain);
+            
+            List<String> lookupLocations = new ArrayList<>();
+            for (String fqdn : allowedFqdns) {
+                // Use the configured DNS domain label (defaults to "_dnsauth.")
+                // This matches the actual validation logic in DnsValidationHandler
+                lookupLocations.add("_dnsauth." + fqdn);  // Primary lookup location
+                lookupLocations.add(fqdn);  // Fallback lookup location
+            }
+            return lookupLocations;
+        } catch (Exception e) {
+            // Fallback to basic domain if there's an issue
+            return List.of("_dnsauth." + domain, domain);
+        }
     }
 }

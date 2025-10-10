@@ -146,4 +146,81 @@ class EmailValidatorTest {
         assertFalse(response.emailResults().getFirst().randomValue().isEmpty());
         verify(emailProvider).findEmailsForDomain("example.com");
     }
+
+    @Test
+    void testGetEmailLookupLocations_SimpleDomain() {
+        String testDomain = "example.com";
+        var locations = emailValidator.getEmailLookupLocations(testDomain);
+        
+        assertNotNull(locations);
+        assertTrue(locations.size() >= 7); // 5 constructed emails + 2 DNS lookups
+        
+        // Should contain constructed email addresses
+        assertTrue(locations.contains("admin@" + testDomain));
+        assertTrue(locations.contains("administrator@" + testDomain));
+        assertTrue(locations.contains("webmaster@" + testDomain));
+        assertTrue(locations.contains("hostmaster@" + testDomain));
+        assertTrue(locations.contains("postmaster@" + testDomain));
+        
+        // Should contain DNS lookup names for email discovery
+        assertTrue(locations.contains("_validation-contactemail." + testDomain));
+        assertTrue(locations.contains(testDomain)); // For CAA lookups
+    }
+
+    @Test
+    void testGetEmailLookupLocations_SubdomainWithHierarchy() {
+        String subdomain = "api.app.example.com";
+        var locations = emailValidator.getEmailLookupLocations(subdomain);
+        
+        assertNotNull(locations);
+        assertTrue(locations.size() >= 7);
+        
+        // Should contain constructed email addresses for the specific subdomain
+        assertTrue(locations.contains("admin@" + subdomain));
+        assertTrue(locations.contains("administrator@" + subdomain));
+        assertTrue(locations.contains("webmaster@" + subdomain));
+        assertTrue(locations.contains("hostmaster@" + subdomain));
+        assertTrue(locations.contains("postmaster@" + subdomain));
+        
+        // Should contain DNS lookup names
+        assertTrue(locations.contains("_validation-contactemail." + subdomain));
+        assertTrue(locations.contains(subdomain));
+    }
+
+    @Test
+    void testGetEmailLookupLocations_EmptyDomain() {
+        var locations = emailValidator.getEmailLookupLocations("");
+        
+        assertNotNull(locations);
+        assertEquals(7, locations.size());
+        
+        // Should handle empty domain gracefully
+        assertTrue(locations.contains("admin@"));
+        assertTrue(locations.contains("administrator@"));
+        assertTrue(locations.contains("webmaster@"));
+        assertTrue(locations.contains("hostmaster@"));
+        assertTrue(locations.contains("postmaster@"));
+        assertTrue(locations.contains("_validation-contactemail."));
+        assertTrue(locations.contains(""));
+    }
+
+    @Test
+    void testGetEmailLookupLocations_SingleLevelDomain() {
+        String tld = "localhost";
+        var locations = emailValidator.getEmailLookupLocations(tld);
+        
+        assertNotNull(locations);
+        assertTrue(locations.size() >= 7);
+        
+        // Should contain constructed email addresses
+        assertTrue(locations.contains("admin@" + tld));
+        assertTrue(locations.contains("administrator@" + tld));
+        assertTrue(locations.contains("webmaster@" + tld));
+        assertTrue(locations.contains("hostmaster@" + tld));
+        assertTrue(locations.contains("postmaster@" + tld));
+        
+        // Should contain DNS lookup names
+        assertTrue(locations.contains("_validation-contactemail." + tld));
+        assertTrue(locations.contains(tld));
+    }
 }
