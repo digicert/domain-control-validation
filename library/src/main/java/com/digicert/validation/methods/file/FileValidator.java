@@ -262,10 +262,22 @@ public class FileValidator {
      * This includes both HTTP and HTTPS URLs for the standard file validation path.
      */
     public List<String> getFileLookupUrls(String domain) {
+        return getFileLookupUrls(domain, null);
+    }
+
+    /**
+     * Returns the list of file URLs where random values could be placed for DCV.
+     * This includes both HTTP and HTTPS URLs for the file validation path.
+     * 
+     * @param domain the domain for which to generate lookup URLs
+     * @param filename the specific filename to use, or null to use the default filename
+     * @return list of HTTP and HTTPS URLs where the validation file would be located
+     */
+    public List<String> getFileLookupUrls(String domain, String filename) {
         List<String> urls = new ArrayList<>();
         
-        // Standard file location (from FILE_LOCATION constant)
-        String fileName = defaultFilename; // Use the configured default filename
+        // Use provided filename or fall back to default
+        String fileName = (filename != null && !filename.trim().isEmpty()) ? filename : defaultFilename;
         urls.add("http://" + domain + "/.well-known/pki-validation/" + fileName);
         urls.add("https://" + domain + "/.well-known/pki-validation/" + fileName);
         

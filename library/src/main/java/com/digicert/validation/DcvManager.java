@@ -104,6 +104,20 @@ public class DcvManager {
      * @return list of lookup locations (e.g., DNS names, file URLs)
      */
     public List<String> getLookupLocations(String domain, DcvMethod dcvMethod) {
+        return getLookupLocations(domain, dcvMethod, null);
+    }
+
+    /**
+     * Returns the list of lookup locations (DNS names or file URLs) for the given domain and DCV method.
+     * This can be used to determine where random values should be placed and validated.
+     * For file validation methods, an optional filename can be specified.
+     *
+     * @param domain the domain to validate
+     * @param dcvMethod the BR DCV method (e.g., BR_3_2_2_4_7, BR_3_2_2_4_18, BR_3_2_2_4_19)
+     * @param filename the custom filename for file validation methods (ignored for non-file methods, null uses default)
+     * @return list of lookup locations (e.g., DNS names, file URLs)
+     */
+    public List<String> getLookupLocations(String domain, DcvMethod dcvMethod, String filename) {
         switch (dcvMethod) {
             case BR_3_2_2_4_4: // Constructed Email to Domain Contact
             case BR_3_2_2_4_13: // Email to DNS CAA Contact  
@@ -112,7 +126,7 @@ public class DcvManager {
             case BR_3_2_2_4_7: // DNS Change
                 return dnsValidator.getDnsLookupNames(domain);
             case BR_3_2_2_4_18: // File Validation
-                return fileValidator.getFileLookupUrls(domain);
+                return fileValidator.getFileLookupUrls(domain, filename);
             case BR_3_2_2_4_19: // ACME HTTP Validation
                 return acmeValidator.getAcmeLookupUrls(domain);
             // Add other cases as needed

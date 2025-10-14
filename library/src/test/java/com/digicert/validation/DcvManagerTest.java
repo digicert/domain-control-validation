@@ -67,6 +67,52 @@ class DcvManagerTest {
     }
 
     @Test
+    void testGetLookupLocations_FileValidationWithCustomFilename() {
+        String domain = "test.example.com";
+        String customFilename = "myvalidation.txt";
+        List<String> locations = dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_18, customFilename);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs with custom filename
+        String expectedHttpUrl = "http://" + domain + "/.well-known/pki-validation/" + customFilename;
+        String expectedHttpsUrl = "https://" + domain + "/.well-known/pki-validation/" + customFilename;
+        
+        assertTrue(locations.contains(expectedHttpUrl), "Should contain HTTP URL with custom filename");
+        assertTrue(locations.contains(expectedHttpsUrl), "Should contain HTTPS URL with custom filename");
+    }
+
+    @Test
+    void testGetLookupLocations_FileValidationWithNullFilename() {
+        String domain = "test.example.com";
+        List<String> locations = dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_18, null);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should use default filename when null is provided
+        assertTrue(locations.stream().anyMatch(loc -> loc.contains("/fileauth.txt")));
+    }
+
+    @Test
+    void testGetLookupLocations_NonFileMethodWithFilename() {
+        String domain = "test.example.com";
+        String filename = "ignored.txt";
+        
+        // Filename should be ignored for non-file methods
+        List<String> dnsLocations = dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_7, filename);
+        List<String> emailLocations = dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_4, filename);
+        
+        assertNotNull(dnsLocations);
+        assertNotNull(emailLocations);
+        
+        // Should behave same as without filename parameter
+        assertEquals(dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_7), dnsLocations);
+        assertEquals(dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_4), emailLocations);
+    }
+
+    @Test
     void testGetLookupLocations_AcmeHttpValidation() {
         String domain = "test.example.com";
         List<String> locations = dcvManager.getLookupLocations(domain, DcvMethod.BR_3_2_2_4_19);

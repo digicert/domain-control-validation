@@ -269,4 +269,57 @@ class FileValidatorTest {
         assertTrue(locations.contains("http://" + tld + "/.well-known/pki-validation/fileauth.txt"));
         assertTrue(locations.contains("https://" + tld + "/.well-known/pki-validation/fileauth.txt"));
     }
+
+    @Test
+    void testGetFileLookupUrls_WithCustomFilename() {
+        String testDomain = "example.com";
+        String customFilename = "myvalidation.txt";
+        var locations = fileValidator.getFileLookupUrls(testDomain, customFilename);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs with custom filename
+        assertTrue(locations.contains("http://" + testDomain + "/.well-known/pki-validation/" + customFilename));
+        assertTrue(locations.contains("https://" + testDomain + "/.well-known/pki-validation/" + customFilename));
+    }
+
+    @Test
+    void testGetFileLookupUrls_WithNullFilename() {
+        String testDomain = "example.com";
+        var locations = fileValidator.getFileLookupUrls(testDomain, null);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should use default filename when null is provided
+        assertTrue(locations.contains("http://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+    }
+
+    @Test
+    void testGetFileLookupUrls_WithEmptyFilename() {
+        String testDomain = "example.com";
+        var locations = fileValidator.getFileLookupUrls(testDomain, "");
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should use default filename when empty string is provided
+        assertTrue(locations.contains("http://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+    }
+
+    @Test
+    void testGetFileLookupUrls_WithWhitespaceFilename() {
+        String testDomain = "example.com";
+        var locations = fileValidator.getFileLookupUrls(testDomain, "   ");
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should use default filename when whitespace-only string is provided
+        assertTrue(locations.contains("http://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+        assertTrue(locations.contains("https://" + testDomain + "/.well-known/pki-validation/fileauth.txt"));
+    }
 }
