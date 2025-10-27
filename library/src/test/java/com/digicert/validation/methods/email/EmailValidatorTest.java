@@ -150,77 +150,106 @@ class EmailValidatorTest {
     @Test
     void testGetEmailLookupLocations_SimpleDomain() {
         String testDomain = "example.com";
-        var locations = emailValidator.getEmailLookupLocations(testDomain);
         
-        assertNotNull(locations);
-        assertTrue(locations.size() >= 7); // 5 constructed emails + 2 DNS lookups
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations(testDomain, DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size()); // 5 constructed emails
+        assertTrue(emailLocations.contains("admin@" + testDomain));
+        assertTrue(emailLocations.contains("administrator@" + testDomain));
+        assertTrue(emailLocations.contains("webmaster@" + testDomain));
+        assertTrue(emailLocations.contains("hostmaster@" + testDomain));
+        assertTrue(emailLocations.contains("postmaster@" + testDomain));
         
-        // Should contain constructed email addresses
-        assertTrue(locations.contains("admin@" + testDomain));
-        assertTrue(locations.contains("administrator@" + testDomain));
-        assertTrue(locations.contains("webmaster@" + testDomain));
-        assertTrue(locations.contains("hostmaster@" + testDomain));
-        assertTrue(locations.contains("postmaster@" + testDomain));
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations(testDomain, DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail." + testDomain));
         
-        // Should contain DNS lookup names for email discovery
-        assertTrue(locations.contains("_validation-contactemail." + testDomain));
-        assertTrue(locations.contains(testDomain)); // For CAA lookups
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations(testDomain, DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(testDomain)); // For CAA lookups
     }
 
     @Test
     void testGetEmailLookupLocations_SubdomainWithHierarchy() {
         String subdomain = "api.app.example.com";
-        var locations = emailValidator.getEmailLookupLocations(subdomain);
         
-        assertNotNull(locations);
-        assertTrue(locations.size() >= 7);
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations(subdomain, DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size());
+        assertTrue(emailLocations.contains("admin@" + subdomain));
+        assertTrue(emailLocations.contains("administrator@" + subdomain));
+        assertTrue(emailLocations.contains("webmaster@" + subdomain));
+        assertTrue(emailLocations.contains("hostmaster@" + subdomain));
+        assertTrue(emailLocations.contains("postmaster@" + subdomain));
         
-        // Should contain constructed email addresses for the specific subdomain
-        assertTrue(locations.contains("admin@" + subdomain));
-        assertTrue(locations.contains("administrator@" + subdomain));
-        assertTrue(locations.contains("webmaster@" + subdomain));
-        assertTrue(locations.contains("hostmaster@" + subdomain));
-        assertTrue(locations.contains("postmaster@" + subdomain));
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations(subdomain, DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail." + subdomain));
         
-        // Should contain DNS lookup names
-        assertTrue(locations.contains("_validation-contactemail." + subdomain));
-        assertTrue(locations.contains(subdomain));
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations(subdomain, DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(subdomain));
     }
 
     @Test
     void testGetEmailLookupLocations_EmptyDomain() {
-        var locations = emailValidator.getEmailLookupLocations("");
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations("", DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size());
+        assertTrue(emailLocations.contains("admin@"));
+        assertTrue(emailLocations.contains("administrator@"));
+        assertTrue(emailLocations.contains("webmaster@"));
+        assertTrue(emailLocations.contains("hostmaster@"));
+        assertTrue(emailLocations.contains("postmaster@"));
         
-        assertNotNull(locations);
-        assertEquals(7, locations.size());
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations("", DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail."));
         
-        // Should handle empty domain gracefully
-        assertTrue(locations.contains("admin@"));
-        assertTrue(locations.contains("administrator@"));
-        assertTrue(locations.contains("webmaster@"));
-        assertTrue(locations.contains("hostmaster@"));
-        assertTrue(locations.contains("postmaster@"));
-        assertTrue(locations.contains("_validation-contactemail."));
-        assertTrue(locations.contains(""));
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations("", DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(""));
     }
 
     @Test
     void testGetEmailLookupLocations_SingleLevelDomain() {
         String tld = "localhost";
-        var locations = emailValidator.getEmailLookupLocations(tld);
         
-        assertNotNull(locations);
-        assertTrue(locations.size() >= 7);
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations(tld, DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size());
+        assertTrue(emailLocations.contains("admin@" + tld));
+        assertTrue(emailLocations.contains("administrator@" + tld));
+        assertTrue(emailLocations.contains("webmaster@" + tld));
+        assertTrue(emailLocations.contains("hostmaster@" + tld));
+        assertTrue(emailLocations.contains("postmaster@" + tld));
         
-        // Should contain constructed email addresses
-        assertTrue(locations.contains("admin@" + tld));
-        assertTrue(locations.contains("administrator@" + tld));
-        assertTrue(locations.contains("webmaster@" + tld));
-        assertTrue(locations.contains("hostmaster@" + tld));
-        assertTrue(locations.contains("postmaster@" + tld));
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations(tld, DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail." + tld));
         
-        // Should contain DNS lookup names
-        assertTrue(locations.contains("_validation-contactemail." + tld));
-        assertTrue(locations.contains(tld));
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations(tld, DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(tld));
     }
 }
