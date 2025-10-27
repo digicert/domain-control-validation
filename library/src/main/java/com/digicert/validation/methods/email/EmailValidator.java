@@ -236,21 +236,27 @@ public class EmailValidator {
      * Returns the list of email lookup locations for email-based DCV methods.
      * This includes constructed emails and DNS record locations for email discovery.
      */
-    public List<String> getEmailLookupLocations(String domain) {
+    public List<String> getEmailLookupLocations(String domain, DcvMethod dcvMethod) {
         List<String> lookupLocations = new ArrayList<>();
-        
-        // Constructed email addresses (BR_3_2_2_4_4)
-        lookupLocations.add("admin@" + domain);
-        lookupLocations.add("administrator@" + domain);
-        lookupLocations.add("webmaster@" + domain);
-        lookupLocations.add("hostmaster@" + domain);
-        lookupLocations.add("postmaster@" + domain);
-        
-        // DNS TXT lookup for email contact (BR_3_2_2_4_14)
-        lookupLocations.add("_validation-contactemail." + domain);
-        
-        // DNS CAA lookup for email contact (BR_3_2_2_4_13)
-        lookupLocations.add(domain); // CAA records are at the domain itself
+
+        if (dcvMethod == DcvMethod.BR_3_2_2_4_4) {
+            // Constructed email addresses (BR_3_2_2_4_4)
+            lookupLocations.add("admin@" + domain);
+            lookupLocations.add("administrator@" + domain);
+            lookupLocations.add("webmaster@" + domain);
+            lookupLocations.add("hostmaster@" + domain);
+            lookupLocations.add("postmaster@" + domain);
+        }
+
+        if (dcvMethod == DcvMethod.BR_3_2_2_4_14) {
+            // DNS TXT lookup for email contact (BR_3_2_2_4_14)
+            lookupLocations.add("_validation-contactemail." + domain);
+        }
+
+        if (dcvMethod == DcvMethod.BR_3_2_2_4_13) {
+            // DNS CAA lookup for email contact (BR_3_2_2_4_13)
+            lookupLocations.add(domain); // CAA records are at the domain itself
+        }
         
         return lookupLocations;
     }

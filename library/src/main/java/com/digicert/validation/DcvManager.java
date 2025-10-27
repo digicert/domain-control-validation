@@ -122,7 +122,7 @@ public class DcvManager {
             case BR_3_2_2_4_4: // Constructed Email to Domain Contact
             case BR_3_2_2_4_13: // Email to DNS CAA Contact  
             case BR_3_2_2_4_14: // Email to DNS TXT Contact
-                return emailValidator.getEmailLookupLocations(domain);
+                return emailValidator.getEmailLookupLocations(domain, dcvMethod);
             case BR_3_2_2_4_7: // DNS Change
                 return dnsValidator.getDnsLookupNames(domain);
             case BR_3_2_2_4_18: // File Validation
