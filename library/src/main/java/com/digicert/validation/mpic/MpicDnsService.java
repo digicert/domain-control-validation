@@ -57,6 +57,13 @@ public class MpicDnsService {
         return mapToMpicDnsDetailsWithErrorCheck(mpicDnsResponse, domain);
     }
 
+    /**
+     * Retrieves only the primary DNS response for a given domain and DNS type.
+     *
+     * @param domain  Domain name to validate
+     * @param dnsType DNS record type to query (e.g., TXT, CNAME)
+     * @return PrimaryDnsResponse containing details from the primary DNS agent
+     */
     public PrimaryDnsResponse getPrimaryDnsDetails(String domain, DnsType dnsType) {
         return mpicClient.getPrimaryOnlyDnsResponse(domain, dnsType);
     }
@@ -70,7 +77,7 @@ public class MpicDnsService {
                     0,
                     0,
                     Collections.emptyMap());
-            log.info("event_id={} mpic_file_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicDnsResponse);
+            log.info("event_id={} mpic_dns_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicDnsResponse);
             return new MpicDnsDetails(mpicDetails,
                     domain,
                     List.of(),
@@ -78,10 +85,11 @@ public class MpicDnsService {
         }
 
         DcvError dcvError = mapToDcvErrorOrNull(mpicDnsResponse);
-        log.info("event_id={} agent_status={} domain={} mpic_status={} dcv_error={}",
+        log.info("event_id={} agent_status={} domain={} dns_type={} mpic_status={} dcv_error={}",
                 LogEvents.DNS_LOOKUP_STATUS,
                 mpicDnsResponse.primaryDnsResponse().agentStatus(),
                 domain,
+                mpicDnsResponse.primaryDnsResponse().requestedType(),
                 mpicDnsResponse.mpicStatus(),
                 dcvError);
         return mapToMpicDnsDetails(mpicDnsResponse, domain, dcvError);

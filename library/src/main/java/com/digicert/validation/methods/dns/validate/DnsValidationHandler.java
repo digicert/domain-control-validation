@@ -71,7 +71,7 @@ public class DnsValidationHandler {
 
     private DnsValidationResponse performValidationForRandomValue(DnsValidationRequest request) {
         // First attempt to validate the request using the domain with the DNS domain label.
-        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(dnsDomainLabel + request.getDomain(), request.getDnsType(), request.getRandomValue());
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(getDomainWithLabel(request), request.getDnsType(), request.getRandomValue());
         ChallengeValidationResponse challengeValidationResponse = null;
         if (mpicDnsDetails.dcvError() == null) {
             challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
@@ -92,12 +92,13 @@ public class DnsValidationHandler {
 
     private DnsValidationResponse performValidationForRequestToken(DnsValidationRequest request) {
         // Find the request token first in the primary DNS details and then perform the corroborated lookup if found.
-        ChallengeValidationResponse challengeValidationResponse = getPrimaryChallengeResponse(request, dnsDomainLabel + request.getDomain(), request.getDnsType());
+        String domainWithLabel = getDomainWithLabel(request);
+        ChallengeValidationResponse challengeValidationResponse = getPrimaryChallengeResponse(request, domainWithLabel, request.getDnsType());
 
         if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
             // If we found a valid request token in the primary DNS details, perform the corroborated lookup.
             MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(
-                    dnsDomainLabel + request.getDomain(),
+                    domainWithLabel,
                     request.getDnsType(),
                     challengeValidationResponse.challengeValue().get());
             if (mpicDnsDetails.dcvError() == null) {
@@ -257,5 +258,25 @@ public class DnsValidationHandler {
                 validRandomValue,
                 validRequestToken,
                 challengeValidationResponse.errors());
+    }
+
+    private String getDomainWithLabel(DnsValidationRequest request) {
+        return normalizeDomainLabel(getDomainLabel(request)) + request.getDomain();
+    }
+
+    private String getDomainLabel(DnsValidationRequest request) {
+        if (request.getDomainLabel() != null && !request.getDomainLabel().isEmpty()) {
+            return request.getDomainLabel();
+        } else {
+            return dnsDomainLabel;
+        }
+    }
+
+    private String normalizeDomainLabel(String domainWithLabel) {
+        if (domainWithLabel.endsWith(".")) {
+            return domainWithLabel;
+        } else {
+            return domainWithLabel + ".";
+        }
     }
 }

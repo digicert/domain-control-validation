@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -70,8 +69,8 @@ class DnsValidatorTest {
         dnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)
                 .randomValue(randomValue)
-                .dnsType(dnsType)
                 .challengeType(ChallengeType.RANDOM_VALUE)
+                .dnsType(dnsType)
                 .validationState(validationState)
                 .build();
     }
@@ -111,27 +110,45 @@ class DnsValidatorTest {
 
     static Stream<Arguments> provideInvalidDnsValidationResponse() {
         return Stream.of(
-                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now()),
-                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now()),
-                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now()),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now()),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null))
-        );
+                // domain, randomValue, dnsType, dcvMethod, prepareTime, dnsDomainLabel, challengeType, expectedError
+                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DOMAIN_REQUIRED),
+                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.RANDOM_VALUE_REQUIRED),
+                Arguments.of("example.com", null, DnsType.CAA, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.RANDOM_VALUE_REQUIRED),
+                Arguments.of("example.com", null, DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.REQUEST_TOKEN, DcvError.REQUEST_TOKEN_DATA_REQUIRED),
+                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DNS_TYPE_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.VALIDATION_STATE_DCV_METHOD_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null), "", ChallengeType.RANDOM_VALUE, DcvError.VALIDATION_STATE_PREPARE_TIME_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), " ", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_invalid.dot", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", null, DcvError.CHALLENGE_TYPE_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.A, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.INVALID_DNS_TYPE)
+                );
     }
 
     @ParameterizedTest
     @MethodSource("provideInvalidDnsValidationResponse")
-    void testDnsValidator_validate_InvalidDnsValidationResponse(String domain, String randomValue, DnsType dnsType,
-                                                                DcvMethod dcvMethod, Instant prepareTime) {
-        ValidationState invalidValidationState = new ValidationState(domain, prepareTime, dcvMethod);
+    void testDnsValidator_validate_InvalidDnsValidationResponse(String domain,
+                                                                String randomValue,
+                                                                DnsType dnsType,
+                                                                DcvMethod dcvMethod,
+                                                                Instant prepareTime,
+                                                                String dnsDomainLabel,
+                                                                ChallengeType challengeType,
+                                                                DcvError expectedError) {
+        ValidationState validationState = new ValidationState(domain, prepareTime, dcvMethod);
         DnsValidationRequest invalidDnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)
                 .randomValue(randomValue)
+                .challengeType(challengeType)
+                .domainLabel(dnsDomainLabel)
                 .dnsType(dnsType)
-                .validationState(invalidValidationState)
+                .validationState(validationState)
                 .build();
 
-        assertThrows(InputException.class, () -> dnsValidator.validate(invalidDnsValidationRequest));
+        InputException exception = assertThrows(InputException.class, () -> dnsValidator.validate(invalidDnsValidationRequest));
+        assertEquals(1, exception.getErrors().size(), "Expected exactly one error but got: " + exception.getErrors());
+        assertTrue(exception.getErrors().contains(expectedError), "expected error=" + expectedError + " errors=" + exception.getErrors());
     }
 
     @Test
@@ -140,8 +157,8 @@ class DnsValidatorTest {
         DnsValidationRequest expiredDnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)
                 .randomValue(randomValue)
-                .dnsType(dnsType)
                 .challengeType(ChallengeType.RANDOM_VALUE)
+                .dnsType(dnsType)
                 .validationState(expiredValidationState)
                 .build();
 
