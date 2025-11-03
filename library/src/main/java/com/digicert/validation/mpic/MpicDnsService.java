@@ -84,7 +84,7 @@ public class MpicDnsService {
                     DcvError.MPIC_INVALID_RESPONSE);
         }
 
-        DcvError dcvError = mapToDcvErrorOrNull(mpicDnsResponse);
+        DcvError dcvError = mapToDcvErrorOrNull(mpicDnsResponse.primaryDnsResponse(), mpicDnsResponse.mpicStatus());
         log.info("event_id={} agent_status={} domain={} dns_type={} mpic_status={} dcv_error={}",
                 LogEvents.DNS_LOOKUP_STATUS,
                 mpicDnsResponse.primaryDnsResponse().agentStatus(),
@@ -95,10 +95,14 @@ public class MpicDnsService {
         return mapToMpicDnsDetails(mpicDnsResponse, domain, dcvError);
     }
 
-    private DcvError mapToDcvErrorOrNull(MpicDnsResponse mpicDnsResponse) {
+    public DcvError mapToDcvErrorOrNull(PrimaryDnsResponse primaryDnsResponse, MpicStatus mpicStatus) {
         DcvError dcvError = null;
-        if (mpicDnsResponse.primaryDnsResponse().agentStatus() != DNS_LOOKUP_SUCCESS) {
-            dcvError = switch (mpicDnsResponse.primaryDnsResponse().agentStatus()) {
+        if (primaryDnsResponse == null) {
+            return DcvError.MPIC_INVALID_RESPONSE;
+        }
+
+        if (primaryDnsResponse.agentStatus() != DNS_LOOKUP_SUCCESS) {
+            dcvError = switch (primaryDnsResponse.agentStatus()) {
                 case DNS_LOOKUP_BAD_REQUEST -> DcvError.DNS_LOOKUP_BAD_REQUEST;
                 case DNS_LOOKUP_TIMEOUT -> DcvError.DNS_LOOKUP_TIMEOUT;
                 case DNS_LOOKUP_IO_EXCEPTION -> DcvError.DNS_LOOKUP_IO_EXCEPTION;
@@ -109,14 +113,14 @@ public class MpicDnsService {
                 default -> DcvError.MPIC_INVALID_RESPONSE;
             };
         }
-        else if (mpicDnsResponse.primaryDnsResponse().dnsRecords() == null ||
-                mpicDnsResponse.primaryDnsResponse().dnsRecords().isEmpty()) {
+        else if (primaryDnsResponse.dnsRecords() == null ||
+                primaryDnsResponse.dnsRecords().isEmpty()) {
             dcvError = DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
         }
-        else if (mpicDnsResponse.mpicStatus() == MpicStatus.VALUE_NOT_FOUND || mpicDnsResponse.mpicStatus() == MpicStatus.PRIMARY_AGENT_FAILURE) {
+        else if (mpicStatus == MpicStatus.VALUE_NOT_FOUND || mpicStatus == MpicStatus.PRIMARY_AGENT_FAILURE) {
             dcvError = DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
         }
-        else if (mpicClient.shouldEnforceCorroboration() && mpicDnsResponse.mpicStatus() == MpicStatus.NON_CORROBORATED) {
+        else if (mpicClient.shouldEnforceCorroboration() && mpicStatus == MpicStatus.NON_CORROBORATED) {
             dcvError = DcvError.MPIC_CORROBORATION_ERROR;
         }
 

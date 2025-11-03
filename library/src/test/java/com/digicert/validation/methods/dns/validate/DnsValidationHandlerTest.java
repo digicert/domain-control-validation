@@ -161,6 +161,7 @@ class DnsValidationHandlerTest {
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(null);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomain), eq(DnsType.CNAME))).thenReturn(null);
+        when(mpicDnsService.mapToDcvErrorOrNull(any(), any())).thenReturn(DcvError.MPIC_INVALID_RESPONSE);
 
         DnsValidationResponse response = dnsValidationHandler.validate(request);
 
