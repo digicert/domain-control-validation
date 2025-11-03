@@ -83,6 +83,9 @@ class DcvDomainNameTest {
                 Arguments.of("example.com.ck", false),
                 Arguments.of("ck.ua", true),       // 'ck.ua' is explicitly listed as a public suffix
 
+                // Domains with Wildcard Entries in the private section of the PSL
+                Arguments.of("compute.amazonaws.com", false),
+
                 // Domains with Exception Rules in PSL
                 Arguments.of("kawasaki.jp", false), // Exception in Japan
                 Arguments.of("city.kawasaki.jp", false), 
@@ -195,27 +198,39 @@ class DcvDomainNameTest {
         assertEquals("example.com", domain.toString(), "Expected domain to be normalized to lowercase");
     }
 
-    @Test
-    void testPublicSuffix() {
-        DcvDomainName domain = DcvDomainName.from("example.co.uk");
-        DcvDomainName publicSuffix = domain.publicSuffix();
-        assertNotNull(publicSuffix, "Expected public suffix to be non-null");
-        assertEquals("co.uk", publicSuffix.toString(), "Expected public suffix to be 'co.uk'");
+    static Stream<Arguments> publicSuffixTestData() {
+        return Stream.of(
+                Arguments.of("example.co.uk", "co.uk", "co.uk"),
+                Arguments.of("example.com", "com", "com"),
+                Arguments.of("com", "com", "com"),
 
-        domain = DcvDomainName.from("example.com");
-        publicSuffix = domain.publicSuffix();
-        assertNotNull(publicSuffix, "Expected public suffix to be non-null");
-        assertEquals("com", publicSuffix.toString(), "Expected public suffix to be 'com'");
+                // ICANN domains has "os.hedmark.no", but not "hedmark.no"
+                Arguments.of("example.os.hedmark.no", "os.hedmark.no", "os.hedmark.no"),
+                Arguments.of("os.hedmark.no", "os.hedmark.no", "os.hedmark.no"),
+                Arguments.of("hedmark.no", "no", "no"),
 
-        domain = DcvDomainName.from("example.blogspot.com");
-        publicSuffix = domain.publicSuffix();
-        assertNotNull(publicSuffix, "Expected public suffix to be non-null");
-        assertEquals("blogspot.com", publicSuffix.toString(), "Expected public suffix to be 'blogspot.com'");
+                // ICANN domains has "*.nom.br", but no "nom.br"
+                Arguments.of("foo.example.nom.br", "example.nom.br", "example.nom.br"),
+                Arguments.of("example.nom.br", "example.nom.br", "example.nom.br"),
+                Arguments.of("nom.br", "br", "br"),
 
-        domain = DcvDomainName.from("com");
-        publicSuffix = domain.publicSuffix();
+                // Private section has "blogspot.com"
+                Arguments.of("example.blogspot.com", "blogspot.com", "com"),
+                Arguments.of("blogspot.com", "blogspot.com", "com"),
+
+                // Private section has "*.on-acorn.io", but no "on-acorn.io"
+                Arguments.of("example.on-acorn.io", "example.on-acorn.io", "io"),
+                Arguments.of("on-acorn.io", "io", "io")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("publicSuffixTestData")
+    void testPublicSuffix(String domain, String expectedPublicSuffix, String registrySuffix) {
+        DcvDomainName dcvDomainName = DcvDomainName.from(domain);
+        DcvDomainName publicSuffix = dcvDomainName.publicSuffix();
         assertNotNull(publicSuffix, "Expected public suffix to be non-null");
-        assertEquals("com", publicSuffix.toString(), "Expected public suffix to be 'com'");
+        assertEquals(expectedPublicSuffix, publicSuffix.toString(), "Incorrect public suffix for domain: " + domain);
     }
 
     @Test
@@ -258,27 +273,13 @@ class DcvDomainNameTest {
         assertThrows(IllegalStateException.class, domain::topDomainUnderRegistrySuffix, "Expected IllegalStateException for 'com'");
     }
 
-    @Test
-    void testRegistrySuffix() {
-        DcvDomainName domain = DcvDomainName.from("example.co.uk");
-        DcvDomainName registrySuffix = domain.registrySuffix();
+    @ParameterizedTest
+    @MethodSource("publicSuffixTestData")
+    void testRegistrySuffix(String domain, String publicSuffix, String expectedRegistrySuffix) {
+        DcvDomainName dcvDomainName = DcvDomainName.from(domain);
+        DcvDomainName registrySuffix = dcvDomainName.registrySuffix();
         assertNotNull(registrySuffix, "Expected registry suffix to be non-null");
-        assertEquals("co.uk", registrySuffix.toString(), "Expected registry suffix to be 'co.uk'");
-
-        domain = DcvDomainName.from("example.com");
-        registrySuffix = domain.registrySuffix();
-        assertNotNull(registrySuffix, "Expected registry suffix to be non-null");
-        assertEquals("com", registrySuffix.toString(), "Expected registry suffix to be 'com'");
-
-        domain = DcvDomainName.from("example.blogspot.com");
-        registrySuffix = domain.registrySuffix();
-        assertNotNull(registrySuffix, "Expected registry suffix to be non-null");
-        assertEquals("com", registrySuffix.toString(), "Expected registry suffix to be 'com'");
-
-        domain = DcvDomainName.from("com");
-        registrySuffix = domain.registrySuffix();
-        assertNotNull(registrySuffix, "Expected registry suffix to be non-null");
-        assertEquals("com", registrySuffix.toString(), "Expected registry suffix to be 'com'");
+        assertEquals(expectedRegistrySuffix, registrySuffix.toString(), "Incorrect public suffix for domain: " + domain);
     }
 
     @Test
