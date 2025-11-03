@@ -91,6 +91,14 @@ public enum DcvError {
     DOMAIN_INVALID_BAD_LDH_LABEL,
 
     /**
+     * Error indicating that a DNS domain label is invalid.
+     * When doing DNS validation, the domain label (the part of the domain name before the main domain)
+     * must begin with an underscore (_). This error occurs when the provided domain label does not
+     * meet this requirement.
+     */
+    DNS_DOMAIN_LABEL_INVALID,
+
+    /**
      * Error indicating that the domain name is a top-level domain.
      * This error occurs when the domain name is a top-level domain (TLD), which is not allowed in
      * this context. TLDs are not specific enough for validation purposes, and a more specific domain
