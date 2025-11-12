@@ -54,14 +54,15 @@ public class MpicClientImpl implements MpicClientInterface {
 
         // Note: In a real implementation, you would have separate requests from different sources
         // For this example, we are simulating a primary response and two secondary responses with the same data.
-        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent-id", agentStatus, dnsRecords, dnsType, domain);
-        SecondaryDnsResponse secondaryDnsResponse1 = new SecondaryDnsResponse("secondary-agent-id-1", agentStatus, true, dnsRecords);
-        SecondaryDnsResponse secondaryDnsResponse2 = new SecondaryDnsResponse("secondary-agent-id-2", agentStatus, true, dnsRecords);
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent-id", agentStatus, dnsRecords, dnsType, domain, null);
+        SecondaryDnsResponse secondaryDnsResponse1 = new SecondaryDnsResponse("secondary-agent-id-1", agentStatus, true, dnsRecords, null, false);
+        SecondaryDnsResponse secondaryDnsResponse2 = new SecondaryDnsResponse("secondary-agent-id-2", agentStatus, true, dnsRecords, null, false);
 
         return new MpicDnsResponse(primaryDnsResponse,
                 List.of(secondaryDnsResponse1, secondaryDnsResponse2),
                 MpicStatus.CORROBORATED,
                 2L,
+                null,
                 null);
     }
 

@@ -38,12 +38,12 @@ class MpicDnsServiceTest {
     private MpicDnsResponse createMpicDnsResponse(PrimaryDnsResponse primary,
                                                   List<SecondaryDnsResponse> secondary,
                                                   MpicStatus mpicStatus) {
-        return new MpicDnsResponse(primary, secondary, mpicStatus, 2, null);
+        return new MpicDnsResponse(primary, secondary, mpicStatus, 2, null, null);
     }
 
     @Test
     void returnsInvalidResponseWhenMpicStatusIsError() {
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(), DnsType.TXT, "example.com");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(), DnsType.TXT, "example.com", null);
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.ERROR);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
         MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
@@ -52,7 +52,7 @@ class MpicDnsServiceTest {
 
     @Test
     void returnsRecordNotFoundErrorWhenDnsRecordsIsNull() {
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, null, DnsType.TXT, "example.com");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, null, DnsType.TXT, "example.com", null);
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
 
@@ -62,7 +62,7 @@ class MpicDnsServiceTest {
 
     @Test
     void returnsRecordNotFoundErrorWhenMpicStatusIsValueNotFound() {
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, "")), DnsType.TXT, "example.com");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, List.of(new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, "")), DnsType.TXT, "example.com", null);
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.VALUE_NOT_FOUND);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, "some-value")).thenReturn(response);
 
@@ -72,7 +72,7 @@ class MpicDnsServiceTest {
 
     @Test
     void returnsRecordNotFoundErrorWhenDnsRecordsIsEmpty() {
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, Collections.emptyList(), DnsType.TXT, "example.com");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, Collections.emptyList(), DnsType.TXT, "example.com", null);
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
 
@@ -83,7 +83,7 @@ class MpicDnsServiceTest {
     @Test
     void returnsCorroborationErrorWhenShouldEnforceCorroborationAndStatusNonCorroborated() {
         List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, ""));
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.TXT, "example.com");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.TXT, "example.com", null);
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.NON_CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(true);
@@ -97,8 +97,8 @@ class MpicDnsServiceTest {
         DnsRecord record1 = new DnsRecord(DnsType.TXT, "example.com", "record1", 0, 0, "");
         DnsRecord record2 = new DnsRecord(DnsType.TXT, "example.com", "record2", 0, 0, "");
         List<DnsRecord> dnsRecords = List.of(record1, record2);
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.TXT, "example.com");
-        SecondaryDnsResponse secondary = new SecondaryDnsResponse("agent2", DNS_LOOKUP_SUCCESS, true, dnsRecords);
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.TXT, "example.com", null);
+        SecondaryDnsResponse secondary = new SecondaryDnsResponse("agent2", DNS_LOOKUP_SUCCESS, true, dnsRecords, null, false);
         MpicDnsResponse response = createMpicDnsResponse(primary, List.of(secondary), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
         when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
@@ -120,7 +120,7 @@ class MpicDnsServiceTest {
     @MethodSource("agentStatusToErrorMapping")
     void mapsDifferentAgentStatusesToCorrectDcvErrors(AgentStatus agentStatus, DcvError expectedError) {
         // Setup
-        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", agentStatus, List.of(), DnsType.TXT, "example.com");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", agentStatus, List.of(), DnsType.TXT, "example.com", null);
         MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
 
@@ -147,5 +147,117 @@ class MpicDnsServiceTest {
                 // This should never happen, but we handle it gracefully
                 Arguments.of(FILE_BAD_REQUEST, DcvError.MPIC_INVALID_RESPONSE)
         );
+    }     
+
+    @Test
+    void capturesCnameChainInCorrectFormat() {
+        DnsRecord cname1 = new DnsRecord(DnsType.CNAME, "www.example.com", "cdn1.example.com", 0, 0, "");
+        DnsRecord cname2 = new DnsRecord(DnsType.CNAME, "cdn1.example.com", "cdn2.example.com", 0, 0, "");
+        List<DnsRecord> cnameChain = List.of(cname1, cname2);
+
+        DnsRecord txtRecord = new DnsRecord(DnsType.TXT, "www.example.com", "verification-token", 0, 0, "");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS,
+                List.of(txtRecord), DnsType.TXT, "www.example.com", cnameChain);
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicDnsResponse("www.example.com", DnsType.TXT, null)).thenReturn(response);
+
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("www.example.com", DnsType.TXT);
+
+        assertNotNull(details.mpicDetails().cnameChain());
+        assertEquals(2, details.mpicDetails().cnameChain().size());
+        assertEquals("www.example.com -> cdn1.example.com", details.mpicDetails().cnameChain().get(0));
+        assertEquals("cdn1.example.com -> cdn2.example.com", details.mpicDetails().cnameChain().get(1));
+    }
+
+    @Test
+    void removesTrailingDotsFromCnameTargets() {
+        DnsRecord cname1 = new DnsRecord(DnsType.CNAME, "www.example.com.", "cdn1.example.com.", 0, 0, "");
+        DnsRecord cname2 = new DnsRecord(DnsType.CNAME, "cdn1.example.com.", "cdn2.example.com.", 0, 0, "");
+        List<DnsRecord> cnameChain = List.of(cname1, cname2);
+
+        DnsRecord txtRecord = new DnsRecord(DnsType.TXT, "www.example.com", "verification-token", 0, 0, "");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS,
+                List.of(txtRecord), DnsType.TXT, "www.example.com", cnameChain);
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicDnsResponse("www.example.com", DnsType.TXT, null)).thenReturn(response);
+
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("www.example.com", DnsType.TXT);
+
+        assertNotNull(details.mpicDetails().cnameChain());
+        assertEquals(2, details.mpicDetails().cnameChain().size());
+        assertEquals("www.example.com -> cdn1.example.com", details.mpicDetails().cnameChain().get(0));
+        assertEquals("cdn1.example.com -> cdn2.example.com", details.mpicDetails().cnameChain().get(1));
+    }
+
+    @Test
+    void handlesNullCnameChain() {
+        DnsRecord txtRecord = new DnsRecord(DnsType.TXT, "example.com", "verification-token", 0, 0, "");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS,
+                List.of(txtRecord), DnsType.TXT, "example.com", null);
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
+
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
+
+        assertNull(details.mpicDetails().cnameChain());
+    }
+
+    @Test
+    void handlesEmptyCnameChain() {
+        DnsRecord txtRecord = new DnsRecord(DnsType.TXT, "example.com", "verification-token", 0, 0, "");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS,
+                List.of(txtRecord), DnsType.TXT, "example.com", Collections.emptyList());
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicDnsResponse("example.com", DnsType.TXT, null)).thenReturn(response);
+
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("example.com", DnsType.TXT);
+
+        assertNotNull(details.mpicDetails().cnameChain());
+        assertTrue(details.mpicDetails().cnameChain().isEmpty());
+    }
+
+    @Test
+    void capturesMultipleHopCnameChain() {
+        DnsRecord cname1 = new DnsRecord(DnsType.CNAME, "www.example.com", "cdn1.example.com.", 0, 0, "");
+        DnsRecord cname2 = new DnsRecord(DnsType.CNAME, "cdn1.example.com", "cdn2.example.com.", 0, 0, "");
+        DnsRecord cname3 = new DnsRecord(DnsType.CNAME, "cdn2.example.com", "cdn3.example.com.", 0, 0, "");
+        DnsRecord cname4 = new DnsRecord(DnsType.CNAME, "cdn3.example.com", "final.cloudfront.net.", 0, 0, "");
+        List<DnsRecord> cnameChain = List.of(cname1, cname2, cname3, cname4);
+
+        DnsRecord txtRecord = new DnsRecord(DnsType.TXT, "www.example.com", "verification-token", 0, 0, "");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS,
+                List.of(txtRecord), DnsType.TXT, "www.example.com", cnameChain);
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicDnsResponse("www.example.com", DnsType.TXT, null)).thenReturn(response);
+
+        MpicDnsDetails details = mpicDnsService.getDnsDetails("www.example.com", DnsType.TXT);
+
+        assertNotNull(details.mpicDetails().cnameChain());
+        assertEquals(4, details.mpicDetails().cnameChain().size());
+        assertEquals("www.example.com -> cdn1.example.com", details.mpicDetails().cnameChain().get(0));
+        assertEquals("cdn1.example.com -> cdn2.example.com", details.mpicDetails().cnameChain().get(1));
+        assertEquals("cdn2.example.com -> cdn3.example.com", details.mpicDetails().cnameChain().get(2));
+        assertEquals("cdn3.example.com -> final.cloudfront.net", details.mpicDetails().cnameChain().get(3));
+    }
+
+    @Test
+    void removesDuplicateHops() {
+        DnsRecord cname1 = new DnsRecord(DnsType.CNAME, "www.example.com.", "cdn1.example.com.", 0, 0, "");
+        DnsRecord cname1Duplicate = new DnsRecord(DnsType.CNAME, "www.example.com.", "cdn1.example.com.", 0, 0, "");
+        DnsRecord cname2 = new DnsRecord(DnsType.CNAME, "cdn1.example.com.", "cdn2.example.com.", 0, 0, "");
+        List<DnsRecord> cnameChain = List.of(cname1, cname1Duplicate, cname2);
+
+        DnsRecord txtRecord = new DnsRecord(DnsType.TXT, "www.example.com", "verification-token", 0, 0, "");
+        PrimaryDnsResponse primary = new PrimaryDnsResponse("agent1", DNS_LOOKUP_SUCCESS,
+                List.of(txtRecord), DnsType.TXT, "www.example.com", cnameChain);
+        MpicDnsResponse response = createMpicDnsResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicDnsResponse("www.example.com", DnsType.TXT, null)).thenReturn(response);
+
+                MpicDnsDetails details = mpicDnsService.getDnsDetails("www.example.com", DnsType.TXT);
+
+        assertNotNull(details.mpicDetails().cnameChain());
+        assertEquals(2, details.mpicDetails().cnameChain().size());
+        assertEquals("www.example.com -> cdn1.example.com", details.mpicDetails().cnameChain().get(0));
+        assertEquals("cdn1.example.com -> cdn2.example.com", details.mpicDetails().cnameChain().get(1));
     }
 }

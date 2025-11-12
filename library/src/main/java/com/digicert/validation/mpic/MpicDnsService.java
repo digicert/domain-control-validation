@@ -76,7 +76,8 @@ public class MpicDnsService {
                     null,
                     0,
                     0,
-                    Collections.emptyMap());
+                    Collections.emptyMap(),
+                    null);
             log.info("event_id={} mpic_dns_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicDnsResponse);
             return new MpicDnsDetails(mpicDetails,
                     domain,
@@ -139,11 +140,30 @@ public class MpicDnsService {
                         (map, response) -> map.put(response.agentId(), response.corroborates()),
                         HashMap::putAll);
 
+        List<String> cnameChain = mpicDnsResponse.primaryDnsResponse().cnameChain() != null
+                ? mpicDnsResponse.primaryDnsResponse().cnameChain().stream()
+                        .map(record -> {
+                            String source = record.name();
+                            String target = record.value();
+
+                            if (source != null && source.endsWith(".")) {
+                                source = source.substring(0, source.length() - 1);
+                            }
+                            if (target != null && target.endsWith(".")) {
+                                target = target.substring(0, target.length() - 1);
+                            }
+                            return source + " -> " + target;
+                        })
+                        .distinct()
+                        .toList()
+                : null;
+
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
-                agentIdToCorroboration);
+                agentIdToCorroboration,
+                cnameChain);
 
         return new MpicDnsDetails(mpicDetails,
                 domain,

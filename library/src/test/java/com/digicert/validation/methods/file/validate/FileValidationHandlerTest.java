@@ -349,7 +349,7 @@ class FileValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated));
+                Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
 
         return new MpicFileDetails(mpicDetails,
                 "http://example.com/.well-known/pki-validation/fileauth.txt",

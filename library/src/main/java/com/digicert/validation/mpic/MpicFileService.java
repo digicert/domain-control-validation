@@ -108,7 +108,8 @@ public class MpicFileService {
                     null,
                     0,
                     0,
-                    Collections.emptyMap());
+                    Collections.emptyMap(),
+                    null);
             log.info("event_id={} mpic_file_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicFileResponse);
             return new MpicFileDetails(mpicDetails,
                     fileUrl,
@@ -135,7 +136,7 @@ public class MpicFileService {
         else if (mpicFileResponse.primaryFileResponse().fileContents() == null || mpicFileResponse.primaryFileResponse().fileContents().isEmpty()) {
             dcvError = DcvError.FILE_VALIDATION_EMPTY_RESPONSE;
         }
-        else if (mpicFileResponse.mpicStatus() == MpicStatus.VALUE_NOT_FOUND || mpicFileResponse.mpicStatus() == MpicStatus.PRIMARY_AGENT_FAILURE) {
+else if (mpicFileResponse.mpicStatus() == MpicStatus.VALUE_NOT_FOUND || mpicFileResponse.mpicStatus() == MpicStatus.PRIMARY_AGENT_FAILURE) {
             dcvError = DcvError.FILE_VALIDATION_NOT_FOUND;
         }
         else if (mpicFileResponse.mpicStatus() == MpicStatus.NON_CORROBORATED && mpicClient.shouldEnforceCorroboration()) {
@@ -173,7 +174,8 @@ public class MpicFileService {
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
-                agentIdToCorroboration);
+                agentIdToCorroboration,
+                null);
 
         return new MpicFileDetails(mpicDetails,
                 fileUrl,
