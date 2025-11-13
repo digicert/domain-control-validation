@@ -136,7 +136,7 @@ public class MpicFileService {
         else if (mpicFileResponse.primaryFileResponse().fileContents() == null || mpicFileResponse.primaryFileResponse().fileContents().isEmpty()) {
             dcvError = DcvError.FILE_VALIDATION_EMPTY_RESPONSE;
         }
-else if (mpicFileResponse.mpicStatus() == MpicStatus.VALUE_NOT_FOUND || mpicFileResponse.mpicStatus() == MpicStatus.PRIMARY_AGENT_FAILURE) {
+        else if (mpicFileResponse.mpicStatus() == MpicStatus.VALUE_NOT_FOUND || mpicFileResponse.mpicStatus() == MpicStatus.PRIMARY_AGENT_FAILURE) {
             dcvError = DcvError.FILE_VALIDATION_NOT_FOUND;
         }
         else if (mpicFileResponse.mpicStatus() == MpicStatus.NON_CORROBORATED && mpicClient.shouldEnforceCorroboration()) {

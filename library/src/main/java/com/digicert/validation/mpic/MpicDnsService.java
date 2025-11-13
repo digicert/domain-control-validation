@@ -5,6 +5,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.mpic.api.MpicStatus;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
 import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
@@ -140,34 +141,38 @@ public class MpicDnsService {
                         (map, response) -> map.put(response.agentId(), response.corroborates()),
                         HashMap::putAll);
 
-        List<String> cnameChain = mpicDnsResponse.primaryDnsResponse().cnameChain() != null
-                ? mpicDnsResponse.primaryDnsResponse().cnameChain().stream()
-                        .map(record -> {
-                            String source = record.name();
-                            String target = record.value();
-
-                            if (source != null && source.endsWith(".")) {
-                                source = source.substring(0, source.length() - 1);
-                            }
-                            if (target != null && target.endsWith(".")) {
-                                target = target.substring(0, target.length() - 1);
-                            }
-                            return source + " -> " + target;
-                        })
-                        .distinct()
-                        .toList()
-                : null;
-
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
                 agentIdToCorroboration,
-                cnameChain);
+                extractCnameChain(mpicDnsResponse.primaryDnsResponse().cnameChain()));
 
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 mpicDnsResponse.primaryDnsResponse().dnsRecords(),
                 dcvError);
+    }
+
+    private List<String> extractCnameChain(List<DnsRecord> cnameChain) {
+        if (cnameChain == null) {
+            return null;
+        }
+
+        return cnameChain.stream()
+                .map(record -> {
+                    String source = record.name();
+                    String target = record.value();
+
+                    if (source != null && source.endsWith(".")) {
+                        source = source.substring(0, source.length() - 1);
+                    }
+                    if (target != null && target.endsWith(".")) {
+                        target = target.substring(0, target.length() - 1);
+                    }
+                    return source + " -> " + target;
+                })
+                .distinct()
+                .toList();
     }
 }
