@@ -251,6 +251,38 @@ class DomainNameUtilsTest {
         assertThrows(InputException.class, () -> overriddenUtils.getBaseDomain(domain));
     }
 
+    static Stream<Arguments> provideBaseDomainInvalidTestData() {
+        /*
+         * Below values contains both Valid IPv4/IPv6 and invalid IP addresses.
+         * The test is to ensure that IP addresses are rejected as invalid domain names.
+         * IPv6 -> hex digits only (0–9, a–f, A–F),  contains 8 groups separated by colons, with optional shorthand notation (::) for consecutive zeros,
+         * and may include embedded IPv4 addresses.
+         * IPv4 -> decimal numbers only (0-255), contains 4 octets separated by dots.
+         */
+        return Stream.of(
+                Arguments.of("192.0.0.1"), // Valid IPv4
+                Arguments.of("a12.0.0.1"), // Invalid IPv4 (with letter)
+                Arguments.of("256.0.0.1"), // Invalid IPv4 (out of range)
+                Arguments.of("123.456.78.90"), // Invalid IPv4 (out of range)
+                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), // Valid IPv6
+                Arguments.of("2001:db8:1:2:3:4:5:6:7"), // Invalid IPv6 (Too many groups -> 9 groups)
+                Arguments.of("::ffff:300.1.2.3"), // Invalid IPv6 (Embedded IPv4 out of range)
+                Arguments.of("2001::85a3::7334"), // Invalid IPv6 (Multiple shorthand notations)
+                Arguments.of("2001:db8:1:2:3:4:5:6/64") // Invalid IPv6 (/64 is CIDR, not address)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideBaseDomainInvalidTestData")
+    void getBaseDomain_invalid(String domain) {
+        DcvContext dcvContext = mock(DcvContext.class);
+        doReturn(supplierWithOverrides).when(dcvContext).get(PslOverrideSupplier.class);
+        DomainNameUtils overriddenUtils = new DomainNameUtils(dcvContext);
+        InputException inputException = assertThrows(InputException.class, () -> overriddenUtils.getBaseDomain(domain));
+        assertTrue(inputException.getErrors().contains(DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN));
+        assertTrue(inputException.getCause().getMessage().contains(domain));
+    }
+
     static Stream<Arguments> provideEmailAddressTestData() {
         return Stream.of(
                 Arguments.of("a@example.com", true),
