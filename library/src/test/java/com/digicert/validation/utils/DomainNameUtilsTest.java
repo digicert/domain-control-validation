@@ -255,7 +255,8 @@ class DomainNameUtilsTest {
         /*
          * Below values contains both Valid IPv4/IPv6 and invalid IP addresses.
          * The test is to ensure that IP addresses are rejected as invalid domain names.
-         * IPv6 -> hex digits only (0–9, a–f, A–F),  contains 8 groups separated by colons, with optional shorthand notation (::) for consecutive zeros,
+         * IPv6 -> hex digits only (0–9, a–f, A–F),  contains 8 groups separated by colons,
+         * with optional shorthand notation (::) for consecutive zeros,
          * and may include embedded IPv4 addresses.
          * IPv4 -> decimal numbers only (0-255), contains 4 octets separated by dots.
          */
