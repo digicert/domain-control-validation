@@ -146,4 +146,110 @@ class EmailValidatorTest {
         assertFalse(response.emailResults().getFirst().randomValue().isEmpty());
         verify(emailProvider).findEmailsForDomain("example.com");
     }
+
+    @Test
+    void testGetEmailLookupLocations_SimpleDomain() {
+        String testDomain = "example.com";
+        
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations(testDomain, DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size()); // 5 constructed emails
+        assertTrue(emailLocations.contains("admin@" + testDomain));
+        assertTrue(emailLocations.contains("administrator@" + testDomain));
+        assertTrue(emailLocations.contains("webmaster@" + testDomain));
+        assertTrue(emailLocations.contains("hostmaster@" + testDomain));
+        assertTrue(emailLocations.contains("postmaster@" + testDomain));
+        
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations(testDomain, DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail." + testDomain));
+        
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations(testDomain, DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(testDomain)); // For CAA lookups
+    }
+
+    @Test
+    void testGetEmailLookupLocations_SubdomainWithHierarchy() {
+        String subdomain = "api.app.example.com";
+        
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations(subdomain, DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size());
+        assertTrue(emailLocations.contains("admin@" + subdomain));
+        assertTrue(emailLocations.contains("administrator@" + subdomain));
+        assertTrue(emailLocations.contains("webmaster@" + subdomain));
+        assertTrue(emailLocations.contains("hostmaster@" + subdomain));
+        assertTrue(emailLocations.contains("postmaster@" + subdomain));
+        
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations(subdomain, DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail." + subdomain));
+        
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations(subdomain, DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(subdomain));
+    }
+
+    @Test
+    void testGetEmailLookupLocations_EmptyDomain() {
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations("", DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size());
+        assertTrue(emailLocations.contains("admin@"));
+        assertTrue(emailLocations.contains("administrator@"));
+        assertTrue(emailLocations.contains("webmaster@"));
+        assertTrue(emailLocations.contains("hostmaster@"));
+        assertTrue(emailLocations.contains("postmaster@"));
+        
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations("", DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail."));
+        
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations("", DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(""));
+    }
+
+    @Test
+    void testGetEmailLookupLocations_SingleLevelDomain() {
+        String tld = "localhost";
+        
+        // Get locations for constructed email method
+        var emailLocations = emailValidator.getEmailLookupLocations(tld, DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(emailLocations);
+        assertEquals(5, emailLocations.size());
+        assertTrue(emailLocations.contains("admin@" + tld));
+        assertTrue(emailLocations.contains("administrator@" + tld));
+        assertTrue(emailLocations.contains("webmaster@" + tld));
+        assertTrue(emailLocations.contains("hostmaster@" + tld));
+        assertTrue(emailLocations.contains("postmaster@" + tld));
+        
+        // Get locations for DNS TXT method
+        var dnsLocations = emailValidator.getEmailLookupLocations(tld, DcvMethod.BR_3_2_2_4_14);
+        assertNotNull(dnsLocations);
+        assertEquals(1, dnsLocations.size());
+        assertTrue(dnsLocations.contains("_validation-contactemail." + tld));
+        
+        // Get locations for DNS CAA method
+        var caaLocations = emailValidator.getEmailLookupLocations(tld, DcvMethod.BR_3_2_2_4_13);
+        assertNotNull(caaLocations);
+        assertEquals(1, caaLocations.size());
+        assertTrue(caaLocations.contains(tld));
+    }
 }
