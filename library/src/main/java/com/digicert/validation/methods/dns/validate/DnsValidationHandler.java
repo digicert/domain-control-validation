@@ -9,6 +9,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.MpicDnsService;
+import com.digicert.validation.mpic.api.MpicStatus;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
@@ -71,20 +72,14 @@ public class DnsValidationHandler {
 
     private DnsValidationResponse performValidationForRandomValue(DnsValidationRequest request) {
         // First attempt to validate the request using the domain with the DNS domain label.
-        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(dnsDomainLabel + request.getDomain(), request.getDnsType(), request.getRandomValue());
-        ChallengeValidationResponse challengeValidationResponse = null;
-        if (mpicDnsDetails.dcvError() == null) {
-            challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
-        }
+        MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(getDomainWithLabel(request), request.getDnsType(), request.getRandomValue());
+        ChallengeValidationResponse challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails);
 
         // If the DNS entry with the domain label fails, then we will
         // try validating the request using the domain without the DNS domain label.
-        if (challengeValidationResponse == null || challengeValidationResponse.challengeValue().isEmpty()) {
+        if (challengeValidationResponse.challengeValue().isEmpty()) {
             mpicDnsDetails = mpicDnsService.getDnsDetails(request.getDomain(), request.getDnsType(), request.getRandomValue());
-            if (mpicDnsDetails.dcvError() == null) {
-                // If the domain without the DNS domain label is valid, validate it.
-                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
-            }
+            challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails);
         }
 
         return buildDnsValidationResponse(request.getDomain(), challengeValidationResponse, request.getDnsType(), request.getChallengeType(), mpicDnsDetails.mpicDetails(), mpicDnsDetails.domain());
@@ -92,18 +87,17 @@ public class DnsValidationHandler {
 
     private DnsValidationResponse performValidationForRequestToken(DnsValidationRequest request) {
         // Find the request token first in the primary DNS details and then perform the corroborated lookup if found.
-        ChallengeValidationResponse challengeValidationResponse = getPrimaryChallengeResponse(request, dnsDomainLabel + request.getDomain(), request.getDnsType());
+        String domainWithLabel = getDomainWithLabel(request);
+        ChallengeValidationResponse challengeValidationResponse = getPrimaryChallengeResponse(request, domainWithLabel, request.getDnsType());
 
         if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
             // If we found a valid request token in the primary DNS details, perform the corroborated lookup.
             MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(
-                    dnsDomainLabel + request.getDomain(),
+                    domainWithLabel,
                     request.getDnsType(),
                     challengeValidationResponse.challengeValue().get());
-            if (mpicDnsDetails.dcvError() == null) {
-                // If the corroborated lookup is successful, validate it.
-                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
-            }
+            challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails);
+
             if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
                 return buildDnsValidationResponse(request.getDomain(),
                         challengeValidationResponse,
@@ -119,10 +113,8 @@ public class DnsValidationHandler {
         if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
             // If we found a valid request token in the primary DNS details, perform the corroborated lookup.
             MpicDnsDetails mpicDnsDetails = mpicDnsService.getDnsDetails(request.getDomain(), request.getDnsType(), challengeValidationResponse.challengeValue().get());
-            if (mpicDnsDetails.dcvError() == null) {
-                // If the corroborated lookup is successful, validate it.
-                challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
-            }
+            challengeValidationResponse = getChallengeValidationResponse(request, mpicDnsDetails);
+
             if (challengeValidationResponse.challengeValue().isPresent() && challengeValidationResponse.errors().isEmpty()) {
                 return buildDnsValidationResponse(request.getDomain(),
                         challengeValidationResponse,
@@ -144,13 +136,20 @@ public class DnsValidationHandler {
 
     private ChallengeValidationResponse getPrimaryChallengeResponse(DnsValidationRequest request, String domain, DnsType dnsType) {
         PrimaryDnsResponse primaryDnsDetails = mpicDnsService.getPrimaryDnsDetails(domain, dnsType);
-        ChallengeValidationResponse challengeValidationResponse;
         if (primaryDnsDetails == null || primaryDnsDetails.dnsRecords() == null || primaryDnsDetails.dnsRecords().isEmpty()) {
-            challengeValidationResponse = new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
+            DcvError dcvError = mpicDnsService.mapToDcvErrorOrNull(primaryDnsDetails, MpicStatus.VALUE_NOT_FOUND);
+            return new ChallengeValidationResponse(Optional.empty(), Set.of(dcvError));
         } else {
-            challengeValidationResponse = getChallengeValidationResponse(request, primaryDnsDetails.dnsRecords());
+            return getChallengeValidationResponse(request, primaryDnsDetails.dnsRecords());
         }
-        return challengeValidationResponse;
+    }
+
+    private ChallengeValidationResponse getChallengeValidationResponse(DnsValidationRequest request, MpicDnsDetails mpicDnsDetails) {
+        if (mpicDnsDetails.dcvError() != null) {
+            return new ChallengeValidationResponse(Optional.empty(), Set.of(mpicDnsDetails.dcvError()));
+        }
+
+        return getChallengeValidationResponse(request, mpicDnsDetails.dnsRecords());
     }
 
     private ChallengeValidationResponse getChallengeValidationResponse(DnsValidationRequest request, List<DnsRecord> dnsRecords) {
@@ -257,5 +256,25 @@ public class DnsValidationHandler {
                 validRandomValue,
                 validRequestToken,
                 challengeValidationResponse.errors());
+    }
+
+    private String getDomainWithLabel(DnsValidationRequest request) {
+        return normalizeDomainLabel(getDomainLabel(request)) + request.getDomain();
+    }
+
+    private String getDomainLabel(DnsValidationRequest request) {
+        if (request.getDomainLabel() != null && !request.getDomainLabel().isEmpty()) {
+            return request.getDomainLabel();
+        } else {
+            return dnsDomainLabel;
+        }
+    }
+
+    private String normalizeDomainLabel(String domainWithLabel) {
+        if (domainWithLabel.endsWith(".")) {
+            return domainWithLabel;
+        } else {
+            return domainWithLabel + ".";
+        }
     }
 }

@@ -187,6 +187,17 @@ public class DnsValidator {
             throw new InputException(DcvError.CHALLENGE_TYPE_REQUIRED);
         }
 
+        String domainLabel = request.getDomainLabel();
+        if (domainLabel != null && !domainLabel.isEmpty()) {
+            // Invalid if:
+            // 1. Does not start with underscore
+            // 2. Contains any '.' character that is not the final character
+            boolean containsInvalidDot = domainLabel.substring(0, domainLabel.length() - 1).contains(".");
+            if (!domainLabel.startsWith("_") || containsInvalidDot) {
+                throw new InputException(DcvError.DNS_DOMAIN_LABEL_INVALID);
+            }
+        }
+
         StateValidationUtils.verifyValidationState(request.getValidationState(), DcvMethod.BR_3_2_2_4_7);
 
         switch (request.getChallengeType()) {

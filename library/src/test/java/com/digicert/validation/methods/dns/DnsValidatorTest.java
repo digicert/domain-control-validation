@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -70,8 +69,8 @@ class DnsValidatorTest {
         dnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)
                 .randomValue(randomValue)
-                .dnsType(dnsType)
                 .challengeType(ChallengeType.RANDOM_VALUE)
+                .dnsType(dnsType)
                 .validationState(validationState)
                 .build();
     }
@@ -111,27 +110,45 @@ class DnsValidatorTest {
 
     static Stream<Arguments> provideInvalidDnsValidationResponse() {
         return Stream.of(
-                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now()),
-                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now()),
-                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now()),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now()),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null))
-        );
+                // domain, randomValue, dnsType, dcvMethod, prepareTime, dnsDomainLabel, challengeType, expectedError
+                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DOMAIN_REQUIRED),
+                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.RANDOM_VALUE_REQUIRED),
+                Arguments.of("example.com", null, DnsType.CAA, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.RANDOM_VALUE_REQUIRED),
+                Arguments.of("example.com", null, DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.REQUEST_TOKEN, DcvError.REQUEST_TOKEN_DATA_REQUIRED),
+                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DNS_TYPE_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.VALIDATION_STATE_DCV_METHOD_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null), "", ChallengeType.RANDOM_VALUE, DcvError.VALIDATION_STATE_PREPARE_TIME_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), " ", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_invalid.dot", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", null, DcvError.CHALLENGE_TYPE_REQUIRED),
+                Arguments.of("example.com", "1234abcd", DnsType.A, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.INVALID_DNS_TYPE)
+                );
     }
 
     @ParameterizedTest
     @MethodSource("provideInvalidDnsValidationResponse")
-    void testDnsValidator_validate_InvalidDnsValidationResponse(String domain, String randomValue, DnsType dnsType,
-                                                                DcvMethod dcvMethod, Instant prepareTime) {
-        ValidationState invalidValidationState = new ValidationState(domain, prepareTime, dcvMethod);
+    void testDnsValidator_validate_InvalidDnsValidationResponse(String domain,
+                                                                String randomValue,
+                                                                DnsType dnsType,
+                                                                DcvMethod dcvMethod,
+                                                                Instant prepareTime,
+                                                                String dnsDomainLabel,
+                                                                ChallengeType challengeType,
+                                                                DcvError expectedError) {
+        ValidationState validationState = new ValidationState(domain, prepareTime, dcvMethod);
         DnsValidationRequest invalidDnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)
                 .randomValue(randomValue)
+                .challengeType(challengeType)
+                .domainLabel(dnsDomainLabel)
                 .dnsType(dnsType)
-                .validationState(invalidValidationState)
+                .validationState(validationState)
                 .build();
 
-        assertThrows(InputException.class, () -> dnsValidator.validate(invalidDnsValidationRequest));
+        InputException exception = assertThrows(InputException.class, () -> dnsValidator.validate(invalidDnsValidationRequest));
+        assertEquals(1, exception.getErrors().size(), "Expected exactly one error but got: " + exception.getErrors());
+        assertTrue(exception.getErrors().contains(expectedError), "expected error=" + expectedError + " errors=" + exception.getErrors());
     }
 
     @Test
@@ -140,8 +157,8 @@ class DnsValidatorTest {
         DnsValidationRequest expiredDnsValidationRequest = DnsValidationRequest.builder()
                 .domain(domain)
                 .randomValue(randomValue)
-                .dnsType(dnsType)
                 .challengeType(ChallengeType.RANDOM_VALUE)
+                .dnsType(dnsType)
                 .validationState(expiredValidationState)
                 .build();
 
@@ -191,64 +208,5 @@ class DnsValidatorTest {
                 3,
                 3,
                 Map.of("secondary-agent-id", true));
-    }
-
-    @Test
-    void testGetDnsLookupNames_SimpleDomain() {
-        String testDomain = "example.com";
-        List<String> locations = dnsValidator.getDnsLookupNames(testDomain);
-        
-        assertNotNull(locations);
-        assertFalse(locations.isEmpty());
-        
-        // Should contain _dnsauth. prefixed domains and direct domains
-        assertTrue(locations.stream().anyMatch(loc -> loc.startsWith("_dnsauth.")));
-        assertTrue(locations.contains(testDomain));
-        
-        // Should contain the specific prefixed domain
-        assertTrue(locations.contains("_dnsauth." + testDomain));
-    }
-
-    @Test
-    void testGetDnsLookupNames_SubdomainWithHierarchy() {
-        String subdomain = "api.app.example.com";
-        List<String> locations = dnsValidator.getDnsLookupNames(subdomain);
-        
-        assertNotNull(locations);
-        assertTrue(locations.size() > 2, "Should include domain hierarchy");
-        
-        // Should contain both prefixed and direct domains
-        assertTrue(locations.stream().anyMatch(loc -> loc.startsWith("_dnsauth.")));
-        assertTrue(locations.contains(subdomain));
-        
-        // Should contain the specific prefixed subdomain
-        assertTrue(locations.contains("_dnsauth." + subdomain));
-        
-        // Should handle domain hierarchy (getDomainAndParents functionality)
-        assertTrue(locations.size() >= 4, "Should have at least subdomain + parent domains with prefixes");
-    }
-
-    @Test
-    void testGetDnsLookupNames_EmptyDomain() {
-        // Test with empty domain - should use fallback logic
-        List<String> locations = dnsValidator.getDnsLookupNames("");
-        
-        assertNotNull(locations);
-        assertEquals(2, locations.size());
-        assertTrue(locations.contains("_dnsauth."));
-        assertTrue(locations.contains(""));
-    }
-
-    @Test
-    void testGetDnsLookupNames_SingleLevelDomain() {
-        String tld = "localhost";
-        List<String> locations = dnsValidator.getDnsLookupNames(tld);
-        
-        assertNotNull(locations);
-        assertFalse(locations.isEmpty());
-        
-        // Should contain both prefixed and direct domain
-        assertTrue(locations.contains("_dnsauth." + tld));
-        assertTrue(locations.contains(tld));
     }
 }

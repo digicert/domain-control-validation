@@ -225,7 +225,7 @@ public final class DcvDomainName {
             if (isExceptionFound(pslData, ancestorName)) {
                 return i + 1;
             }
-            if (isWildcardFound(desiredType, pslData, ancestorName)) {
+            if (i > 0 && isWildcardFound(desiredType, pslData, ancestorName)) {
                 return i - 1;
             }
         }

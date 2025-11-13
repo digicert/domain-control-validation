@@ -40,6 +40,9 @@ public class DnsValidationRequest {
     /** The current state of the validation process. */
     private final ValidationState validationState;
 
+    /** An optional domain label for the DNS record. Must begin with an underscore (_) if provided. */
+    private final String domainLabel;
+
     /**
      * Private constructor to prevent instantiation without using the builder.
      *
@@ -50,7 +53,13 @@ public class DnsValidationRequest {
      * @param requestTokenData The data necessary to validate request tokens.
      * @param validationState The current validation state.
      */
-    private DnsValidationRequest(String domain, DnsType dnsType, ChallengeType challengeType, String randomValue, RequestTokenData requestTokenData, ValidationState validationState) {
+    private DnsValidationRequest(String domain,
+                                 DnsType dnsType,
+                                 ChallengeType challengeType,
+                                 String randomValue,
+                                 RequestTokenData requestTokenData,
+                                 ValidationState validationState,
+                                 String domainLabel) {
         // Default constructor
         this.domain = domain;
         this.dnsType = dnsType;
@@ -58,5 +67,6 @@ public class DnsValidationRequest {
         this.randomValue = randomValue;
         this.requestTokenData = requestTokenData;
         this.validationState = validationState;
+        this.domainLabel = domainLabel;
     }
 }
