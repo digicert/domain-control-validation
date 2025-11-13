@@ -276,6 +276,8 @@ public class DomainNameUtils {
             }
         } catch (IllegalStateException e) {
             throw new InputException(DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX, e);
+        } catch (IllegalArgumentException e) {
+            throw new InputException(DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN, e);
         }
     }
 
