@@ -57,7 +57,7 @@ class DnsValidationHandlerTest {
                 .build();
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, defaultDomainWithLabel, "randomValue");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, defaultDomainWithLabel, "randomValue");
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
 
         DnsValidationResponse response = dnsValidationHandler.validate(request);
@@ -70,6 +70,7 @@ class DnsValidationHandlerTest {
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
         assertEquals(defaultDomainWithLabel, response.dnsRecordName());
+        assertTrue(response.errors().isEmpty());
     }
 
     @Test
@@ -85,7 +86,7 @@ class DnsValidationHandlerTest {
                 .build();
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, domainWithLabel, "randomValue");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, domainWithLabel, "randomValue");
         when(mpicDnsService.getDnsDetails(eq(domainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
 
         DnsValidationResponse response = dnsValidationHandler.validate(request);
@@ -98,6 +99,7 @@ class DnsValidationHandlerTest {
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
         assertEquals(domainWithLabel, response.dnsRecordName());
+        assertTrue(response.errors().isEmpty());
     }
 
     @Test
@@ -109,7 +111,7 @@ class DnsValidationHandlerTest {
                 .challengeType(ChallengeType.RANDOM_VALUE)
                 .build();
 
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, defaultDomain, "randomValue");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, defaultDomain, "randomValue");
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(getNotFoundMpicDnsDetails(defaultDomainWithLabel));
         when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
 
@@ -121,6 +123,7 @@ class DnsValidationHandlerTest {
         assertEquals("primary-agent", response.mpicDetails().primaryAgentId());
         assertEquals(defaultDomain, response.domain());
         assertEquals(defaultDomain, response.dnsRecordName());
+        assertTrue(response.errors().isEmpty());
     }
 
     @Test
@@ -132,7 +135,7 @@ class DnsValidationHandlerTest {
                 .challengeType(ChallengeType.RANDOM_VALUE)
                 .build();
 
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, defaultDomainWithLabel, "some-other-value");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, defaultDomainWithLabel, "some-other-value");
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
         when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(getNotFoundMpicDnsDetails(defaultDomain));
 
@@ -147,6 +150,9 @@ class DnsValidationHandlerTest {
         assertEquals(defaultDomain, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isEmpty(response.validRequestToken()));
+        assertEquals(2, response.errors().size());
+        assertTrue(response.errors().contains(DcvError.DNS_LOOKUP_RECORD_NOT_FOUND));
+        assertTrue(response.errors().contains(DcvError.RANDOM_VALUE_NOT_FOUND));
     }
 
     @Test
@@ -175,6 +181,49 @@ class DnsValidationHandlerTest {
         assertNull(response.dnsRecordName());
         assertNull(response.validRandomValue());
         assertNull(response.validRequestToken());
+        assertEquals(1, response.errors().size());
+        assertTrue(response.errors().contains(DcvError.MPIC_INVALID_RESPONSE));
+    }
+
+    @Test
+    void validateRequestToken_multipleErrors() {
+        DnsValidationRequest request = DnsValidationRequest.builder()
+                .domain(defaultDomain)
+                .requestTokenData(new BasicRequestTokenData("hashingKey", "hashingValue"))
+                .dnsType(DnsType.CNAME)
+                .challengeType(ChallengeType.REQUEST_TOKEN)
+                .build();
+
+        // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
+        List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.CNAME, defaultDomain, "randomValue", 3600, 0, ""));
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain);
+        when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
+        when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomain), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
+
+        // Also configure the mock to return MpicDnsDetails when getDnsDetails is called for both domains
+        // First domain with label returns MPIC_CORROBORATION_ERROR
+        // Second domain without label returns DNS_LOOKUP_DOMAIN_NOT_FOUND
+        MpicDnsDetails domainWithLabelErrorDetails = getMpicDnsDetailsWithError(defaultDomainWithLabel, DcvError.MPIC_CORROBORATION_ERROR, false);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(domainWithLabelErrorDetails);
+        MpicDnsDetails defaultDomainErrorDetails = getMpicDnsDetailsWithError(defaultDomain, DcvError.DNS_LOOKUP_DOMAIN_NOT_FOUND, true);
+        when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(defaultDomainErrorDetails);
+
+        DnsValidationResponse response = dnsValidationHandler.validate(request);
+
+        assertFalse(response.isValid());
+        verify(mpicDnsService).getPrimaryDnsDetails(defaultDomainWithLabel, DnsType.CNAME);
+        verify(mpicDnsService).getPrimaryDnsDetails(defaultDomain, DnsType.CNAME);
+        verify(mpicDnsService).getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"));
+        verify(mpicDnsService).getDnsDetails(eq(defaultDomain), eq(DnsType.CNAME), eq("randomValue"));
+        assertEquals(DnsType.CNAME, response.dnsType());
+        assertEquals(defaultDomain, response.domain());
+        assertNull(response.mpicDetails());
+        assertNull(response.dnsRecordName());
+        assertNull(response.validRandomValue());
+        assertNull(response.validRequestToken());
+        assertEquals(2, response.errors().size());
+        assertTrue(response.errors().contains(DcvError.MPIC_CORROBORATION_ERROR));
+        assertTrue(response.errors().contains(DcvError.DNS_LOOKUP_DOMAIN_NOT_FOUND));
     }
 
     @Test
@@ -187,9 +236,9 @@ class DnsValidationHandlerTest {
                 .build();
 
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue")))
-                .thenReturn(getErrorMpicDnsDetails(defaultDomainWithLabel));
+                .thenReturn(getMpicDnsDetailsWithError(defaultDomainWithLabel, DcvError.DNS_LOOKUP_IO_EXCEPTION, true));
         when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.CNAME), eq("randomValue")))
-                .thenReturn(getErrorMpicDnsDetails(defaultDomain));
+                .thenReturn(getMpicDnsDetailsWithError(defaultDomain, DcvError.DNS_LOOKUP_IO_EXCEPTION, true));
 
         DnsValidationResponse response = dnsValidationHandler.validate(request);
 
@@ -202,6 +251,8 @@ class DnsValidationHandlerTest {
         assertEquals(defaultDomain, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isEmpty(response.validRequestToken()));
+        assertEquals(1, response.errors().size());
+        assertTrue(response.errors().contains(DcvError.DNS_LOOKUP_IO_EXCEPTION));
     }
 
     @Test
@@ -218,7 +269,7 @@ class DnsValidationHandlerTest {
         PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, defaultDomainWithLabel, "randomValue");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, defaultDomainWithLabel, "randomValue");
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
 
         DnsValidationResponse response = dnsValidationHandler.validate(request);
@@ -234,6 +285,7 @@ class DnsValidationHandlerTest {
         assertEquals(defaultDomainWithLabel, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isNotEmpty(response.validRequestToken()));
+        assertTrue(response.errors().isEmpty());
     }
 
     @Test
@@ -253,7 +305,7 @@ class DnsValidationHandlerTest {
         PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain);
         when(mpicDnsService.getPrimaryDnsDetails(eq(localDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, localDomainWithLabel, "randomValue");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, localDomainWithLabel, "randomValue");
         when(mpicDnsService.getDnsDetails(eq(localDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
 
         DnsValidationResponse response = dnsValidationHandler.validate(request);
@@ -269,6 +321,7 @@ class DnsValidationHandlerTest {
         assertEquals(localDomainWithLabel, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isNotEmpty(response.validRequestToken()));
+        assertTrue(response.errors().isEmpty());
     }
 
     @Test
@@ -287,7 +340,7 @@ class DnsValidationHandlerTest {
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomain), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
         // Also configure the mock to return MpicDnsDetails when getDnsDetails is called
-        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, true, defaultDomain, "randomValue");
+        MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, defaultDomain, "randomValue");
         when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(getNotFoundMpicDnsDetails(defaultDomainWithLabel));
         when(mpicDnsService.getDnsDetails(eq(defaultDomain), eq(DnsType.CNAME), eq("randomValue"))).thenReturn(mpicDnsDetails);
 
@@ -304,9 +357,10 @@ class DnsValidationHandlerTest {
         assertEquals(defaultDomain, response.dnsRecordName());
         assertTrue(StringUtils.isEmpty(response.validRandomValue()));
         assertTrue(StringUtils.isNotEmpty(response.validRequestToken()));
+        assertTrue(response.errors().isEmpty());
     }
 
-    private static MpicDnsDetails getMpicDnsDetails(DnsType dnsType, boolean corroborated, String domainName, String dnsValue) {
+    private static MpicDnsDetails getMpicDnsDetails(DnsType dnsType, String domainName, String dnsValue) {
         DnsRecord dnsRecord = new DnsRecord(
                 dnsType,
                 domainName,
@@ -314,11 +368,11 @@ class DnsValidationHandlerTest {
                 3600,
                 0,
                 "");
-        MpicDetails mpicDetails = new MpicDetails(corroborated,
+        MpicDetails mpicDetails = new MpicDetails(true,
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated));
+                Map.of("secondary-1", true, "secondary-2", true));
         return new MpicDnsDetails(mpicDetails,
                 domainName,
                 List.of(dnsRecord),
@@ -326,27 +380,19 @@ class DnsValidationHandlerTest {
     }
 
     private static MpicDnsDetails getNotFoundMpicDnsDetails(String domain) {
-        MpicDetails mpicDetails = new MpicDetails(true,
-                "primary-agent",
-                3,
-                3,
-                Map.of("secondary-1", true, "secondary-2", true));
-        return new MpicDnsDetails(mpicDetails,
-                domain,
-                List.of(),
-                null);
+        return getMpicDnsDetailsWithError(domain, null, true);
     }
 
-    private static MpicDnsDetails getErrorMpicDnsDetails(String domain) {
-        MpicDetails mpicDetails = new MpicDetails(true,
+    private static MpicDnsDetails getMpicDnsDetailsWithError(String domain, DcvError dcvError, boolean corroborated) {
+        MpicDetails mpicDetails = new MpicDetails(corroborated,
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true));
+                Map.of("secondary-1", corroborated, "secondary-2", corroborated));
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 List.of(),
-                DcvError.DNS_LOOKUP_IO_EXCEPTION);
+                dcvError);
     }
 
 }
