@@ -8,6 +8,8 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
+import com.digicert.validation.DcvManager;
+import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.challenges.BasicRequestTokenUtils;
 import com.digicert.validation.utils.CSRGenerator;
 import com.digicert.validation.utils.DomainUtils;
@@ -30,6 +32,10 @@ class DnsTokenValueMethodIT {
 
     @Autowired
     private ExampleAppClient exampleAppClient;
+    
+    @Autowired
+    private DcvManager dcvManager;
+    
     private final PdnsClient pdnsClient = new PdnsClient();
     private final Long defaultAccountId = 1234L;
     private final CSRGenerator csrGenerator = new CSRGenerator();
@@ -64,6 +70,13 @@ class DnsTokenValueMethodIT {
         // Get and assert that the domain is now valid
         DomainResource verifiedDomain = getDomainResource(createdDomain.getId());
         assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+        
+        // Verify DcvManager.getLookupLocations() for DNS Token method
+        List<String> lookupLocations = dcvManager.getLookupLocations(domainName, DcvMethod.BR_3_2_2_4_7);
+        assertNotNull(lookupLocations, "DNS Token lookup locations should not be null");
+        assertFalse(lookupLocations.isEmpty(), "DNS Token lookup locations should not be empty");
+        assertTrue(lookupLocations.stream().anyMatch(url -> url.contains(domainName)), 
+                   "Lookup locations should contain domain: " + domainName);
     }
 
     @Test
