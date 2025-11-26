@@ -38,7 +38,7 @@ class MpicDnsServiceTest {
     private MpicDnsResponse createMpicDnsResponse(PrimaryDnsResponse primary,
                                                   List<SecondaryDnsResponse> secondary,
                                                   MpicStatus mpicStatus) {
-        return new MpicDnsResponse(primary, secondary, mpicStatus, 2, null, null);
+        return new MpicDnsResponse(primary, secondary, mpicStatus, 2, null);
     }
 
     @Test
@@ -147,7 +147,7 @@ class MpicDnsServiceTest {
                 // This should never happen, but we handle it gracefully
                 Arguments.of(FILE_BAD_REQUEST, DcvError.MPIC_INVALID_RESPONSE)
         );
-    }     
+    }
 
     @Test
     void capturesCnameChainInCorrectFormat() {

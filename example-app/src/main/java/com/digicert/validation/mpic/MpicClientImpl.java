@@ -62,7 +62,6 @@ public class MpicClientImpl implements MpicClientInterface {
                 List.of(secondaryDnsResponse1, secondaryDnsResponse2),
                 MpicStatus.CORROBORATED,
                 2L,
-                null,
                 null);
     }
 
