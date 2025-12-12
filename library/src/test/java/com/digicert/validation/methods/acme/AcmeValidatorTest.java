@@ -177,6 +177,6 @@ class AcmeValidatorTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-agent-id", true));
+                Map.of("secondary-agent-id", true), null);
     }
 }

@@ -108,7 +108,8 @@ public class MpicFileService {
                     null,
                     0,
                     0,
-                    Collections.emptyMap());
+                    Collections.emptyMap(),
+                    null);
             log.info("event_id={} mpic_file_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicFileResponse);
             return new MpicFileDetails(mpicDetails,
                     fileUrl,
@@ -173,7 +174,8 @@ public class MpicFileService {
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
-                agentIdToCorroboration);
+                agentIdToCorroboration,
+                null);
 
         return new MpicFileDetails(mpicDetails,
                 fileUrl,
