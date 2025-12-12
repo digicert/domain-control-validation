@@ -89,7 +89,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true));
+                Map.of("secondary-1", true, "secondary-2", true), null);
         MpicDnsDetails mpicDnsDetails = new MpicDnsDetails(mpicDetails,
                 defaultDomainWithLabel,
                 List.of(getDnsTxtRecord(calculatedDnsTxtValue, defaultDomainWithLabel), getDnsTxtRecord("some-other-value", defaultDomainWithLabel)),
@@ -229,7 +229,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated));
+                Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
         return new MpicDnsDetails(mpicDetails,
                 domainName,
                 List.of(getDnsTxtRecord(dnsValue, defaultDomainWithLabel)),
@@ -241,7 +241,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true));
+                Map.of("secondary-1", true, "secondary-2", true), null);
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 List.of(),
@@ -253,7 +253,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true));
+                Map.of("secondary-1", true, "secondary-2", true), null);
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 List.of(),
@@ -265,7 +265,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated));
+                Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
 
         return new MpicFileDetails(mpicDetails,
                 "http://example.com/.well-known/pki-validation/fileauth.txt",
