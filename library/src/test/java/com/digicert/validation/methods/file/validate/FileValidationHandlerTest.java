@@ -72,6 +72,22 @@ class FileValidationHandlerTest {
         // Assert
         assertNotNull(fileUrls);
         assertEquals(2, fileUrls.size());
+        assertTrue(fileUrls.get(0).startsWith("https://"));
+        assertTrue(fileUrls.stream().anyMatch(url -> url.contains("https://example.com/.well-known/pki-validation/fileauth.txt")));
+        assertTrue(fileUrls.stream().anyMatch(url -> url.contains("http://example.com/.well-known/pki-validation/fileauth.txt")));
+    }
+
+    @Test
+    void testGetFileUrls_usingHttps_checkHttpFirst() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttpsFirst(false).build();
+        initializeMocks(dcvConfiguration);
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(getRandomValueFileValidationRequest());
+        // Assert
+        assertNotNull(fileUrls);
+        assertEquals(2, fileUrls.size());
+        assertTrue(fileUrls.get(0).startsWith("http://"));
         assertTrue(fileUrls.stream().anyMatch(url -> url.contains("https://example.com/.well-known/pki-validation/fileauth.txt")));
         assertTrue(fileUrls.stream().anyMatch(url -> url.contains("http://example.com/.well-known/pki-validation/fileauth.txt")));
     }

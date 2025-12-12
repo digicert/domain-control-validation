@@ -46,6 +46,9 @@ public class FileValidationHandler {
     /** The flag to check if the file validation request should be made over HTTPS. */
     private final boolean fileValidationCheckHttps;
 
+    /** The flag to check if HTTPS should be tried first for file validation requests. */
+    private final boolean fileValidationCheckHttpsFirst;
+
     /**
      * Constructs a new FileValidationHandler with the specified configuration.
      * <p>
@@ -62,6 +65,7 @@ public class FileValidationHandler {
 
         defaultFileValidationFilename = dcvContext.getDcvConfiguration().getFileValidationFilename();
         fileValidationCheckHttps = dcvContext.getDcvConfiguration().getFileValidationCheckHttps();
+        fileValidationCheckHttpsFirst = dcvContext.getDcvConfiguration().getFileValidationCheckHttpsFirst();
     }
 
     /**
@@ -225,7 +229,11 @@ public class FileValidationHandler {
             domainPath = fileValidationRequest.getDomain() + FILE_PATH + defaultFileValidationFilename;
         }
         if (fileValidationCheckHttps) {
-            return List.of("https://" + domainPath, "http://" + domainPath);
+            if (fileValidationCheckHttpsFirst) {
+                return List.of("https://" + domainPath, "http://" + domainPath);
+            } else {
+                return List.of("http://" + domainPath, "https://" + domainPath);
+            }
         }
         else {
             return List.of("http://" + domainPath);

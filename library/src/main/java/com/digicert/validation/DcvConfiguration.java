@@ -82,6 +82,12 @@ public class DcvConfiguration {
     private Boolean fileValidationCheckHttps = true;
 
     /**
+     * This flag indicates that the library will try HTTPS first
+     * when performing file validation requests.
+     */
+    private Boolean fileValidationCheckHttpsFirst = true;
+
+    /**
      * The default file validation filename.
      * <p>
      * This value represents the default file name used for "Agreed-Upon Change to Website v2" validation.
@@ -337,6 +343,19 @@ public class DcvConfiguration {
          */
         public DcvConfigurationBuilder fileValidationCheckHttps(Boolean fileValidationCheckHttps) {
             dcvConfiguration.setFileValidationCheckHttps(fileValidationCheckHttps);
+            return this;
+        }
+
+        /**
+         * Set the flag to indicate that the library will try HTTPS first when performing file validation requests.
+         * <p>
+         * The Default value is true.
+         *
+         * @param fileValidationCheckHttpsFirst indicates if the file validation check should use HTTPS first
+         * @return the builder instance
+         */
+        public DcvConfigurationBuilder fileValidationCheckHttpsFirst(Boolean fileValidationCheckHttpsFirst) {
+            dcvConfiguration.setFileValidationCheckHttpsFirst(fileValidationCheckHttpsFirst);
             return this;
         }
 
