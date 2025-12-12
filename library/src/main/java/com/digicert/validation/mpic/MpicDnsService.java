@@ -5,6 +5,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.mpic.api.MpicStatus;
+import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
 import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
@@ -76,7 +77,8 @@ public class MpicDnsService {
                     null,
                     0,
                     0,
-                    Collections.emptyMap());
+                    Collections.emptyMap(),
+                    null);
             log.info("event_id={} mpic_dns_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicDnsResponse);
             return new MpicDnsDetails(mpicDetails,
                     domain,
@@ -143,11 +145,34 @@ public class MpicDnsService {
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
-                agentIdToCorroboration);
+                agentIdToCorroboration,
+                extractCnameChain(mpicDnsResponse.primaryDnsResponse().cnameChain()));
 
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 mpicDnsResponse.primaryDnsResponse().dnsRecords(),
                 dcvError);
+    }
+
+    private List<String> extractCnameChain(List<DnsRecord> cnameChain) {
+        if (cnameChain == null) {
+            return null;
+        }
+
+        return cnameChain.stream()
+                .map(record -> {
+                    String source = record.name();
+                    String target = record.value();
+
+                    if (source != null && source.endsWith(".")) {
+                        source = source.substring(0, source.length() - 1);
+                    }
+                    if (target != null && target.endsWith(".")) {
+                        target = target.substring(0, target.length() - 1);
+                    }
+                    return source + " -> " + target;
+                })
+                .distinct()
+                .toList();
     }
 }
