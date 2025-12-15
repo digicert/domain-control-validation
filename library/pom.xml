@@ -43,19 +43,19 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--     Dependency versions-->
-        <commons-net.version>3.11.1</commons-net.version>
-        <commons-lang3.version>3.17.0</commons-lang3.version>
-        <projectlombok.version>1.18.38</projectlombok.version>
+        <commons-net.version>3.12.0</commons-net.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
+        <projectlombok.version>1.18.42</projectlombok.version>
         <dnsjava.version>3.6.3</dnsjava.version>
-        <httpcomponents.version>5.4.4</httpcomponents.version>
+        <httpcomponents.version>5.5.1</httpcomponents.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.18</logback.version>
-        <bouncycastle.version>1.80</bouncycastle.version>
+        <logback.version>1.5.22</logback.version>
+        <bouncycastle.version>1.83</bouncycastle.version>
         <guava.version>33.2.1-jre</guava.version>
-        <icu.version>77.1</icu.version>
+        <icu.version>78.1</icu.version>
     <!--    TEST versions -->
-        <mockito.version>5.17.0</mockito.version>
-        <jupiter.version>5.12.2</jupiter.version>
+        <mockito.version>5.21.0</mockito.version>
+        <jupiter.version>6.0.1</jupiter.version>
         <mock-server.version>5.15.0</mock-server.version>
         <sonar.coverage.jacoco.xmlReportPaths>./target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
@@ -174,22 +174,22 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
+                <version>3.14.1</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.3</version>
+                <version>3.5.4</version>
             </plugin>
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>5.1.0.4751</version>
+                <version>5.5.0.6356</version>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.13</version>
+                <version>0.8.14</version>
             </plugin>
 
         </plugins>
@@ -240,7 +240,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.3.1</version>
+                        <version>3.4.0</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -255,7 +255,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.11.2</version>
+                        <version>3.12.0</version>
                         <configuration>
                             <source>21</source>
                             <show>private</show>
@@ -274,7 +274,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.7</version>
+                        <version>3.2.8</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -293,7 +293,7 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.7.0</version>
+                        <version>0.9.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>central</serverId>
