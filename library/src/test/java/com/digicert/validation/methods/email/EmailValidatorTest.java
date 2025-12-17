@@ -130,7 +130,7 @@ class EmailValidatorTest {
     private EmailPreparation getEmailPreparation(EmailSource emailSource, EmailProvider emailProvider) throws PreparationException{
         EmailPreparation emailPreparation = new EmailPreparation("example.com", emailSource);
         Set<EmailDnsDetails> emails = Set.of(new EmailDnsDetails("test@example.com", "example.com"));
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Map.of());
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Map.of(), null);
         when(emailProvider.findEmailsForDomain("example.com")).thenReturn(new EmailDetails(emails, mpicDetails));
         return emailPreparation;
     }
