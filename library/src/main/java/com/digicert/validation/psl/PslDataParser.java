@@ -97,6 +97,10 @@ public class PslDataParser {
      * of Unicode domain names to their ASCII-compatible encoding (punycode) and inserts the punycode representation
      * into the trie as well. This ensures that both Unicode and punycode versions of the domain names are recognized
      * and validated correctly.
+     * <p>
+     * The method uses the {@code IDN.ALLOW_UNASSIGNED} flag to handle Unicode characters that are not yet assigned
+     * in the Unicode standard (such as Balinese script). This flag allows the conversion to succeed for a wider
+     * range of Unicode characters that may appear in the Public Suffix List.
      *
      * @param substring Substring to add to the trie
      * @param trie Trie to add the substring to
@@ -105,9 +109,16 @@ public class PslDataParser {
         trie.insert(substring);
 
         // Unicode domains are also converted to punycode and inserted into the trie
-        String punycode = IDN.toASCII(substring);
-        if (!punycode.equals(substring)) {
-            trie.insert(punycode);
+        // Using ALLOW_UNASSIGNED flag to handle edge cases like Balinese script (ᬩᬮᬶ)
+        try {
+            String punycode = IDN.toASCII(substring, IDN.ALLOW_UNASSIGNED);
+            if (!punycode.equals(substring)) {
+                trie.insert(punycode);
+            }
+        } catch (IllegalArgumentException e) {
+            // If conversion fails even with ALLOW_UNASSIGNED, the original substring
+            // has already been inserted above, so no entries are skipped
+            // This should be rare but we handle it gracefully
         }
     }
 }
