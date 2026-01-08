@@ -1,13 +1,16 @@
 package com.digicert.validation.psl;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.net.IDN;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,156 +31,51 @@ class PslDataParserTest {
         }
     }
 
-    @Test
-    void testIdnToAscii_handlesBalineseScript() {
-        // Test the Balinese script characters (ᬩᬮᬶ) for the .bali TLD
-        // Java's IDN.toASCII can handle this with ALLOW_UNASSIGNED flag
-        String balineseEntry = "ᬩᬮᬶ";
-
-        String result = null;
-        try {
-            // This is the exact call used in PslDataParser.addToTrie()
-            result = IDN.toASCII(balineseEntry, IDN.ALLOW_UNASSIGNED);
-        } catch (IllegalArgumentException e) {
-            fail("IDN.toASCII should handle Balinese script with ALLOW_UNASSIGNED: " + e.getMessage());
-        }
-
-        // Verify successful conversion to Punycode
-        assertNotNull(result, "Result should not be null");
-        assertTrue(result.startsWith("xn--"), "Balinese script should be converted to Punycode: " + result);
-    }
-
-    @Test
-    void testIdnToAscii_handlesRegularAscii() {
-        // Verify that regular ASCII domains work fine
-        String asciiEntry = "example.com";
-
-        String result = null;
-        try {
-            result = IDN.toASCII(asciiEntry, IDN.ALLOW_UNASSIGNED);
-        } catch (IllegalArgumentException e) {
-            fail("IDN.toASCII should handle regular ASCII: " + e.getMessage());
-        }
-
-        assertNotNull(result, "Result should not be null");
-        assertEquals("example.com", result, "ASCII domains should pass through unchanged");
-    }
-
-    @Test
-    void testIdnToAscii_handlesCommonUnicode() {
-        // Test common Unicode that should work (e.g., internationalized domain names)
-        String[][] unicodeDomains = {
-                {"münchen", "xn--mnchen-3ya"},  // German umlaut
-                {"日本", "xn--wgv71a"},      // Japanese
-                {"中国", "xn--fiqs8s"}       // Chinese
-        };
-
-        for (String[] testCase : unicodeDomains) {
-            String unicode = testCase[0];
-            String expectedPunycode = testCase[1];
-
-            String result = null;
-            try {
-                result = IDN.toASCII(unicode, IDN.ALLOW_UNASSIGNED);
-            } catch (IllegalArgumentException e) {
-                fail("IDN.toASCII should handle common Unicode domain: " + unicode + " - " + e.getMessage());
-            }
-
-            assertNotNull(result, "Result should not be null for: " + unicode);
-            assertTrue(result.startsWith("xn--"),
-                    "Unicode domain should be converted to Punycode: " + unicode + " -> " + result);
-        }
-    }
-
-    @Test
-    void testIdnToAscii_handlesVariousScripts() {
-        // Test various Unicode scripts that may appear in PSL data
-        String[][] testCases = {
-                {"ᬩᬮᬶ", "Balinese script (.bali TLD)"},
-                {"संगठन", "Devanagari script (.org in Hindi)"},
-                {"বাংলা", "Bengali script"},
-                {"ελ", "Greek (.el for Greece)"},
-                {"рф", "Cyrillic (.rf for Russia)"},
-                {"한국", "Korean (.kr)"},
-                {"ไทย", "Thai (.th)"},
-                {"இலங்கை", "Tamil (.lk for Sri Lanka)"},
-                {"مصر", "Arabic (.eg for Egypt)"},
-                {"קום", "Hebrew (.com in Hebrew)"}
-        };
-
-        for (String[] testCase : testCases) {
-            String entry = testCase[0];
-            String description = testCase[1];
-
-            try {
-                String result = IDN.toASCII(entry, IDN.ALLOW_UNASSIGNED);
-                assertNotNull(result, description + " should convert successfully");
-                assertTrue(result.startsWith("xn--"),
-                        description + " should convert to Punycode: " + entry + " -> " + result);
-            } catch (IllegalArgumentException e) {
-                fail("IDN.toASCII should handle " + description + ": " + entry + " - " + e.getMessage());
-            }
-        }
-    }
-
-    @Test
-    void testIdnToAscii_compareWithAndWithoutAllowUnassigned() {
-        // Test behavior difference with and without ALLOW_UNASSIGNED flag
-        // This demonstrates why ALLOW_UNASSIGNED is necessary
-        String testEntry = "ᬩᬮᬶ";
-
-        // With ALLOW_UNASSIGNED (as used in our code)
-        String resultWithFlag = null;
-        try {
-            resultWithFlag = IDN.toASCII(testEntry, IDN.ALLOW_UNASSIGNED);
-        } catch (IllegalArgumentException e) {
-            fail("Should work with ALLOW_UNASSIGNED: " + e.getMessage());
-        }
-
-        assertNotNull(resultWithFlag, "Should convert with ALLOW_UNASSIGNED flag");
-        assertTrue(resultWithFlag.startsWith("xn--"), "Should produce Punycode: " + resultWithFlag);
-
-        // Without flag (default behavior) - may fail for some Unicode
-        String resultWithoutFlag = null;
-        boolean failedWithoutFlag = false;
-        String errorMessage = null;
-        try {
-            resultWithoutFlag = IDN.toASCII(testEntry);
-        } catch (IllegalArgumentException e) {
-            failedWithoutFlag = true;
-            errorMessage = e.getMessage();
-        }
-
-        // Document that ALLOW_UNASSIGNED flag is necessary for some Unicode
-        if (failedWithoutFlag) {
-            assertNotNull(errorMessage, "Should have error message when failing without ALLOW_UNASSIGNED");
-            // This is expected - it shows why we need ALLOW_UNASSIGNED
-        } else {
-            assertEquals(resultWithFlag, resultWithoutFlag,
-                    "Results should match if both succeed");
-        }
-    }
-
-    @Test
-    void testParsePslData_handlesUnicodeEntries() throws IOException {
-        // Test that parser correctly handles Unicode entries in PSL data
-        String pslContent = """
-                // Test PSL with Unicode
-                
-                // Balinese script
-                ᬩᬮᬶ
-                
-                // Hebrew
-                ישראל
-                
-                // Arabic
-                مصر
-                
-                // Regular ASCII
+    @ParameterizedTest(name = "{2}")
+    @MethodSource("provideUnicodeScriptTestData")
+    void testParsePslData_handlesVariousUnicodeScripts(String unicodeEntry, String punycodeEntry, String description) {
+        // Test that parser handles various Unicode scripts through full parsing flow
+        // Each test creates PSL content with the specific script being tested
+        String pslContent = String.format("""
+                // Test PSL with %s
+                %s
                 com
-                org
-                """;
+                """, description, unicodeEntry);
 
+        PslData pslData = PslDataParser.parsePslData(new StringReader(pslContent));
+
+        assertNotNull(pslData);
+        assertNotNull(pslData.getRegistrySuffixTrie());
+
+        // Verify that the Unicode entry is searchable in both Unicode and Punycode forms
+        assertTrue(pslData.getRegistrySuffixTrie().search(unicodeEntry),
+                description + " Unicode should be found: " + unicodeEntry);
+        assertTrue(pslData.getRegistrySuffixTrie().search(punycodeEntry),
+                description + " Punycode should be found: " + punycodeEntry);
+    }
+
+    private static Stream<Arguments> provideUnicodeScriptTestData() {
+        return Stream.of(
+                Arguments.of("ᬩᬮᬶ", "xn--9tfky", "Balinese script (.bali TLD)"),
+                Arguments.of("संगठन", "xn--i1b6b1a6a2e", "Devanagari script (.org in Hindi)"),
+                Arguments.of("বাংলা", "xn--54b7fta0cc", "Bengali script"),
+                Arguments.of("ελ", "xn--qxam", "Greek (.el for Greece)"),
+                Arguments.of("рф", "xn--p1ai", "Cyrillic (.rf for Russia)"),
+                Arguments.of("한국", "xn--3e0b707e", "Korean (.kr)"),
+                Arguments.of("ไทย", "xn--o3cw4h", "Thai (.th)"),
+                Arguments.of("இலங்கை", "xn--xkc2al3hye2a", "Tamil (.lk for Sri Lanka)"),
+                Arguments.of("مصر", "xn--wgbh1c", "Arabic (.eg for Egypt)"),
+                Arguments.of("קום", "xn--9dbq2a", "Hebrew (.com in Hebrew)"),
+                Arguments.of("münchen", "xn--mnchen-3ya", "German umlaut"),
+                Arguments.of("日本", "xn--wgv71a", "Japanese"),
+                Arguments.of("中国", "xn--fiqs8s", "Chinese"),
+                Arguments.of("example.com", "example.com", "ASCII domain")
+        );
+    }
+
+    @ParameterizedTest(name = "{3}")
+    @MethodSource("provideUnicodeEntriesTestData")
+    void testParsePslData_handlesUnicodeEntries(String pslContent, String unicodeEntry, String punycodeEntry, String description) {
         PslData pslData = PslDataParser.parsePslData(new StringReader(pslContent));
 
         assertNotNull(pslData);
@@ -188,26 +86,36 @@ class PslDataParserTest {
         assertTrue(pslData.getRegistrySuffixTrie().search("org"), "ASCII 'org' should be found");
 
         // Unicode entries should be searchable in both forms
-        assertTrue(pslData.getRegistrySuffixTrie().search("ישראל"), "Hebrew Unicode should be found");
-        assertTrue(pslData.getRegistrySuffixTrie().search("xn--4dbrk0ce"), "Hebrew Punycode should be found");
+        assertTrue(pslData.getRegistrySuffixTrie().search(unicodeEntry), description + " Unicode should be found");
+        assertTrue(pslData.getRegistrySuffixTrie().search(punycodeEntry), description + " Punycode should be found");
     }
 
-    @Test
-    void testParsePslData_handlesWildcardsAndExceptions() throws IOException {
-        // Test wildcard and exception rules with Unicode
-        String pslContent = """
-                // Test wildcards and exceptions
-                
-                // Wildcard rule
-                *.example.com
-                
-                // Exception rule
-                !exception.example.com
-                
-                // Unicode wildcard
-                *.日本
-                """;
+    private static Stream<Arguments> provideUnicodeEntriesTestData() {
+        String pslContentTemplate = """
+            // Test PSL with Unicode
+            
+            // Balinese script
+            ᬩᬮᬶ
+            
+            // Hebrew
+            ישראל
+            
+            // Arabic
+            مصر
+            
+            // Regular ASCII
+            com
+            org
+            """;
 
+        return Stream.of(
+                Arguments.of(pslContentTemplate, "ישראל", "xn--4dbrk0ce", "Hebrew")
+        );
+    }
+
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("provideWildcardsAndExceptionsTestData")
+    void testParsePslData_handlesWildcardsAndExceptions(String pslContent, String description) {
         PslData pslData = PslDataParser.parsePslData(new StringReader(pslContent));
 
         assertNotNull(pslData);
@@ -221,20 +129,26 @@ class PslDataParserTest {
         assertTrue(pslData.getRegistryExceptionTrie().search("exception.example.com"), "Exception entry should be found");
     }
 
-    @Test
-    void testParsePslData_skipsCommentsAndEmptyLines() throws IOException {
-        // Test that comments and empty lines are properly skipped
-        String pslContent = """
-                // This is a comment
-                
-                // Another comment
-                com
-                
-                // More comments
-                
-                org
-                """;
+    private static Stream<Arguments> provideWildcardsAndExceptionsTestData() {
+        return Stream.of(
+                Arguments.of("""
+                    // Test wildcards and exceptions
+                    
+                    // Wildcard rule
+                    *.example.com
+                    
+                    // Exception rule
+                    !exception.example.com
+                    
+                    // Unicode wildcard
+                    *.日本
+                    """, "Wildcards and exceptions with Unicode")
+        );
+    }
 
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("provideCommentsAndEmptyLinesTestData")
+    void testParsePslData_skipsCommentsAndEmptyLines(String pslContent, String description) {
         PslData pslData = PslDataParser.parsePslData(new StringReader(pslContent));
 
         assertNotNull(pslData);
@@ -244,21 +158,24 @@ class PslDataParserTest {
         assertTrue(pslData.getRegistrySuffixTrie().search("org"));
     }
 
-    @Test
-    void testParsePslData_handlesPrivateDomains() throws IOException {
-        // Test parsing of private domain section
-        String pslContent = """
-                // Public domains
-                com
-                org
-                
-                // ===BEGIN PRIVATE DOMAINS===
-                
-                // Private domains
-                blogspot.com
-                github.io
-                """;
+    private static Stream<Arguments> provideCommentsAndEmptyLinesTestData() {
+        return Stream.of(
+                Arguments.of("""
+                    // This is a comment
+                    
+                    // Another comment
+                    com
+                    
+                    // More comments
+                    
+                    org
+                    """, "Comments and empty lines")
+        );
+    }
 
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("providePrivateDomainsTestData")
+    void testParsePslData_handlesPrivateDomains(String pslContent, String description) {
         PslData pslData = PslDataParser.parsePslData(new StringReader(pslContent));
 
         assertNotNull(pslData);
@@ -273,39 +190,20 @@ class PslDataParserTest {
         assertTrue(pslData.getPrivateSuffixTrie().search("github.io"));
     }
 
-    @Test
-    void testIdnToAscii_detectsEntriesThatNeedAllowUnassigned() {
-        // Test entries that might fail without ALLOW_UNASSIGNED
-        String[] potentiallyProblematicEntries = {
-                "ᬩᬮᬶ",      // Balinese script
-                "संगठन",     // Devanagari script
-                "বাংলা"      // Bengali script
-        };
-
-        for (String entry : potentiallyProblematicEntries) {
-            // Test with ALLOW_UNASSIGNED (should work)
-            try {
-                String withFlag = IDN.toASCII(entry, IDN.ALLOW_UNASSIGNED);
-                assertNotNull(withFlag, "Entry should work with ALLOW_UNASSIGNED: " + entry);
-                assertTrue(withFlag.startsWith("xn--"), "Should convert to Punycode: " + entry);
-            } catch (IllegalArgumentException e) {
-                fail("Entry should work with ALLOW_UNASSIGNED: " + entry + " - " + e.getMessage());
-            }
-
-            // Test without ALLOW_UNASSIGNED (might fail)
-            boolean failsWithoutFlag = false;
-            try {
-                IDN.toASCII(entry);
-            } catch (IllegalArgumentException e) {
-                failsWithoutFlag = true;
-                // This is expected for some Unicode characters
-            }
-
-            // If it fails without the flag, our ALLOW_UNASSIGNED implementation is necessary
-            if (failsWithoutFlag) {
-                // This validates that our fix is needed
-                assertNotNull(entry, "Entry that needs ALLOW_UNASSIGNED: " + entry);
-            }
-        }
+    private static Stream<Arguments> providePrivateDomainsTestData() {
+        return Stream.of(
+                Arguments.of("""
+                    // Public domains
+                    com
+                    org
+                    
+                    // ===BEGIN PRIVATE DOMAINS===
+                    
+                    // Private domains
+                    blogspot.com
+                    github.io
+                    """, "Private domains section")
+        );
     }
 }
+
