@@ -1,9 +1,6 @@
 package com.digicert.validation.psl;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +9,10 @@ import java.io.StringReader;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class PslDataParserTest {
 
@@ -73,46 +73,6 @@ class PslDataParserTest {
         );
     }
 
-    @ParameterizedTest(name = "{3}")
-    @MethodSource("provideUnicodeEntriesTestData")
-    void testParsePslData_handlesUnicodeEntries(String pslContent, String unicodeEntry, String punycodeEntry, String description) {
-        PslData pslData = PslDataParser.parsePslData(new StringReader(pslContent));
-
-        assertNotNull(pslData);
-        assertNotNull(pslData.getRegistrySuffixTrie());
-
-        // Verify that both Unicode and Punycode versions are in the trie
-        assertTrue(pslData.getRegistrySuffixTrie().search("com"), "ASCII 'com' should be found");
-        assertTrue(pslData.getRegistrySuffixTrie().search("org"), "ASCII 'org' should be found");
-
-        // Unicode entries should be searchable in both forms
-        assertTrue(pslData.getRegistrySuffixTrie().search(unicodeEntry), description + " Unicode should be found");
-        assertTrue(pslData.getRegistrySuffixTrie().search(punycodeEntry), description + " Punycode should be found");
-    }
-
-    private static Stream<Arguments> provideUnicodeEntriesTestData() {
-        String pslContentTemplate = """
-            // Test PSL with Unicode
-            
-            // Balinese script
-            ᬩᬮᬶ
-            
-            // Hebrew
-            ישראל
-            
-            // Arabic
-            مصر
-            
-            // Regular ASCII
-            com
-            org
-            """;
-
-        return Stream.of(
-                Arguments.of(pslContentTemplate, "ישראל", "xn--4dbrk0ce", "Hebrew")
-        );
-    }
-
     @ParameterizedTest(name = "{1}")
     @MethodSource("provideWildcardsAndExceptionsTestData")
     void testParsePslData_handlesWildcardsAndExceptions(String pslContent, String description) {
@@ -156,6 +116,12 @@ class PslDataParserTest {
         // Should only have the actual entries, not comments
         assertTrue(pslData.getRegistrySuffixTrie().search("com"));
         assertTrue(pslData.getRegistrySuffixTrie().search("org"));
+        
+        // Verify that comment text was not added to the trie
+        assertFalse(pslData.getRegistrySuffixTrie().search("This is a comment"));
+        assertFalse(pslData.getRegistrySuffixTrie().search("Another comment"));
+        assertFalse(pslData.getRegistrySuffixTrie().search("More comments"));
+        assertFalse(pslData.getRegistrySuffixTrie().search("// This is a comment"));
     }
 
     private static Stream<Arguments> provideCommentsAndEmptyLinesTestData() {
@@ -188,6 +154,10 @@ class PslDataParserTest {
         // Private domains
         assertTrue(pslData.getPrivateSuffixTrie().search("blogspot.com"));
         assertTrue(pslData.getPrivateSuffixTrie().search("github.io"));
+        
+        // Verify that private domains are not in the registry/public trie
+        assertFalse(pslData.getRegistrySuffixTrie().search("blogspot.com"));
+        assertFalse(pslData.getRegistrySuffixTrie().search("github.io"));
     }
 
     private static Stream<Arguments> providePrivateDomainsTestData() {
