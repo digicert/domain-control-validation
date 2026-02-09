@@ -8,6 +8,7 @@ import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +48,7 @@ class DnsTxtEmailProviderTest {
                 new DnsRecord(DnsType.TXT, domain, "invalid-email", 0, 0, ""));
 
         // Create DnsData with the mocked TXTRecord
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
         String domainWithPrefix = String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
@@ -72,7 +73,7 @@ class DnsTxtEmailProviderTest {
                 new DnsRecord(DnsType.TXT, domain, "another@example.com", 0, 0, ""));
 
         // Create DnsData with the mocked TXTRecord
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
         String domainWithPrefix = String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
@@ -94,7 +95,7 @@ class DnsTxtEmailProviderTest {
         List<DnsRecord> dnsRecords = List.of();
 
         // Create DnsData with the mocked TXTRecord
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION);
         String domainWithPrefix = String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
@@ -112,7 +113,7 @@ class DnsTxtEmailProviderTest {
                 new DnsRecord(DnsType.TXT, domain, "another-invalid-email", 0, 0, ""));
 
         // Create DnsData with the mocked TXTRecord
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
         String domainWithPrefix = String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);
@@ -128,7 +129,7 @@ class DnsTxtEmailProviderTest {
         List<DnsRecord> dnsRecords = List.of();
 
         // Create DnsData with the mocked TXTRecord
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, DcvError.DNS_LOOKUP_RECORD_NOT_FOUND);
         String domainWithPrefix = String.format("%s.%s", DNS_TXT_EMAIL_AUTHORIZATION_PREFIX, domain);
         when(mpicDnsService.getDnsDetails(domainWithPrefix, DnsType.TXT)).thenReturn(mpicDnsDetailsData);

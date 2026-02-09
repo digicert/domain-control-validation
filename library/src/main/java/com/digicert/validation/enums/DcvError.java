@@ -298,6 +298,9 @@ public enum DcvError {
     /** Error indicating that the DNS lookup timed out. */
     DNS_LOOKUP_TIMEOUT,
 
+    /** Error indicating that DNSSEC validation failed during DNS lookup. */
+    DNS_LOOKUP_DNSSEC_FAILURE,
+
     /** Error indicating a bad request during DNS lookup. */
     DNS_LOOKUP_BAD_REQUEST,
 

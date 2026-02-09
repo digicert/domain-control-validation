@@ -6,6 +6,7 @@ import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
@@ -196,7 +197,7 @@ class DnsValidationHandlerTest {
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
         List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.CNAME, defaultDomain, "randomValue", 3600, 0, ""));
-        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain, null);
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, null, dnsRecords, DnsType.CNAME, defaultDomain, null);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomain), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
@@ -266,7 +267,7 @@ class DnsValidationHandlerTest {
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
         List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.CNAME, defaultDomain, "randomValue", 3600, 0, ""));
-        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain, null);
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, null, dnsRecords, DnsType.CNAME, defaultDomain, null);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
         MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, defaultDomainWithLabel, "randomValue");
@@ -302,7 +303,7 @@ class DnsValidationHandlerTest {
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
         List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.CNAME, defaultDomain, "randomValue", 3600, 0, ""));
-        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain, null);
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, null, dnsRecords, DnsType.CNAME, defaultDomain, null);
         when(mpicDnsService.getPrimaryDnsDetails(eq(localDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
         MpicDnsDetails mpicDnsDetails = getMpicDnsDetails(DnsType.CNAME, localDomainWithLabel, "randomValue");
@@ -335,7 +336,7 @@ class DnsValidationHandlerTest {
 
         // Configure the mock to return a PrimaryDnsResponse when getPrimaryDnsDetails is called (both times)
         List<DnsRecord> dnsRecords = List.of(new DnsRecord(DnsType.CNAME, defaultDomain, "randomValue", 3600, 0, ""));
-        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, dnsRecords, DnsType.CNAME, defaultDomain, null);
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent", AgentStatus.DNS_LOOKUP_SUCCESS, null, dnsRecords, DnsType.CNAME, defaultDomain, null);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
         when(mpicDnsService.getPrimaryDnsDetails(eq(defaultDomain), eq(DnsType.CNAME))).thenReturn(primaryDnsResponse);
 
@@ -372,7 +373,7 @@ class DnsValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", true, "secondary-2", true), null);
         return new MpicDnsDetails(mpicDetails,
                 domainName,
                 List.of(dnsRecord),
@@ -388,7 +389,7 @@ class DnsValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 List.of(),

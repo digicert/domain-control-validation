@@ -9,6 +9,7 @@ import com.digicert.validation.challenges.RequestTokenValidator;
 import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.MpicFileService;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
@@ -365,6 +366,7 @@ class FileValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
+                DnssecDetails.notChecked(),
                 Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
 
         return new MpicFileDetails(mpicDetails,

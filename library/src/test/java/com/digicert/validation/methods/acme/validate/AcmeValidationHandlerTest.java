@@ -12,6 +12,7 @@ import com.digicert.validation.exceptions.AcmeValidationException;
 import com.digicert.validation.exceptions.ValidationException;
 import com.digicert.validation.methods.file.validate.MpicFileDetails;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.MpicFileService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
@@ -89,7 +90,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", true, "secondary-2", true), null);
         MpicDnsDetails mpicDnsDetails = new MpicDnsDetails(mpicDetails,
                 defaultDomainWithLabel,
                 List.of(getDnsTxtRecord(calculatedDnsTxtValue, defaultDomainWithLabel), getDnsTxtRecord("some-other-value", defaultDomainWithLabel)),
@@ -229,7 +230,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
         return new MpicDnsDetails(mpicDetails,
                 domainName,
                 List.of(getDnsTxtRecord(dnsValue, defaultDomainWithLabel)),
@@ -241,7 +242,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", true, "secondary-2", true), null);
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 List.of(),
@@ -253,7 +254,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", true, "secondary-2", true), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", true, "secondary-2", true), null);
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 List.of(),
@@ -265,7 +266,7 @@ class AcmeValidationHandlerTest {
                 "primary-agent",
                 3,
                 3,
-                Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
+                DnssecDetails.notChecked(), Map.of("secondary-1", corroborated, "secondary-2", corroborated), null);
 
         return new MpicFileDetails(mpicDetails,
                 "http://example.com/.well-known/pki-validation/fileauth.txt",

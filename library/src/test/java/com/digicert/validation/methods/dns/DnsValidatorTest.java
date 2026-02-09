@@ -16,6 +16,7 @@ import com.digicert.validation.methods.dns.validate.DnsValidationHandler;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
 import com.digicert.validation.methods.dns.validate.DnsValidationResponse;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -207,6 +208,7 @@ class DnsValidatorTest {
                 "primary-agent",
                 3,
                 3,
+                DnssecDetails.notChecked(),
                 Map.of("secondary-agent-id", true), null);
     }
 }

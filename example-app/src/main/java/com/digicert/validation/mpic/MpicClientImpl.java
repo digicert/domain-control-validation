@@ -12,6 +12,8 @@ import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.MpicStatus;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
 import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
 import com.digicert.validation.mpic.api.dns.SecondaryDnsResponse;
@@ -52,17 +54,22 @@ public class MpicClientImpl implements MpicClientInterface {
         AgentStatus agentStatus = mapDnsToAgentStatus(dnsData.errors());
         List<DnsRecord> dnsRecords = mapToRecords(dnsData);
 
+        // Simulate DNSSEC validation result.
+        // In a real implementation, this would come from a DNSSEC-validating resolver.
+        DnssecDetails dnssecDetails = new DnssecDetails(DnssecStatus.INSECURE, null, null, null);
+
         // Note: In a real implementation, you would have separate requests from different sources
         // For this example, we are simulating a primary response and two secondary responses with the same data.
-        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent-id", agentStatus, dnsRecords, dnsType, domain, null);
-        SecondaryDnsResponse secondaryDnsResponse1 = new SecondaryDnsResponse("secondary-agent-id-1", agentStatus, true, dnsRecords, null, false);
-        SecondaryDnsResponse secondaryDnsResponse2 = new SecondaryDnsResponse("secondary-agent-id-2", agentStatus, true, dnsRecords, null, false);
+        PrimaryDnsResponse primaryDnsResponse = new PrimaryDnsResponse("primary-agent-id", agentStatus, dnssecDetails, dnsRecords, dnsType, domain, null);
+        SecondaryDnsResponse secondaryDnsResponse1 = new SecondaryDnsResponse("secondary-agent-id-1", agentStatus, dnssecDetails, true, dnsRecords, null, false);
+        SecondaryDnsResponse secondaryDnsResponse2 = new SecondaryDnsResponse("secondary-agent-id-2", agentStatus, dnssecDetails, true, dnsRecords, null, false);
 
         return new MpicDnsResponse(primaryDnsResponse,
                 List.of(secondaryDnsResponse1, secondaryDnsResponse2),
                 MpicStatus.CORROBORATED,
                 2L,
-                null);
+                null,
+                primaryDnsResponse.dnssecDetails());
     }
 
     private List<DnsRecord> mapToRecords(DnsData dnsData) {
