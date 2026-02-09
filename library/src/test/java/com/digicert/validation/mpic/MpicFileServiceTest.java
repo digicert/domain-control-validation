@@ -5,6 +5,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.methods.file.validate.MpicFileDetails;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.MpicStatus;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.mpic.api.file.MpicFileResponse;
 import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
 import com.digicert.validation.mpic.api.file.SecondaryFileResponse;
@@ -99,11 +100,10 @@ class MpicFileServiceTest {
     }
 
     @Test
-    void returnsCorroborationErrorWhenShouldEnforceCorroborationAndStatusNonCorroborated() {
+    void returnsCorroborationErrorWhenStatusNonCorroborated() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.NON_CORROBORATED);
         when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
-        when(mpicClient.shouldEnforceCorroboration()).thenReturn(true);
 
         MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertEquals(DcvError.MPIC_CORROBORATION_ERROR, details.dcvError());
@@ -115,7 +115,6 @@ class MpicFileServiceTest {
         SecondaryFileResponse secondary = new SecondaryFileResponse("agent2", 200, FILE_SUCCESS, true);
         MpicFileResponse response = createMpicFileResponse(primary, List.of(secondary), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
-        when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
         MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url"), "randomValue");
         assertNull(details.dcvError());
@@ -141,7 +140,6 @@ class MpicFileServiceTest {
 
         when(mpicClient.getMpicFileResponse("url1", "randomValue")).thenReturn(errorResponse);
         when(mpicClient.getMpicFileResponse("url2", "randomValue")).thenReturn(validResponse);
-        when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
         MpicFileDetails details = mpicFileService.getMpicFileDetails(List.of("url1", "url2"), "randomValue");
         assertNull(details.dcvError());
@@ -176,7 +174,6 @@ class MpicFileServiceTest {
         SecondaryFileResponse secondary = new SecondaryFileResponse("agent2", 200, FILE_SUCCESS, true);
         MpicFileResponse response = createMpicFileResponse(primary, List.of(secondary), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
-        when(mpicClient.shouldEnforceCorroboration()).thenReturn(false);
 
         MpicFileDetails details = mpicFileService.getMpicFileDetails("url", "randomValue");
         assertNull(details.dcvError());
@@ -231,6 +228,21 @@ class MpicFileServiceTest {
 
         PrimaryFileResponse response = mpicFileService.getPrimaryOnlyFileResponse(List.of("url1", "url2"));
         assertEquals(primary1, response);
+    }
+
+    @Test
+    void dnssecDetailsIsAlwaysNotCheckedForFileValidation() {
+        PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
+        MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
+
+        MpicFileDetails details = mpicFileService.getMpicFileDetails("url", "randomValue");
+
+        assertNotNull(details.mpicDetails().dnssecDetails());
+        assertEquals(DnssecStatus.NOT_CHECKED, details.mpicDetails().dnssecDetails().dnssecStatus());
+        assertNull(details.mpicDetails().dnssecDetails().dnssecError());
+        assertNull(details.mpicDetails().dnssecDetails().errorLocation());
+        assertNull(details.mpicDetails().dnssecDetails().errorDetails());
     }
 
     static Stream<Arguments> agentStatusToErrorMapping() {

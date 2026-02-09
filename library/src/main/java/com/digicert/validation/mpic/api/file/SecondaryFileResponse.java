@@ -10,4 +10,5 @@ import com.digicert.validation.mpic.api.AgentStatus;
 public record SecondaryFileResponse(String agentId,
                                     int statusCode,
                                     AgentStatus agentStatus,
-                                    boolean corroborates) { }
+                                    boolean corroborates) {
+}

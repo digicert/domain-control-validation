@@ -11,4 +11,5 @@ public record PrimaryFileResponse(String agentId,
                                   AgentStatus agentStatus,
                                   String fileUrl,
                                   String actualFileUrl,
-                                  String fileContents) { }
+                                  String fileContents) {
+}

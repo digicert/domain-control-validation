@@ -14,6 +14,7 @@ import com.digicert.validation.methods.acme.validate.AcmeValidationHandler;
 import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
 import com.digicert.validation.methods.acme.validate.AcmeValidationResponse;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -177,6 +178,7 @@ class AcmeValidatorTest {
                 "primary-agent",
                 3,
                 3,
+                DnssecDetails.notChecked(),
                 Map.of("secondary-agent-id", true), null);
     }
 }

@@ -6,6 +6,7 @@ import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.mpic.api.MpicStatus;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
 import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
@@ -77,6 +78,7 @@ public class MpicDnsService {
                     null,
                     0,
                     0,
+                    DnssecDetails.notChecked(),
                     Collections.emptyMap(),
                     null);
             log.info("event_id={} mpic_dns_response={}", LogEvents.MPIC_INVALID_RESPONSE, mpicDnsResponse);
@@ -97,14 +99,24 @@ public class MpicDnsService {
         return mapToMpicDnsDetails(mpicDnsResponse, domain, dcvError);
     }
 
+    /**
+     * Maps the primary DNS response and MPIC status to a DcvError, if applicable.
+     *
+     * @param primaryDnsResponse the primary DNS response from the MPIC agent
+     * @param mpicStatus the overall MPIC status
+     * @return a DcvError if validation failed, or null if validation succeeded
+     */
     public DcvError mapToDcvErrorOrNull(PrimaryDnsResponse primaryDnsResponse, MpicStatus mpicStatus) {
-        DcvError dcvError = null;
         if (primaryDnsResponse == null) {
             return DcvError.MPIC_INVALID_RESPONSE;
         }
 
+        if (primaryDnsResponse.agentStatus() == null) {
+            return DcvError.MPIC_INVALID_RESPONSE;
+        }
+
         if (primaryDnsResponse.agentStatus() != DNS_LOOKUP_SUCCESS) {
-            dcvError = switch (primaryDnsResponse.agentStatus()) {
+            return switch (primaryDnsResponse.agentStatus()) {
                 case DNS_LOOKUP_BAD_REQUEST -> DcvError.DNS_LOOKUP_BAD_REQUEST;
                 case DNS_LOOKUP_TIMEOUT -> DcvError.DNS_LOOKUP_TIMEOUT;
                 case DNS_LOOKUP_IO_EXCEPTION -> DcvError.DNS_LOOKUP_IO_EXCEPTION;
@@ -112,39 +124,49 @@ public class MpicDnsService {
                 case DNS_LOOKUP_RECORD_NOT_FOUND -> DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
                 case DNS_LOOKUP_TEXT_PARSE_EXCEPTION -> DcvError.DNS_LOOKUP_TEXT_PARSE_EXCEPTION;
                 case DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION -> DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION;
+                case DNS_LOOKUP_DNSSEC_FAILURE -> DcvError.DNS_LOOKUP_DNSSEC_FAILURE;
                 default -> DcvError.MPIC_INVALID_RESPONSE;
             };
         }
-        else if (primaryDnsResponse.dnsRecords() == null ||
-                primaryDnsResponse.dnsRecords().isEmpty()) {
-            dcvError = DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
-        }
-        else if (mpicStatus == MpicStatus.VALUE_NOT_FOUND || mpicStatus == MpicStatus.PRIMARY_AGENT_FAILURE) {
-            dcvError = DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
-        }
-        else if (mpicClient.shouldEnforceCorroboration() && mpicStatus == MpicStatus.NON_CORROBORATED) {
-            dcvError = DcvError.MPIC_CORROBORATION_ERROR;
+
+        if (primaryDnsResponse.dnsRecords() == null || primaryDnsResponse.dnsRecords().isEmpty()) {
+            return DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
         }
 
-        return dcvError;
+        if (mpicStatus == MpicStatus.VALUE_NOT_FOUND || mpicStatus == MpicStatus.PRIMARY_AGENT_FAILURE) {
+            return DcvError.DNS_LOOKUP_RECORD_NOT_FOUND;
+        }
+
+        if (mpicStatus == MpicStatus.NON_CORROBORATED) {
+            return DcvError.MPIC_CORROBORATION_ERROR;
+        }
+
+        return null;
     }
 
     private MpicDnsDetails mapToMpicDnsDetails(MpicDnsResponse mpicDnsResponse, String domain, DcvError dcvError) {
+        List<SecondaryDnsResponse> secondaryResponses = mpicDnsResponse.secondaryDnsResponses() == null
+                ? List.of()
+                : mpicDnsResponse.secondaryDnsResponses();
+
         boolean corroborated = MpicStatus.CORROBORATED.equals(mpicDnsResponse.mpicStatus());
         String primaryAgentId = mpicDnsResponse.primaryDnsResponse().agentId();
-        int numSecondariesChecked = mpicDnsResponse.secondaryDnsResponses().size();
-        long numCorroborated = mpicDnsResponse.secondaryDnsResponses().stream()
+        int numSecondariesChecked = secondaryResponses.size();
+        long numCorroborated = secondaryResponses.stream()
                 .filter(SecondaryDnsResponse::corroborates)
                 .count();
-        Map<String, Boolean> agentIdToCorroboration = mpicDnsResponse.secondaryDnsResponses().stream()
+        Map<String, Boolean> agentIdToCorroboration = secondaryResponses.stream()
                 .collect(HashMap::new,
                         (map, response) -> map.put(response.agentId(), response.corroborates()),
                         HashMap::putAll);
+
+        DnssecDetails dnssecDetails = extractDnssecDetails(mpicDnsResponse);
 
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
+                dnssecDetails,
                 agentIdToCorroboration,
                 extractCnameChain(mpicDnsResponse.primaryDnsResponse().cnameChain()));
 
@@ -152,6 +174,20 @@ public class MpicDnsService {
                 domain,
                 mpicDnsResponse.primaryDnsResponse().dnsRecords(),
                 dcvError);
+    }
+
+    private DnssecDetails extractDnssecDetails(MpicDnsResponse mpicDnsResponse) {
+        DnssecDetails details = mpicDnsResponse.dnssecDetails();
+        if (details == null || details.dnssecStatus() == null) {
+            PrimaryDnsResponse primary = mpicDnsResponse.primaryDnsResponse();
+            if (primary != null) {
+                details = primary.dnssecDetails();
+            }
+        }
+        if (details == null || details.dnssecStatus() == null) {
+            return DnssecDetails.notChecked();
+        }
+        return details;
     }
 
     private List<String> extractCnameChain(List<DnsRecord> cnameChain) {

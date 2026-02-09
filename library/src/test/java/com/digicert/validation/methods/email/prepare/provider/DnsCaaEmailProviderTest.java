@@ -8,6 +8,7 @@ import com.digicert.validation.exceptions.PreparationException;
 import com.digicert.validation.methods.email.prepare.EmailDetails;
 import com.digicert.validation.methods.email.prepare.EmailDnsDetails;
 import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
@@ -46,7 +47,7 @@ public class DnsCaaEmailProviderTest {
 
         DnsRecord caaRecord = new DnsRecord(DnsType.CAA, domain, caaEmail, 0, 0, DnsCaaEmailProvider.DNS_CAA_EMAIL_TAG);
 
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(caaRecord), null);
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
 
@@ -69,7 +70,7 @@ public class DnsCaaEmailProviderTest {
 
         List<DnsRecord> dnsRecords = List.of(caaEmailRecord, caaIssueRecord, caaIssueWildRecord);
 
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, dnsRecords, null);
 
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
@@ -86,7 +87,7 @@ public class DnsCaaEmailProviderTest {
     void testFindEmailsForDomainCaa_throwsPreparationException() {
         String domain = "example.com";
 
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(), DcvError.DNS_LOOKUP_UNKNOWN_HOST_EXCEPTION);
 
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
@@ -100,7 +101,7 @@ public class DnsCaaEmailProviderTest {
     void testFindEmailsForDomainCaa_missingDnsData() {
         String domain = "example.com";
 
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(), DcvError.DNS_LOOKUP_RECORD_NOT_FOUND);
 
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
@@ -113,7 +114,7 @@ public class DnsCaaEmailProviderTest {
     @Test
     void testFindEmailsForDomainCaa_dnsData_noEmail() {
         String domain = "example.com";
-        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, Collections.emptyMap(), null);
+        MpicDetails mpicDetails = new MpicDetails(true, "primary-agent-id", 2, 2, DnssecDetails.notChecked(), Collections.emptyMap(), null);
         DnsRecord caaIssueRecord = new DnsRecord(DnsType.CAA, domain, "somedomain.com", 0, 0, "issue");
         MpicDnsDetails mpicDnsDetailsData = new MpicDnsDetails(mpicDetails, domain, List.of(caaIssueRecord), null);
         when(mpicDnsService.getDnsDetails(domain, DnsType.CAA)).thenReturn(mpicDnsDetailsData);
