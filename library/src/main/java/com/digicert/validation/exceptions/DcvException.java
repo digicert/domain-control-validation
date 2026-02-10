@@ -1,6 +1,7 @@
 package com.digicert.validation.exceptions;
 
 import com.digicert.validation.enums.DcvError;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import lombok.Getter;
 
 import java.util.Set;
@@ -25,6 +26,11 @@ public class DcvException extends Exception {
     private final Set<DcvError> errors;
 
     /**
+     * The DNSSEC details associated with this exception.
+     */
+    private final DnssecDetails dnssecDetails;
+
+    /**
      * Constructs a new DcvException with the specified DcvError.
      *
      * @param dcvError the DCV error that caused the exception to be thrown
@@ -39,7 +45,7 @@ public class DcvException extends Exception {
      * @param errors the set of DCV errors that caused the exception to be thrown
      */
     public DcvException(Set<DcvError> errors) {
-        this(errors, null);
+        this(errors, null, null);
     }
 
     /**
@@ -49,7 +55,19 @@ public class DcvException extends Exception {
      * @param cause  the cause of the exception
      */
     public DcvException(Set<DcvError> dcvErrors, Throwable cause) {
+        this(dcvErrors, cause, null);
+    }
+
+    /**
+     * Constructs a new DcvException with a set of specified DcvErrors, an optional cause, and DNSSEC details.
+     *
+     * @param dcvErrors the set of DCV errors that caused the exception to be thrown
+     * @param cause  the cause of the exception
+     * @param dnssecDetails the DNSSEC details associated with this exception
+     */
+    public DcvException(Set<DcvError> dcvErrors, Throwable cause, DnssecDetails dnssecDetails) {
         super("DcvException with errors = " + dcvErrors.stream().map(DcvError::toString).collect(Collectors.joining(",")), cause);
         this.errors = dcvErrors;
+        this.dnssecDetails = dnssecDetails;
     }
 }

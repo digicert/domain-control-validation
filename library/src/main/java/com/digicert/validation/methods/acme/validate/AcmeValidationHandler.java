@@ -10,6 +10,8 @@ import com.digicert.validation.methods.file.validate.MpicFileDetails;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.MpicFileService;
 import com.digicert.validation.mpic.api.dns.DnsRecord;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -90,7 +92,7 @@ public class AcmeValidationHandler {
             // If the MPIC file details contain an error, we will not throw an exception
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} reason={}",
                     LogEvents.ACME_VALIDATION_FAILED, request.getDomain(), mpicDnsDetails.dcvError());
-            throw new AcmeValidationException(mpicDnsDetails.dcvError(), request);
+            evaluateAcmeValidation(request, mpicDnsDetails, null);
         }
 
         boolean isValid = mpicDnsDetails.dnsRecords().stream()
@@ -103,10 +105,23 @@ public class AcmeValidationHandler {
         if (!isValid) {
             log.atLevel(logLevelForDcvErrors).log("event_id={} domain={} reason={}",
                     LogEvents.ACME_VALIDATION_FAILED, request.getDomain(), DcvError.RANDOM_VALUE_NOT_FOUND);
-            throw new AcmeValidationException(DcvError.RANDOM_VALUE_NOT_FOUND, request);
+            evaluateAcmeValidation(request, mpicDnsDetails, DcvError.RANDOM_VALUE_NOT_FOUND);
         }
 
         return new AcmeValidationResponse(mpicDnsDetails.mpicDetails(), dnsRecordName, null);
+    }
+
+    private static void evaluateAcmeValidation(AcmeValidationRequest request, MpicDnsDetails mpicDnsDetails, DcvError dcvError) throws AcmeValidationException {
+        DnssecDetails dnssecDetails = null;
+        if (mpicDnsDetails.mpicDetails() != null && mpicDnsDetails.mpicDetails().dnssecDetails() != null
+                && mpicDnsDetails.mpicDetails().dnssecDetails().dnssecStatus() != DnssecStatus.NOT_CHECKED) {
+            dnssecDetails = mpicDnsDetails.mpicDetails().dnssecDetails();
+        }
+        if (dnssecDetails != null) {
+            throw new AcmeValidationException(dcvError != null ? dcvError : mpicDnsDetails.dcvError(), request, dnssecDetails);
+        } else {
+            throw new AcmeValidationException(dcvError != null ? dcvError : mpicDnsDetails.dcvError(), request);
+        }
     }
 
     private String calculateDnsTxtValue(AcmeValidationRequest request) throws ValidationException {

@@ -2,6 +2,7 @@ package com.digicert.validation.exceptions;
 
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.methods.file.FileValidator;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -40,4 +41,15 @@ public class ValidationException extends DcvException {
     public ValidationException(Set<DcvError> errors) {
         super(errors);
     }
+
+    /**
+     * Constructs a new ValidationException with a set of specified DcvErrors and an optional cause.
+     *
+     * @param dcvErrors     the set of DCV errors
+     * @param dnssecDetails the DNSSEC details associated with this exception
+     */
+    public ValidationException(Set<DcvError> dcvErrors, DnssecDetails dnssecDetails) {
+        super(dcvErrors, null, dnssecDetails);
+    }
+
 }

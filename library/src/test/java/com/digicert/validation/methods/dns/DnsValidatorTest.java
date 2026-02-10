@@ -17,6 +17,8 @@ import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
 import com.digicert.validation.methods.dns.validate.DnsValidationResponse;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecError;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -202,6 +204,31 @@ class DnsValidatorTest {
 
         assertTrue(exception.getErrors().contains(dcvError), "expected: " + dcvError + " but got: " + exception.getErrors());
     }
+
+    @Test
+    void testDnsValidator_validate_dnssec_dnskey_missing() {
+        DnssecDetails expectedDnssecDetails = new DnssecDetails(DnssecStatus.INSECURE, DnssecError.DNSKEY_MISSING, null, "no SEP matching the DS found");
+        MpicDetails mpicDetails = new MpicDetails(true,
+                "primary-agent",
+                3,
+                3,
+                expectedDnssecDetails,
+                Map.of("secondary-agent-id", true), null);
+        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, mpicDetails, domain, domain,
+                dnsType, randomValue, null, Set.of(DcvError.DNS_LOOKUP_DNSSEC_FAILURE));
+
+        when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> dnsValidator.validate(dnsValidationRequest));
+
+        assertEquals(1, exception.getErrors().size(), "Expected exactly one error");
+        assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_DNSSEC_FAILURE), "expected: " + DcvError.DNS_LOOKUP_DNSSEC_FAILURE + " but got: " + exception.getErrors());
+        assertNotNull(exception.getDnssecDetails(), "DNSSEC details should be present in the exception");
+        assertEquals(expectedDnssecDetails, exception.getDnssecDetails(), "DNSSEC details should match the response");
+        assertEquals(DnssecStatus.INSECURE, exception.getDnssecDetails().dnssecStatus());
+        assertEquals(DnssecError.DNSKEY_MISSING, exception.getDnssecDetails().dnssecError());
+    }
+
 
     private static MpicDetails getMpicDetails() {
         return new MpicDetails(true,
