@@ -141,7 +141,7 @@ public class DnsValidator {
 
             if (dnsValidationResponse.mpicDetails() != null &&
                     dnsValidationResponse.mpicDetails().dnssecDetails() != null &&
-                    !dnsValidationResponse.mpicDetails().dnssecDetails().dnssecStatus().equals(DnssecStatus.NOT_CHECKED)) {
+                    !DnssecStatus.NOT_CHECKED.equals(dnsValidationResponse.mpicDetails().dnssecDetails().dnssecStatus())) {
                 DnssecDetails dnssecDetails = dnsValidationResponse.mpicDetails().dnssecDetails();
                 throw new ValidationException(dnsValidationResponse.errors(), dnssecDetails);
             }
