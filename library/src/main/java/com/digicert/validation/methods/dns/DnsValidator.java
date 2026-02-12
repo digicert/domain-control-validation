@@ -12,6 +12,8 @@ import com.digicert.validation.methods.dns.prepare.DnsPreparationResponse;
 import com.digicert.validation.methods.dns.validate.DnsValidationHandler;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
 import com.digicert.validation.methods.dns.validate.DnsValidationResponse;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.random.RandomValueGenerator;
 import com.digicert.validation.random.RandomValueVerifier;
 import com.digicert.validation.utils.DomainNameUtils;
@@ -136,6 +138,13 @@ public class DnsValidator {
                     dnsValidationResponse.mpicDetails(),
                     dnsValidationRequest.getDnsType().toString(),
                     dnsValidationResponse.errors());
+
+            if (dnsValidationResponse.mpicDetails() != null &&
+                    dnsValidationResponse.mpicDetails().dnssecDetails() != null &&
+                    !DnssecStatus.NOT_CHECKED.equals(dnsValidationResponse.mpicDetails().dnssecDetails().dnssecStatus())) {
+                DnssecDetails dnssecDetails = dnsValidationResponse.mpicDetails().dnssecDetails();
+                throw new ValidationException(dnsValidationResponse.errors(), dnssecDetails);
+            }
 
             throw new ValidationException(dnsValidationResponse.errors());
         }
