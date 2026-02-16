@@ -7,6 +7,8 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
+import com.digicert.validation.DcvManager;
+import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.utils.DomainUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,9 @@ class AcmeDnsMethodIT {
 
     @Autowired
     private PdnsClient pdnsClient;
+
+    @Autowired
+    private DcvManager dcvManager;
 
     private final Long defaultAccountId = 1234L;
 
@@ -57,6 +62,12 @@ class AcmeDnsMethodIT {
         // Get and assert that the domain is now valid
         DomainResource verifiedDomain = exampleAppClient.getDomainResource(createdDomain.getId());
         assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+        
+        List<String> lookupLocations = dcvManager.getLookupLocations(dcvRequest.domain(), DcvMethod.BR_3_2_2_4_7);
+        assertNotNull(lookupLocations, "ACME DNS lookup locations should not be null");
+        assertFalse(lookupLocations.isEmpty(), "ACME DNS lookup locations should not be empty");
+        assertTrue(lookupLocations.stream().anyMatch(url -> url.contains(dcvRequest.domain())), 
+                   "Lookup locations should contain domain: " + dcvRequest.domain());
     }
 
     @Test

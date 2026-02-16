@@ -25,6 +25,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.event.Level;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FileValidator is a class that provides methods to prepare and validate files for domain validation.
@@ -253,5 +255,32 @@ public class FileValidator {
             fileName = defaultFilename;
         }
         return String.format(FILE_LOCATION, domainName, fileName);
+    }
+
+    /**
+     * Returns the list of file URLs where random values could be placed for DCV.
+     * This includes both HTTP and HTTPS URLs for the standard file validation path.
+     */
+    public List<String> getFileLookupUrls(String domain) {
+        return getFileLookupUrls(domain, null);
+    }
+
+    /**
+     * Returns the list of file URLs where random values could be placed for DCV.
+     * This includes both HTTP and HTTPS URLs for the file validation path.
+     * 
+     * @param domain the domain for which to generate lookup URLs
+     * @param filename the specific filename to use, or null to use the default filename
+     * @return list of HTTP and HTTPS URLs where the validation file would be located
+     */
+    public List<String> getFileLookupUrls(String domain, String filename) {
+        List<String> urls = new ArrayList<>();
+        
+        // Use provided filename or fall back to default
+        String fileName = (filename != null && !filename.trim().isEmpty()) ? filename : defaultFilename;
+        urls.add("http://" + domain + "/.well-known/pki-validation/" + fileName);
+        urls.add("https://" + domain + "/.well-known/pki-validation/" + fileName);
+        
+        return urls;
     }
 }

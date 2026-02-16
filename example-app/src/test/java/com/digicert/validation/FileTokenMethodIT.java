@@ -8,6 +8,8 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
+import com.digicert.validation.DcvManager;
+import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.challenges.BasicRequestTokenUtils;
 import com.digicert.validation.utils.CSRGenerator;
 import com.digicert.validation.utils.DomainUtils;
@@ -21,6 +23,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +33,10 @@ class FileTokenMethodIT {
 
     @Autowired
     private ExampleAppClient exampleAppClient;
+    
+    @Autowired
+    private DcvManager dcvManager;
+    
     private final PdnsClient pdnsClient = new PdnsClient();
     private final Long defaultAccountId = 1234L;
     private final CSRGenerator csrGenerator = new CSRGenerator();
@@ -65,6 +72,13 @@ class FileTokenMethodIT {
         // Get and assert that the domain is now valid
         DomainResource verifiedDomain = exampleAppClient.getDomainResource(createdDomain.getId());
         assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+        
+        // Verify DcvManager.getLookupLocations() for File Token method  
+        List<String> lookupLocations = dcvManager.getLookupLocations(domainName, DcvMethod.BR_3_2_2_4_18);
+        assertNotNull(lookupLocations, "File Token lookup locations should not be null");
+        assertFalse(lookupLocations.isEmpty(), "File Token lookup locations should not be empty");
+        assertTrue(lookupLocations.stream().anyMatch(url -> url.contains(domainName)),
+                   "Lookup locations should contain domain: " + domainName);
     }
 
     @Test
