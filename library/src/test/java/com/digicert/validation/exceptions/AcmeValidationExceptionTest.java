@@ -110,6 +110,10 @@ class AcmeValidationExceptionTest {
 
         // Test with NOT_CHECKED status
         testWithDnssecStatus(DnssecStatus.NOT_CHECKED, null);
+
+        // Test with INDETERMINATE status
+        testWithDnssecStatus(DnssecStatus.INDETERMINATE, DnssecError.IO_EXCEPTION);
+
     }
 
     @Test
@@ -215,6 +219,28 @@ class AcmeValidationExceptionTest {
         assertNull(exception.getDnssecDetails().dnssecError());
         assertNull(exception.getDnssecDetails().errorLocation());
         assertNull(exception.getDnssecDetails().errorDetails());
+    }
+
+    @Test
+    void testAcmeDnsValidationException_with_messageContainsError() {
+        // Given
+        AcmeValidationRequest request = createSampleRequest();
+        DcvError dcvError = DcvError.DNS_LOOKUP_DNSSEC_FAILURE;
+        DnssecDetails dnssecDetails = new DnssecDetails(
+                DnssecStatus.INDETERMINATE,
+                DnssecError.IO_EXCEPTION,
+                "example.com",
+                "connection timed out during DNS resolution"
+        );
+
+        // When
+        AcmeValidationException exception = new AcmeValidationException(dcvError, request, dnssecDetails);
+
+        // Then
+        assertNotNull(exception.getMessage());
+        assertTrue(exception.getErrors().contains(dcvError));
+        assertNotNull(exception.getDnssecDetails());
+        assertSame(DnssecError.IO_EXCEPTION, exception.getDnssecDetails().dnssecError());
     }
 
     private void testWithDnssecStatus(DnssecStatus status, DnssecError error) {
