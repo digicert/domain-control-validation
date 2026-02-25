@@ -12,5 +12,6 @@ public enum MpicStatus {
     NON_CORROBORATED,
     VALUE_NOT_FOUND,
     PRIMARY_AGENT_FAILURE,
+    DNSSEC_FAILURE,
     ERROR
 }

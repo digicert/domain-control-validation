@@ -141,6 +141,10 @@ public class MpicDnsService {
             return DcvError.MPIC_CORROBORATION_ERROR;
         }
 
+        if (mpicStatus == MpicStatus.DNSSEC_FAILURE) {
+            return DcvError.DNS_LOOKUP_DNSSEC_FAILURE;
+        }
+
         return null;
     }
 

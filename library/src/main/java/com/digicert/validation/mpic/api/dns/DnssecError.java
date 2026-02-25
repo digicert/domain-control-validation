@@ -12,6 +12,8 @@ public enum DnssecError {
     NSEC_MISSING,
     /** RRSIG records are missing for the requested record type */
     RRSIGS_MISSING,
+    /** DNSSEC validation failed due to an I/O error during DNS resolution */
+    IO_EXCEPTION,
     /** Other unspecified DNSSEC error */
     OTHER
 }

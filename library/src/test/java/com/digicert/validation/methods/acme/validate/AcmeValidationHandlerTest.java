@@ -12,11 +12,9 @@ import com.digicert.validation.exceptions.AcmeValidationException;
 import com.digicert.validation.exceptions.ValidationException;
 import com.digicert.validation.methods.file.validate.MpicFileDetails;
 import com.digicert.validation.mpic.MpicDetails;
-import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.*;
 import com.digicert.validation.mpic.MpicDnsService;
 import com.digicert.validation.mpic.MpicFileService;
-import com.digicert.validation.mpic.api.dns.DnsRecord;
-import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -225,6 +223,33 @@ class AcmeValidationHandlerTest {
         assertTrue(exception.getErrors().contains(DcvError.FILE_VALIDATION_INVALID_STATUS_CODE));
     }
 
+    @Test
+    void testAcmeHttpValidationHandler_validate_dnssecIOError() {
+        AcmeValidationRequest request = AcmeValidationRequest.builder()
+                .domain(defaultDomain)
+                .randomValue(defaultRandomValue)
+                .acmeThumbprint(defaultAcmeThumbprint)
+                .acmeType(AcmeType.ACME_DNS_01)
+                .build();
+        DnssecDetails dnssecDetails = new DnssecDetails(
+                DnssecStatus.INDETERMINATE,
+                DnssecError.IO_EXCEPTION,
+                "example.com",
+                "connection timed out during DNS resolution"
+        );
+
+        // When
+        when(mpicDnsService.getDnsDetails(eq(defaultDomainWithLabel), eq(DnsType.TXT), anyString()))
+                .thenReturn(getErrorMpicDnssecDetails(defaultDomainWithLabel, dnssecDetails));
+        AcmeValidationException exception = assertThrows(AcmeValidationException.class, () -> acmeValidationHandler.validate(request));
+
+        // Then
+        assertNotNull(exception.getMessage());
+        assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_DNSSEC_FAILURE));
+        assertNotNull(exception.getDnssecDetails());
+        assertSame(DnssecError.IO_EXCEPTION, exception.getDnssecDetails().dnssecError());
+    }
+
     private MpicDnsDetails getMpicDnsDetails(boolean corroborated, String domainName, String dnsValue) {
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 "primary-agent",
@@ -259,6 +284,18 @@ class AcmeValidationHandlerTest {
                 domain,
                 List.of(),
                 DcvError.DNS_LOOKUP_IO_EXCEPTION);
+    }
+
+    private MpicDnsDetails getErrorMpicDnssecDetails(String domain, DnssecDetails dnssecDetails) {
+        MpicDetails mpicDetails = new MpicDetails(true,
+                "primary-agent",
+                3,
+                3,
+                dnssecDetails, Map.of("secondary-1", true, "secondary-2", true), null);
+        return new MpicDnsDetails(mpicDetails,
+                domain,
+                List.of(),
+                DcvError.DNS_LOOKUP_DNSSEC_FAILURE);
     }
 
     private MpicFileDetails getMpicFileDetails(boolean corroborated, DcvError dcvError, int statusCode, String fileContents) {
