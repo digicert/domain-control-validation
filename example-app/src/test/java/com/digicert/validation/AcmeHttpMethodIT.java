@@ -7,6 +7,7 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
+import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.utils.DomainUtils;
 import com.digicert.validation.utils.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,6 +29,9 @@ class AcmeHttpMethodIT {
 
     @Autowired
     private PdnsClient pdnsClient;
+
+    @Autowired
+    private DcvManager dcvManager;
 
     private final Long defaultAccountId = 1234L;
 
@@ -41,6 +46,19 @@ class AcmeHttpMethodIT {
 
         DomainResource createdDomain = exampleAppClient.submitDnsDomain(dcvRequest);
         assertCreatedDomain(createdDomain, dcvRequest);
+
+        // Verify lookup locations for ACME HTTP validation
+        List<String> lookupLocations = dcvManager.getLookupLocations(dcvRequest.domain(), DcvMethod.BR_3_2_2_4_19);
+        assertNotNull(lookupLocations, "Lookup locations should not be null");
+        assertEquals(2, lookupLocations.size(), "Should return exactly 2 lookup locations for ACME HTTP validation");
+        
+        // Verify the structure of returned URLs
+        assertTrue(lookupLocations.stream().anyMatch(url -> url.startsWith("http://")), "Should include HTTP URL");
+        assertTrue(lookupLocations.stream().anyMatch(url -> url.startsWith("https://")), "Should include HTTPS URL");
+        assertTrue(lookupLocations.stream().allMatch(url -> url.contains("/.well-known/acme-challenge/")), 
+                "All URLs should contain ACME challenge path");
+        assertTrue(lookupLocations.stream().allMatch(url -> url.contains(domainName)), 
+                "All URLs should contain the domain name");
 
         // Setup DNS record for domain
         pdnsClient.createLocalhostARecord(domainName);

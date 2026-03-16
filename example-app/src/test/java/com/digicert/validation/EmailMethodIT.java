@@ -8,6 +8,8 @@ import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainRandomValueDetails;
 import com.digicert.validation.controller.resource.response.DomainResource;
+import com.digicert.validation.DcvManager;
+import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.methods.email.prepare.provider.DnsTxtEmailProvider;
 import com.digicert.validation.utils.DomainUtils;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,10 @@ class EmailMethodIT {
 
     @Autowired
     private ExampleAppClient exampleAppClient;
+    
+    @Autowired
+    private DcvManager dcvManager;
+    
     private final PdnsClient pdnsClient = new PdnsClient();
     private final Long defaultAccountId = 1234L;
 
@@ -52,6 +58,13 @@ class EmailMethodIT {
         // verify domain is showing as valid
         DomainResource verifiedDomain = exampleAppClient.getDomainResource(domainResource.getId());
         assertEquals(DcvRequestStatus.VALID, verifiedDomain.getStatus());
+        
+        // Verify DcvManager.getLookupLocations() for Email Constructed method
+        List<String> lookupLocations = dcvManager.getLookupLocations(dcvRequest.domain(), DcvMethod.BR_3_2_2_4_4);
+        assertNotNull(lookupLocations, "Email Constructed lookup locations should not be null");
+        assertFalse(lookupLocations.isEmpty(), "Email Constructed lookup locations should not be empty");
+        assertTrue(lookupLocations.stream().anyMatch(email -> email.contains(dcvRequest.domain())), 
+                   "Lookup locations should contain domain: " + dcvRequest.domain());
     }
 
     @Test
