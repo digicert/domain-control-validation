@@ -35,10 +35,13 @@ public class DcvManager {
      * This validator assists with email-based domain control validation. It is able to perform DNS lookups
      * to determine usable email addresses for a given domain. It is not able to send out emails.
      * <p>
+     * Note: BR 3.2.2.4.2 (Email, Fax, SMS, or Postal Mail to Domain Contact / WHOIS) is deprecated and
+     * not supported by this library.
+     * <p>
      * Handles
      * <ul>
-     * <li>3.2.2.4.2 Email, Fax, SMS, or Postal Mail to Domain Contact</li>
      * <li>3.2.2.4.4 Constructed Email to Domain Contact</li>
+     * <li>3.2.2.4.13 Email to DNS CAA Contact</li>
      * <li>3.2.2.4.14 Email to DNS TXT Contact</li>
      * </ul>
      */
