@@ -5,8 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.net.IDN;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Parser for public suffix list data.
@@ -17,9 +16,8 @@ import org.slf4j.LoggerFactory;
  * based on whether it is a public or private suffix, and whether it is an exact match, wildcard, or exception rule.
  * The parsed data is then stored in a `PslData` object for further use in domain validation processes.
  */
+@Slf4j
 public class PslDataParser {
-
-    private static final Logger log = LoggerFactory.getLogger(PslDataParser.class);
 
     /**
      * Private constructor to prevent instantiation of this class.
