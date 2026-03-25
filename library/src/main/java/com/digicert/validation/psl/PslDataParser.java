@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.net.IDN;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Parser for public suffix list data.
  * <p>
@@ -15,6 +18,8 @@ import java.net.IDN;
  * The parsed data is then stored in a `PslData` object for further use in domain validation processes.
  */
 public class PslDataParser {
+
+    private static final Logger log = LoggerFactory.getLogger(PslDataParser.class);
 
     /**
      * Private constructor to prevent instantiation of this class.
@@ -95,8 +100,8 @@ public class PslDataParser {
      * <p>
      * This helper method inserts a substring into the specified `Trie` object. It also handles the conversion
      * of Unicode domain names to their ASCII-compatible encoding (punycode) and inserts the punycode representation
-     * into the trie as well. This ensures that both Unicode and punycode versions of the domain names are recognized
-     * and validated correctly.
+     * into the trie as well when conversion succeeds. This allows both Unicode and punycode versions of many domain
+     * names to be recognized and validated correctly.
      * <p>
      * The method uses the {@code IDN.ALLOW_UNASSIGNED} flag to handle Unicode characters that are not yet assigned
      * in the Unicode standard (such as Balinese script). This flag allows the conversion to succeed for a wider
@@ -116,9 +121,7 @@ public class PslDataParser {
                 trie.insert(punycode);
             }
         } catch (IllegalArgumentException e) {
-            // If conversion fails even with ALLOW_UNASSIGNED, the original substring
-            // has already been inserted above, so no entries are skipped
-            // This should be rare but we handle it gracefully
+            log.warn("Unable to convert PSL entry to punycode: {}", substring, e);
         }
     }
 }

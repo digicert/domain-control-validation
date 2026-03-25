@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.net.IDN;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -33,7 +34,7 @@ class PslDataParserTest {
 
     @ParameterizedTest(name = "{2}")
     @MethodSource("provideUnicodeScriptTestData")
-    void testParsePslData_handlesVariousUnicodeScripts(String unicodeEntry, String punycodeEntry, String description) {
+    void testParsePslData_handlesVariousUnicodeScripts(String unicodeEntry, String description) {
         // Test that parser handles various Unicode scripts through full parsing flow
         // Each test creates PSL content with the specific script being tested
         String pslContent = String.format("""
@@ -47,6 +48,8 @@ class PslDataParserTest {
         assertNotNull(pslData);
         assertNotNull(pslData.getRegistrySuffixTrie());
 
+        String punycodeEntry = IDN.toASCII(unicodeEntry, IDN.ALLOW_UNASSIGNED);
+
         // Verify that the Unicode entry is searchable in both Unicode and Punycode forms
         assertTrue(pslData.getRegistrySuffixTrie().search(unicodeEntry),
                 description + " Unicode should be found: " + unicodeEntry);
@@ -56,20 +59,20 @@ class PslDataParserTest {
 
     private static Stream<Arguments> provideUnicodeScriptTestData() {
         return Stream.of(
-                Arguments.of("ᬩᬮᬶ", "xn--9tfky", "Balinese script (.bali TLD)"),
-                Arguments.of("संगठन", "xn--i1b6b1a6a2e", "Devanagari script (.org in Hindi)"),
-                Arguments.of("বাংলা", "xn--54b7fta0cc", "Bengali script"),
-                Arguments.of("ελ", "xn--qxam", "Greek (.el for Greece)"),
-                Arguments.of("рф", "xn--p1ai", "Cyrillic (.rf for Russia)"),
-                Arguments.of("한국", "xn--3e0b707e", "Korean (.kr)"),
-                Arguments.of("ไทย", "xn--o3cw4h", "Thai (.th)"),
-                Arguments.of("இலங்கை", "xn--xkc2al3hye2a", "Tamil (.lk for Sri Lanka)"),
-                Arguments.of("مصر", "xn--wgbh1c", "Arabic (.eg for Egypt)"),
-                Arguments.of("קום", "xn--9dbq2a", "Hebrew (.com in Hebrew)"),
-                Arguments.of("münchen", "xn--mnchen-3ya", "German umlaut"),
-                Arguments.of("日本", "xn--wgv71a", "Japanese"),
-                Arguments.of("中国", "xn--fiqs8s", "Chinese"),
-                Arguments.of("example.com", "example.com", "ASCII domain")
+                Arguments.of("ᬩᬮᬶ", "Balinese script (.bali TLD)"),
+                Arguments.of("संगठन", "Devanagari script (.org in Hindi)"),
+                Arguments.of("বাংলা", "Bengali script"),
+                Arguments.of("ελ", "Greek (.el for Greece)"),
+                Arguments.of("рф", "Cyrillic (.rf for Russia)"),
+                Arguments.of("한국", "Korean (.kr)"),
+                Arguments.of("ไทย", "Thai (.th)"),
+                Arguments.of("இலங்கை", "Tamil (.lk for Sri Lanka)"),
+                Arguments.of("مصر", "Arabic (.eg for Egypt)"),
+                Arguments.of("קום", "Hebrew (.com in Hebrew)"),
+                Arguments.of("münchen", "German umlaut"),
+                Arguments.of("日本", "Japanese"),
+                Arguments.of("中国", "Chinese"),
+                Arguments.of("example.com", "ASCII domain")
         );
     }
 
@@ -83,10 +86,12 @@ class PslDataParserTest {
         assertNotNull(pslData.getRegistryExceptionTrie());
 
         // Verify wildcard entries (without the *. prefix)
-        assertTrue(pslData.getRegistryWildcardTrie().search("example.com"), "Wildcard entry should be found");
+        assertTrue(pslData.getRegistryWildcardTrie().search("example.com"),
+                description + " wildcard entry should be found");
 
         // Verify exception entries (without the ! prefix)
-        assertTrue(pslData.getRegistryExceptionTrie().search("exception.example.com"), "Exception entry should be found");
+        assertTrue(pslData.getRegistryExceptionTrie().search("exception.example.com"),
+                description + " exception entry should be found");
     }
 
     private static Stream<Arguments> provideWildcardsAndExceptionsTestData() {
@@ -114,8 +119,8 @@ class PslDataParserTest {
         assertNotNull(pslData);
 
         // Should only have the actual entries, not comments
-        assertTrue(pslData.getRegistrySuffixTrie().search("com"));
-        assertTrue(pslData.getRegistrySuffixTrie().search("org"));
+        assertTrue(pslData.getRegistrySuffixTrie().search("com"), description + " should include com");
+        assertTrue(pslData.getRegistrySuffixTrie().search("org"), description + " should include org");
         
         // Verify that comment text was not added to the trie
         assertFalse(pslData.getRegistrySuffixTrie().search("This is a comment"));
@@ -148,12 +153,12 @@ class PslDataParserTest {
         assertNotNull(pslData.getPrivateSuffixTrie());
 
         // Public domains
-        assertTrue(pslData.getRegistrySuffixTrie().search("com"));
-        assertTrue(pslData.getRegistrySuffixTrie().search("org"));
+        assertTrue(pslData.getRegistrySuffixTrie().search("com"), description + " should include public com");
+        assertTrue(pslData.getRegistrySuffixTrie().search("org"), description + " should include public org");
 
         // Private domains
-        assertTrue(pslData.getPrivateSuffixTrie().search("blogspot.com"));
-        assertTrue(pslData.getPrivateSuffixTrie().search("github.io"));
+        assertTrue(pslData.getPrivateSuffixTrie().search("blogspot.com"), description + " should include blogspot.com");
+        assertTrue(pslData.getPrivateSuffixTrie().search("github.io"), description + " should include github.io");
         
         // Verify that private domains are not in the registry/public trie
         assertFalse(pslData.getRegistrySuffixTrie().search("blogspot.com"));
@@ -176,4 +181,3 @@ class PslDataParserTest {
         );
     }
 }
-
