@@ -135,10 +135,12 @@ class EmailMethodIT {
     @Test
     void verifyEmailDnsTxtSubmitFlow_EmailDoesNotMatchDomain() {
         // create domain request with email dns txt
-        DcvRequest dcvRequest = createDcvRequest(DomainUtils.getRandomDomainName(2, "com"), DcvRequestType.EMAIL_DNS_TXT);
+        String dcvDomain = "email-mismatch-" + System.currentTimeMillis() + ".com";
+        DcvRequest dcvRequest = createDcvRequest(dcvDomain, DcvRequestType.EMAIL_DNS_TXT);
 
         // add email as a dns txt record that does not match the domain
-        pdnsClient.addRandomValueToRecord(DomainUtils.getRandomDomainName(2, "com"), List.of("admin@"+dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
+        String mismatchedDnsDomain = "email-mismatch-alt-" + System.nanoTime() + ".com";
+        pdnsClient.addRandomValueToRecord(mismatchedDnsDomain, List.of("admin@"+dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
 
         // submit domain
         assertTrue(exampleAppClient.submitDnsDomainExpectingFail(dcvRequest));
