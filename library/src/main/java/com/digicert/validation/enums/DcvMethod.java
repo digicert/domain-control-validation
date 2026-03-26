@@ -9,8 +9,7 @@ import lombok.Getter;
  * Brief Description of the DCV Methods:
  * <ul>
  *     <li>3.2.2.4.1 -> NOT Allowed</li>
- *     <li>3.2.2.4.2 -> Email, Fax, SMS, or Postal Mail to Domain Contact (WHOIS) -
- *     <b>Deprecated and removed from this library</b></li>
+ *     <li>3.2.2.4.2 -> Email (whois) - Not Allowed</li>
  *     <li>3.2.2.4.3 -> Phone - NOT Allowed</li>
  *     <li><b>3.2.2.4.4 -> Email to constructed email address</b></li>
  *     <li>3.2.2.4.5 -> NOT Allowed</li>
