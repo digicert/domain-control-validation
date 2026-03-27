@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -135,10 +136,14 @@ class EmailMethodIT {
     @Test
     void verifyEmailDnsTxtSubmitFlow_EmailDoesNotMatchDomain() {
         // create domain request with email dns txt
-        DcvRequest dcvRequest = createDcvRequest(DomainUtils.getRandomDomainName(2, "com"), DcvRequestType.EMAIL_DNS_TXT);
+        String token = UUID.randomUUID().toString().replace("-", "");
+        String dcvDomain = "email-mismatch-" + token + ".com";
+        DcvRequest dcvRequest = createDcvRequest(dcvDomain, DcvRequestType.EMAIL_DNS_TXT);
 
         // add email as a dns txt record that does not match the domain
-        pdnsClient.addRandomValueToRecord(DomainUtils.getRandomDomainName(2, "com"), List.of("admin@"+dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
+        String mismatchedDnsDomain = "email-mismatch-alt-" + token + ".com";
+        assertNotEquals(dcvRequest.domain(), mismatchedDnsDomain);
+        pdnsClient.addRandomValueToRecord(mismatchedDnsDomain, List.of("admin@"+dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
 
         // submit domain
         assertTrue(exampleAppClient.submitDnsDomainExpectingFail(dcvRequest));

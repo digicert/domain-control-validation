@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.net.IDN;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Parser for public suffix list data.
  * <p>
@@ -14,6 +16,7 @@ import java.net.IDN;
  * based on whether it is a public or private suffix, and whether it is an exact match, wildcard, or exception rule.
  * The parsed data is then stored in a `PslData` object for further use in domain validation processes.
  */
+@Slf4j
 public class PslDataParser {
 
     /**
@@ -95,8 +98,12 @@ public class PslDataParser {
      * <p>
      * This helper method inserts a substring into the specified `Trie` object. It also handles the conversion
      * of Unicode domain names to their ASCII-compatible encoding (punycode) and inserts the punycode representation
-     * into the trie as well. This ensures that both Unicode and punycode versions of the domain names are recognized
-     * and validated correctly.
+     * into the trie as well when conversion succeeds. This allows both Unicode and punycode versions of many domain
+     * names to be recognized and validated correctly.
+     * <p>
+     * The method uses the {@code IDN.ALLOW_UNASSIGNED} flag to handle Unicode characters that are not yet assigned
+     * in the Unicode standard (such as Balinese script). This flag allows the conversion to succeed for a wider
+     * range of Unicode characters that may appear in the Public Suffix List.
      *
      * @param substring Substring to add to the trie
      * @param trie Trie to add the substring to
@@ -105,9 +112,14 @@ public class PslDataParser {
         trie.insert(substring);
 
         // Unicode domains are also converted to punycode and inserted into the trie
-        String punycode = IDN.toASCII(substring);
-        if (!punycode.equals(substring)) {
-            trie.insert(punycode);
+        // Using ALLOW_UNASSIGNED flag to handle edge cases like Balinese script (ᬩᬮᬶ)
+        try {
+            String punycode = IDN.toASCII(substring, IDN.ALLOW_UNASSIGNED);
+            if (!punycode.equals(substring)) {
+                trie.insert(punycode);
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Unable to convert PSL entry to punycode: {}", substring, e);
         }
     }
 }
