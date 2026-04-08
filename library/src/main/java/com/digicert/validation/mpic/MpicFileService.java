@@ -156,6 +156,7 @@ public class MpicFileService {
             case FILE_NOT_FOUND -> DcvError.FILE_VALIDATION_NOT_FOUND;
             case FILE_TOO_LARGE -> DcvError.FILE_VALIDATION_INVALID_CONTENT;
             case FILE_SERVER_ERROR -> DcvError.FILE_VALIDATION_INVALID_STATUS_CODE;
+            case DNS_LOOKUP_DNSSEC_FAILURE -> DcvError.DNS_LOOKUP_DNSSEC_FAILURE;
             default -> DcvError.MPIC_INVALID_RESPONSE;
         };
     }
