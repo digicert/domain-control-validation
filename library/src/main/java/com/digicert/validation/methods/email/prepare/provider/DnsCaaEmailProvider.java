@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
  * DNS CAA records of the domain.
  * <p>
  * This provider is designed to facilitate the process of domain validation by extracting email addresses from DNS CAA records.
- * The DNS CAA records are filtered using a specific tag defined in the Baseline Requirements (BRs), which ensures that the
- * email addresses retrieved are intended for validation purposes.
+ * The DNS CAA records are filtered using the {@code contactemail} tag defined in the Baseline Requirements (BRs, section A.1.1),
+ * which ensures that the email addresses retrieved are intended for validation purposes.
  */
 @Slf4j
 public class DnsCaaEmailProvider implements EmailProvider {
