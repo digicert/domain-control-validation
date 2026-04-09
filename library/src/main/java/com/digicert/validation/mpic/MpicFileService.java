@@ -173,11 +173,14 @@ public class MpicFileService {
                         (map, response) -> map.put(response.agentId(), response.corroborates()),
                         HashMap::putAll);
 
+        DnssecDetails dnssecDetails = mpicFileResponse.primaryFileResponse().dnssecDetails() != null
+                ? mpicFileResponse.primaryFileResponse().dnssecDetails()
+                : DnssecDetails.notChecked();
         MpicDetails mpicDetails = new MpicDetails(corroborated,
                 primaryAgentId,
                 numSecondariesChecked,
                 numCorroborated,
-                DnssecDetails.notChecked(),
+                dnssecDetails,
                 agentIdToCorroboration,
                 null);
 

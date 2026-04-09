@@ -11,6 +11,8 @@ import com.digicert.validation.exceptions.DcvException;
 import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
 import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
 import com.digicert.validation.methods.file.validate.FileValidationHandler;
 import com.digicert.validation.methods.file.validate.FileValidationRequest;
@@ -156,6 +158,12 @@ public class FileValidator {
                     LogEvents.FILE_VALIDATION_FAILED,
                     validationRequest.getDomain(),
                     fileValidationResponse);
+            if (fileValidationResponse.mpicDetails() != null &&
+                    fileValidationResponse.mpicDetails().dnssecDetails() != null &&
+                    !DnssecStatus.NOT_CHECKED.equals(fileValidationResponse.mpicDetails().dnssecDetails().dnssecStatus())) {
+                DnssecDetails dnssecDetails = fileValidationResponse.mpicDetails().dnssecDetails();
+                throw new ValidationException(fileValidationResponse.errors(), dnssecDetails);
+            }
             throw new ValidationException(fileValidationResponse.errors());
         }
     }

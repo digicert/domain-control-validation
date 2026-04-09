@@ -5,6 +5,8 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.methods.file.validate.MpicFileDetails;
 import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.MpicStatus;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecError;
 import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.mpic.api.file.MpicFileResponse;
 import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
@@ -231,7 +233,7 @@ class MpicFileServiceTest {
     }
 
     @Test
-    void dnssecDetailsIsAlwaysNotCheckedForFileValidation() {
+    void dnssecDetailsDefaultsToNotCheckedWhenAbsentInPrimaryResponse() {
         PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, FILE_SUCCESS, "abc", "abc", "file-contents");
         MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
         when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
@@ -240,9 +242,22 @@ class MpicFileServiceTest {
 
         assertNotNull(details.mpicDetails().dnssecDetails());
         assertEquals(DnssecStatus.NOT_CHECKED, details.mpicDetails().dnssecDetails().dnssecStatus());
-        assertNull(details.mpicDetails().dnssecDetails().dnssecError());
-        assertNull(details.mpicDetails().dnssecDetails().errorLocation());
-        assertNull(details.mpicDetails().dnssecDetails().errorDetails());
+    }
+
+    @Test
+    void dnssecDetailsArePropagatedFromPrimaryFileResponse() {
+        DnssecDetails dnssecDetails = new DnssecDetails(DnssecStatus.BOGUS, DnssecError.DNSSEC_BOGUS, "sigfail.example.net.", "signature verification failed");
+        PrimaryFileResponse primary = new PrimaryFileResponse("agent1", 200, DNS_LOOKUP_DNSSEC_FAILURE, "abc", "abc", null, dnssecDetails);
+        MpicFileResponse response = createMpicFileResponse(primary, Collections.emptyList(), MpicStatus.CORROBORATED);
+        when(mpicClient.getMpicFileResponse("url", "randomValue")).thenReturn(response);
+
+        MpicFileDetails details = mpicFileService.getMpicFileDetails("url", "randomValue");
+
+        assertEquals(DcvError.DNS_LOOKUP_DNSSEC_FAILURE, details.dcvError());
+        assertNotNull(details.mpicDetails().dnssecDetails());
+        assertEquals(DnssecStatus.BOGUS, details.mpicDetails().dnssecDetails().dnssecStatus());
+        assertEquals(DnssecError.DNSSEC_BOGUS, details.mpicDetails().dnssecDetails().dnssecError());
+        assertEquals("sigfail.example.net.", details.mpicDetails().dnssecDetails().errorLocation());
     }
 
     static Stream<Arguments> agentStatusToErrorMapping() {
@@ -254,6 +269,8 @@ class MpicFileServiceTest {
                 Arguments.of(FILE_NOT_FOUND, DcvError.FILE_VALIDATION_NOT_FOUND),
                 Arguments.of(FILE_TOO_LARGE, DcvError.FILE_VALIDATION_INVALID_CONTENT),
                 Arguments.of(FILE_SERVER_ERROR, DcvError.FILE_VALIDATION_INVALID_STATUS_CODE),
+
+                Arguments.of(DNS_LOOKUP_DNSSEC_FAILURE, DcvError.DNS_LOOKUP_DNSSEC_FAILURE),
 
                 // This should never happen, but we handle it gracefully
                 Arguments.of(DNS_LOOKUP_BAD_REQUEST, DcvError.MPIC_INVALID_RESPONSE)

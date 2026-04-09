@@ -15,6 +15,10 @@ import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
 import com.digicert.validation.methods.file.validate.FileValidationHandler;
 import com.digicert.validation.methods.file.validate.FileValidationRequest;
 import com.digicert.validation.methods.file.validate.FileValidationResponse;
+import com.digicert.validation.mpic.MpicDetails;
+import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import com.digicert.validation.mpic.api.dns.DnssecError;
+import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -178,6 +182,30 @@ class FileValidatorTest {
 
         // Assert
         assertTrue(exception.getErrors().contains(DcvError.FILE_VALIDATION_CLIENT_ERROR));
+    }
+
+    @Test
+    void validateShouldIncludeDnssecDetailsInExceptionWhenPresent() {
+        // Arrange
+        FileValidationRequest request = getRandomValueFileValidationRequest().build();
+        DnssecDetails dnssecDetails = new DnssecDetails(DnssecStatus.BOGUS, DnssecError.DNSSEC_BOGUS, "sigfail.example.net.", null);
+        MpicDetails mpicDetails = new MpicDetails(false, "agent1", 0, 0, dnssecDetails, java.util.Collections.emptyMap(), null);
+        FileValidationResponse response = getDefaultFileValidationResponse()
+                .isValid(false)
+                .mpicDetails(mpicDetails)
+                .errors(Set.of(DcvError.DNS_LOOKUP_DNSSEC_FAILURE))
+                .build();
+
+        when(fileValidationHandler.validate(request)).thenReturn(response);
+
+        // Act
+        ValidationException exception = assertThrows(ValidationException.class, () -> fileValidator.validate(request));
+
+        // Assert
+        assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_DNSSEC_FAILURE));
+        assertNotNull(exception.getDnssecDetails());
+        assertEquals(DnssecStatus.BOGUS, exception.getDnssecDetails().dnssecStatus());
+        assertEquals("sigfail.example.net.", exception.getDnssecDetails().errorLocation());
     }
 
     @Test
