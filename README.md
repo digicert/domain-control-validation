@@ -34,14 +34,12 @@ Supported Methods
 
 
 ### [Email to DNS CAA Contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#322413-email-to-dns-caa-contact)
-* The prepare step obtains the email address of the [DNS CAA record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a11-dns-caa-record-email-contact) (`contactemail` tag).
-  The library does not facilitate sending the random value to the applicant.
+* The prepare step obtains the email address of the [DNS CAA record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a11-dns-caa-record-email-contact). The library does not facilitate sending the random value to the applicant.
 * This library does not facilitate receiving the random value from the applicant. The validation step can only confirm the appropriate
   data has been collected.
 
 ### [Email to DNS TXT Contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#322414-email-to-dns-txt-contact)
-* The prepare step obtains the email address of the [DNS TXT record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a21-dns-txt-record-email-contact).
-  The library does not facilitate sending the random value to the applicant.
+* The prepare step obtains the email address of the [DNS TXT record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a21-dns-txt-record-email-contact). The library does not facilitate sending the random value to the applicant.
 * This library does not facilitate receiving the random value from the applicant. The validation step can only confirm the appropriate
   data has been collected.
 
