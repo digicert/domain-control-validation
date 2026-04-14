@@ -241,7 +241,7 @@ DnsValidationResponse response = dnsValidationHandler.validate(request);
 ```
 
 
-### BR: 3.2.2.4.2 / 3.2.2.4.4 / 3.2.2.4.14 - Email to Domain Contact / Constructed Email / DNS TXT Contact
+### BR: 3.2.2.4.4 / 3.2.2.4.13 / 3.2.2.4.14 - Constructed Email / DNS CAA Contact / DNS TXT Contact
 #### EmailPreparationRequest - Email Preparation
 The `EmailPreparationRequest` object is used to prepare the email validation process. This request object is built using the `EmailPreparationRequest.Builder` class, and contains the following fields:
 

@@ -20,11 +20,6 @@ objects are used, please refer to the [README-details.md](README-details.md) fil
 Supported Methods
 -----------------
 
-### [Email, Fax, SMS, or Postal Mail to Domain Contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#32242-email-fax-sms-or-postal-mail-to-domain-contact)
-* The prepare step obtains contact information for the [domain contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#161-definitions).
-  The library does not facilitate sending the random value to the applicant.
-* This library does not facilitate receiving the random value from the applicant. The validation step can only confirm the appropriate
-  data has been collected.
 
 ### [Constructed Email to Domain Contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#32244-constructed-email-to-domain-contact)
 * The prepare step generates the possible email addresses to which the random value could be sent. The library does not facilitate
@@ -37,9 +32,14 @@ Supported Methods
 * The validate step will call the DNS servers and obtain the specified record type for the specified domain. It will also check
   with the configurable domain label prefixed. If the random value is found in the record, the DCV can be considered complete.
 
+
+### [Email to DNS CAA Contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#322413-email-to-dns-caa-contact)
+* The prepare step obtains the email address of the [DNS CAA record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a11-dns-caa-record-email-contact). The library does not facilitate sending the random value to the applicant.
+* This library does not facilitate receiving the random value from the applicant. The validation step can only confirm the appropriate
+  data has been collected.
+
 ### [Email to DNS TXT Contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#322414-email-to-dns-txt-contact)
-* The prepare step obtains the email address of the [DNS TXT record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a21-dns-txt-record-email-contact).
-  The library does not facilitate sending the random value to the applicant.
+* The prepare step obtains the email address of the [DNS TXT record email contact](https://github.com/cabforum/servercert/blob/main/docs/BR.md#a21-dns-txt-record-email-contact). The library does not facilitate sending the random value to the applicant.
 * This library does not facilitate receiving the random value from the applicant. The validation step can only confirm the appropriate
   data has been collected.
 

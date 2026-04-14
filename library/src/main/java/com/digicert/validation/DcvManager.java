@@ -37,8 +37,8 @@ public class DcvManager {
      * <p>
      * Handles
      * <ul>
-     * <li>3.2.2.4.2 Email, Fax, SMS, or Postal Mail to Domain Contact</li>
      * <li>3.2.2.4.4 Constructed Email to Domain Contact</li>
+     * <li>3.2.2.4.13 Email to DNS CAA Contact</li>
      * <li>3.2.2.4.14 Email to DNS TXT Contact</li>
      * </ul>
      */

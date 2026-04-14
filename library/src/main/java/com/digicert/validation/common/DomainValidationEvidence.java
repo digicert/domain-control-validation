@@ -44,7 +44,7 @@ public class DomainValidationEvidence {
      * EMAIL: The email address used for validation.
      * <p>
      * Only populated when the DCV method is an email type otherwise NULL
-     * (BR_3_2_2_4_2 / BR_3_2_2_4_4 / BR_3_2_2_4_14)
+     * (BR_3_2_2_4_4 / BR_3_2_2_4_13 / BR_3_2_2_4_14)
      */
     private final String emailAddress;
 

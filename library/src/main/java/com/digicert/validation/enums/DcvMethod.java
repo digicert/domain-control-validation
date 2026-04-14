@@ -9,7 +9,7 @@ import lombok.Getter;
  * Brief Description of the DCV Methods:
  * <ul>
  *     <li>3.2.2.4.1 -> NOT Allowed</li>
- *     <li>3.2.2.4.2 -> Email (whois) - Not Allowed</li>
+ *     <li>3.2.2.4.2 -> NOT Allowed</li>
  *     <li>3.2.2.4.3 -> Phone - NOT Allowed</li>
  *     <li><b>3.2.2.4.4 -> Email to constructed email address</b></li>
  *     <li>3.2.2.4.5 -> NOT Allowed</li>
@@ -20,7 +20,7 @@ import lombok.Getter;
  *     <li>3.2.2.4.10 -> NOT Allowed</li>
  *     <li>3.2.2.4.11 -> NOT Allowed</li>
  *     <li>3.2.2.4.12 -> Validating applicant as a Domain Contact - Not Supported</li>
- *     <li>3.2.2.4.13 -> Email to DNS CAA Contact - Not Supported</li>
+ *     <li><b>3.2.2.4.13 -> Email to DNS CAA Contact</b></li>
  *     <li><b>3.2.2.4.14 -> Email to DNS TXT Contact</b></li>
  *     <li>3.2.2.4.15 / 16 / 17 -> Phone Contact - Not Supported</li>
  *     <li><b>3.2.2.4.18 -> File Validation</b></li>
