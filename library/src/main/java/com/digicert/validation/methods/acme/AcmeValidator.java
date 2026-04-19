@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * AcmeValidator is a class that provides methods to prepare and validate domains using the ACME protocol.
@@ -179,5 +180,16 @@ public class AcmeValidator {
      */
     private void verifyAcmePreparation(AcmePreparation acmePreparation) throws InputException {
         domainNameUtils.validateDomainName(acmePreparation.domain());
+    }
+
+    /**
+     * Returns the list of ACME HTTP challenge URLs where tokens could be placed for DCV.
+     * This includes both HTTP and HTTPS URLs for the standard ACME challenge path.
+     */
+    public List<String> getAcmeLookupUrls(String domain) {
+        return List.of(
+            "http://" + domain + "/.well-known/acme-challenge/{token}",
+            "https://" + domain + "/.well-known/acme-challenge/{token}"
+        );
     }
 }

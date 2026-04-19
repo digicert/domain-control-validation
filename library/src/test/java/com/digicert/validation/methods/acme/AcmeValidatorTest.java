@@ -181,4 +181,55 @@ class AcmeValidatorTest {
                 DnssecDetails.notChecked(),
                 Map.of("secondary-agent-id", true), null);
     }
+
+    @Test
+    void testGetAcmeLookupUrls_SimpleDomain() {
+        String testDomain = "example.com";
+        var locations = acmeValidator.getAcmeLookupUrls(testDomain);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs
+        assertTrue(locations.contains("http://" + testDomain + "/.well-known/acme-challenge/{token}"));
+        assertTrue(locations.contains("https://" + testDomain + "/.well-known/acme-challenge/{token}"));
+    }
+
+    @Test
+    void testGetAcmeLookupUrls_SubdomainWithHierarchy() {
+        String subdomain = "api.app.example.com";
+        var locations = acmeValidator.getAcmeLookupUrls(subdomain);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs for the specific subdomain
+        assertTrue(locations.contains("http://" + subdomain + "/.well-known/acme-challenge/{token}"));
+        assertTrue(locations.contains("https://" + subdomain + "/.well-known/acme-challenge/{token}"));
+    }
+
+    @Test
+    void testGetAcmeLookupUrls_EmptyDomain() {
+        var locations = acmeValidator.getAcmeLookupUrls("");
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should handle empty domain gracefully
+        assertTrue(locations.contains("http:///.well-known/acme-challenge/{token}"));
+        assertTrue(locations.contains("https:///.well-known/acme-challenge/{token}"));
+    }
+
+    @Test
+    void testGetAcmeLookupUrls_SingleLevelDomain() {
+        String tld = "localhost";
+        var locations = acmeValidator.getAcmeLookupUrls(tld);
+        
+        assertNotNull(locations);
+        assertEquals(2, locations.size());
+        
+        // Should contain both HTTP and HTTPS URLs
+        assertTrue(locations.contains("http://" + tld + "/.well-known/acme-challenge/{token}"));
+        assertTrue(locations.contains("https://" + tld + "/.well-known/acme-challenge/{token}"));
+    }
 }
