@@ -29,8 +29,9 @@ import java.time.Instant;
 /**
  * FileValidator is a class that provides methods to prepare and validate files for domain validation.
  * <p>
- * This class implements Validation for {@link DcvMethod#BR_3_2_2_4_18} method. It is responsible for handling the preparation and validation
- * processes required for file-based domain control validation (DCV).
+ * This class implements Validation for {@link DcvMethod#BR_3_2_2_4_18} and {@link DcvMethod#BR_3_2_2_5_1} methods.
+ * It is responsible for handling the preparation and validation processes required for file-based domain control
+ * validation (DCV) for both domain names and IP addresses.
  */
 @Slf4j
 public class FileValidator {
@@ -113,11 +114,14 @@ public class FileValidator {
         verifyFilePreparation(preparationRequest);
 
         // Create and return the preparation response
+        DcvMethod dcvMethod = DomainNameUtils.isIpAddress(preparationRequest.domain())
+                ? DcvMethod.BR_3_2_2_5_1
+                : DcvMethod.BR_3_2_2_4_18;
         FilePreparationResponse.FilePreparationResponseBuilder responseBuilder = FilePreparationResponse.builder()
                 .domain(preparationRequest.domain())
                 .challengeType(preparationRequest.challengeType())
                 .fileLocation(getFileUrl(preparationRequest.domain(), preparationRequest.filename()))
-                .validationState(new ValidationState(preparationRequest.domain(), Instant.now(), DcvMethod.BR_3_2_2_4_18));
+                .validationState(new ValidationState(preparationRequest.domain(), Instant.now(), dcvMethod));
 
         if (preparationRequest.challengeType() == ChallengeType.RANDOM_VALUE) {
             responseBuilder.randomValue(randomValueGenerator.generateRandomString());
@@ -197,8 +201,11 @@ public class FileValidator {
      */
     void verifyFileValidationRequest(FileValidationRequest fileValidationRequest) throws DcvException {
 
-        domainNameUtils.validateDomainName(fileValidationRequest.getDomain());
-        StateValidationUtils.verifyValidationState(fileValidationRequest.getValidationState(), DcvMethod.BR_3_2_2_4_18);
+        domainNameUtils.validateDomainOrIpAddress(fileValidationRequest.getDomain());
+        DcvMethod expectedMethod = DomainNameUtils.isIpAddress(fileValidationRequest.getDomain())
+                ? DcvMethod.BR_3_2_2_5_1
+                : DcvMethod.BR_3_2_2_4_18;
+        StateValidationUtils.verifyValidationState(fileValidationRequest.getValidationState(), expectedMethod);
 
         switch (fileValidationRequest.getChallengeType()) {
             case RANDOM_VALUE -> {
@@ -224,7 +231,7 @@ public class FileValidator {
      * @throws DcvException if the request is invalid. {@link InputException} when missing required fields.
      */
     private void verifyFilePreparation(FilePreparationRequest filePreparationRequest) throws DcvException, IllegalArgumentException {
-        domainNameUtils.validateDomainName(filePreparationRequest.domain());
+        domainNameUtils.validateDomainOrIpAddress(filePreparationRequest.domain());
 
         if (filePreparationRequest.challengeType() == null) {
             throw new InputException(DcvError.CHALLENGE_TYPE_REQUIRED);
@@ -234,7 +241,7 @@ public class FileValidator {
             FilenameUtils.validateFilename(filePreparationRequest.filename());
         }
 
-        if (filePreparationRequest.domain().startsWith("*.")) {
+        if (!DomainNameUtils.isIpAddress(filePreparationRequest.domain()) && filePreparationRequest.domain().startsWith("*.")) {
             throw new InputException(DcvError.DOMAIN_INVALID_WILDCARD_NOT_ALLOWED);
         }
     }

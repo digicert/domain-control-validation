@@ -326,6 +326,90 @@ class DomainNameUtilsTest {
         assertEquals(isValid, DomainNameUtils.isValidEmailAddress(email));
     }
 
+    // -----------------------------------------------------------------------
+    // isIpAddress
+    // -----------------------------------------------------------------------
+
+    static Stream<Arguments> provideIsIpAddressTestData() {
+        return Stream.of(
+                // IPv4 — should be recognised as IP
+                Arguments.of("1.2.3.4",               true),
+                Arguments.of("192.168.1.1",            true),
+                Arguments.of("0.0.0.0",                true),
+                Arguments.of("255.255.255.255",        true),
+                // IPv6 — should be recognised as IP (contains ":")
+                Arguments.of("2001:db8::1",            true),
+                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334", true),
+                Arguments.of("::1",                    true),
+                Arguments.of("::ffff:1.2.3.4",         true),
+                // Domain names — should NOT be recognised as IP
+                Arguments.of("example.com",            false),
+                Arguments.of("sub.example.com",        false),
+                // Strings that have letters mixed with IPv4-like dots
+                Arguments.of("a12.0.0.1",              false),
+                // Out-of-range IPv4 — BouncyCastle rejects these as invalid
+                Arguments.of("256.0.0.1",              false),
+                // Empty / null
+                Arguments.of("",                       false),
+                Arguments.of(null,                     false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideIsIpAddressTestData")
+    void isIpAddress(String value, boolean expected) {
+        assertEquals(expected, DomainNameUtils.isIpAddress(value));
+    }
+
+    // -----------------------------------------------------------------------
+    // validateDomainOrIpAddress
+    // -----------------------------------------------------------------------
+
+    static Stream<Arguments> provideValidateDomainOrIpAddress_valid() {
+        return Stream.of(
+                // Valid domain names — delegates to validateDomainName
+                Arguments.of("example.com"),
+                Arguments.of("sub.example.com"),
+                // Valid IPv4
+                Arguments.of("1.2.3.4"),
+                Arguments.of("192.168.1.1"),
+                Arguments.of("203.0.113.42"),
+                // Valid IPv6
+                Arguments.of("2001:db8::1"),
+                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334"),
+                Arguments.of("::1"),
+                Arguments.of("::ffff:192.0.2.1")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideValidateDomainOrIpAddress_valid")
+    void validateDomainOrIpAddress_valid(String value) {
+        assertDoesNotThrow(() -> domainNameUtils.validateDomainOrIpAddress(value));
+    }
+
+    static Stream<Arguments> provideValidateDomainOrIpAddress_invalid() {
+        return Stream.of(
+                Arguments.of(null,        DcvError.DOMAIN_REQUIRED),
+                Arguments.of("",          DcvError.DOMAIN_REQUIRED),
+                // Invalid IPv4 (out of range) — IPAddress.isValid() returns false, falls through to domain validation
+                Arguments.of("256.0.0.1", DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN),
+                // Invalid IPv6 (multiple shorthand notations) — IPAddress.isValid() returns false, falls through to domain validation
+                Arguments.of("2001::85a3::7334", DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN),
+                // Invalid domain name
+                Arguments.of("example.invalid", DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideValidateDomainOrIpAddress_invalid")
+    void validateDomainOrIpAddress_invalid(String value, DcvError expectedError) {
+        InputException exception = assertThrows(InputException.class,
+                () -> domainNameUtils.validateDomainOrIpAddress(value));
+        assertTrue(exception.getErrors().contains(expectedError),
+                "expected error: " + expectedError + ", got: " + exception.getErrors());
+    }
+
     private Stream<Arguments> emailProvider() {
         return Stream.of(
                 Arguments.of("dnstxt@email.com", true),

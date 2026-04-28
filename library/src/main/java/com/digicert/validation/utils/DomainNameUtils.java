@@ -9,6 +9,8 @@ import com.ibm.icu.text.IDNA;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import org.bouncycastle.util.IPAddress;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -279,6 +281,43 @@ public class DomainNameUtils {
         } catch (IllegalArgumentException e) {
             throw new InputException(DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN, e);
         }
+    }
+
+    /**
+     * Checks if the given value is an IP address (IPv4 or IPv6).
+     * <p>
+     * Uses BouncyCastle {@link IPAddress#isValid(String)} for consistent, pure-parser validation
+     * with no DNS resolution side-effects.
+     *
+     * @param value the value to check
+     * @return true if the value is a valid IPv4 or IPv6 address, false otherwise
+     */
+    public static boolean isIpAddress(String value) {
+        if (StringUtils.isEmpty(value)) return false;
+        return IPAddress.isValid(value);
+    }
+
+    /**
+     * Validates the given value as either a domain name or an IP address.
+     * <p>
+     * If the value is a valid IP address (per {@link #isIpAddress(String)}), this method returns
+     * without further checks. Range checks (e.g. private or reserved ranges) are the
+     * responsibility of the caller.
+     * <p>
+     * If the value does not look like an IP address, it is validated as a domain name via
+     * {@link #validateDomainName(String)}.
+     *
+     * @param value the domain name or IP address to validate
+     * @throws InputException if the value is empty, not a valid IP address, or not a valid domain name
+     */
+    public void validateDomainOrIpAddress(String value) throws InputException {
+        if (StringUtils.isEmpty(value)) {
+            throw new InputException(DcvError.DOMAIN_REQUIRED);
+        }
+        if (isIpAddress(value)) {
+            return;
+        }
+        validateDomainName(value);
     }
 
     /**

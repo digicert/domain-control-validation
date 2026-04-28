@@ -222,11 +222,12 @@ public class FileValidationHandler {
      * @return the list of file URLs
      */
     public List<String> getFileUrls(FileValidationRequest fileValidationRequest) {
+        String host = formatHostForUrl(fileValidationRequest.getDomain());
         String domainPath;
         if (StringUtils.isNotBlank(fileValidationRequest.getFilename())) {
-            domainPath = fileValidationRequest.getDomain() + FILE_PATH + fileValidationRequest.getFilename();
+            domainPath = host + FILE_PATH + fileValidationRequest.getFilename();
         } else {
-            domainPath = fileValidationRequest.getDomain() + FILE_PATH + defaultFileValidationFilename;
+            domainPath = host + FILE_PATH + defaultFileValidationFilename;
         }
         if (fileValidationCheckHttps) {
             if (fileValidationCheckHttpsFirst) {
@@ -238,5 +239,22 @@ public class FileValidationHandler {
         else {
             return List.of("http://" + domainPath);
         }
+    }
+
+    /**
+     * Formats the host portion of a URL.
+     * <p>
+     * IPv6 addresses must be enclosed in brackets per RFC 2732 when used in URLs
+     * (e.g., {@code http://[2001:db8::1]/.well-known/...}). IPv4 addresses and
+     * domain names are returned unchanged.
+     *
+     * @param domainOrIp the domain name or IP address
+     * @return the host string suitable for use in a URL
+     */
+    private static String formatHostForUrl(String domainOrIp) {
+        if (domainOrIp.contains(":")) {  // IPv6 addresses always contain ":"
+            return "[" + domainOrIp + "]";
+        }
+        return domainOrIp;
     }
 }
