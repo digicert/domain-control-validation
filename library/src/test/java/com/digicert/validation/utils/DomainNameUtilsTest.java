@@ -351,7 +351,11 @@ class DomainNameUtilsTest {
                 Arguments.of("256.0.0.1",              false),
                 // Empty / null
                 Arguments.of("",                       false),
-                Arguments.of(null,                     false)
+                Arguments.of(null,                     false),
+                // already bracketed IPv6 - gets rejected
+                Arguments.of("[2001:db8::1]",          false),
+                // host:port format - gets rejected
+                Arguments.of("example.com:8080",          false)
         );
     }
 
