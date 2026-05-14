@@ -353,4 +353,142 @@ class DomainNameUtilsTest {
             assertFalse(DomainNameUtils.isValidEmailAddress(email));
         }
     }
+
+    // -----------------------------------------------------------------------
+    // isIpAddress
+    // -----------------------------------------------------------------------
+
+    static Stream<Arguments> provideIsIpAddressTestData() {
+        return Stream.of(
+                // IPv4 — should be recognised as IP
+                Arguments.of("1.2.3.4",               true),
+                Arguments.of("192.168.1.1",            true),
+                Arguments.of("0.0.0.0",                true),
+                Arguments.of("255.255.255.255",        true),
+                // IPv6 — should be recognised as IP (contains ":")
+                Arguments.of("2001:db8::1",            true),
+                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334", true),
+                Arguments.of("::1",                    true),
+                Arguments.of("::ffff:1.2.3.4",         true),
+                // Domain names — should NOT be recognised as IP
+                Arguments.of("example.com",            false),
+                Arguments.of("sub.example.com",        false),
+                // Strings that have letters mixed with IPv4-like dots
+                Arguments.of("a12.0.0.1",              false),
+                // Out-of-range IPv4 — BouncyCastle rejects these as invalid
+                Arguments.of("256.0.0.1",              false),
+                // Empty / null
+                Arguments.of("",                       false),
+                Arguments.of(null,                     false),
+                // already-bracketed IPv6 — rejected by BouncyCastle IPAddress.isValid()
+                Arguments.of("[2001:db8::1]",          false),
+                // host:port format — rejected by BouncyCastle IPAddress.isValid()
+                Arguments.of("example.com:8080",       false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideIsIpAddressTestData")
+    void isIpAddress(String value, boolean expected) {
+        assertEquals(expected, DomainNameUtils.isIpAddress(value));
+    }
+
+    // -----------------------------------------------------------------------
+    // validateDomainOrIpAddress — valid inputs (should not throw)
+    // -----------------------------------------------------------------------
+
+    static Stream<Arguments> provideValidateDomainOrIpAddress_valid() {
+        return Stream.of(
+                // Valid domain names
+                Arguments.of("example.com"),
+                Arguments.of("sub.example.com"),
+                // Valid public IPv4
+                Arguments.of("1.2.3.4"),
+                Arguments.of("203.0.114.42"),    // outside the RFC 5737 doc range
+                Arguments.of("8.8.8.8"),
+                // Valid public IPv6 (Global Unicast 2000::/3)
+                Arguments.of("2001:db8::1"),
+                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334"),
+                Arguments.of("2600::1")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideValidateDomainOrIpAddress_valid")
+    void validateDomainOrIpAddress_valid(String value) {
+        assertDoesNotThrow(() -> domainNameUtils.validateDomainOrIpAddress(value));
+    }
+
+    // -----------------------------------------------------------------------
+    // validateDomainOrIpAddress — invalid inputs (should throw)
+    // -----------------------------------------------------------------------
+
+    static Stream<Arguments> provideValidateDomainOrIpAddress_invalid() {
+        return Stream.of(
+                // Missing input
+                Arguments.of(null,              DcvError.DOMAIN_REQUIRED),
+                Arguments.of("",               DcvError.DOMAIN_REQUIRED),
+                // Invalid IPv4 (out of range) — IPAddress.isValid() returns false, falls through to domain validation
+                Arguments.of("256.0.0.1",      DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN),
+                // Invalid IPv6 — falls through to domain validation
+                Arguments.of("2001::85a3::7334", DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN),
+                // Invalid domain
+                Arguments.of("example.invalid", DcvError.DOMAIN_INVALID_NOT_UNDER_PUBLIC_SUFFIX),
+                // Private IPv4 — RFC 1918
+                Arguments.of("10.0.0.1",        DcvError.IP_ADDRESS_RESERVED),
+                Arguments.of("172.16.0.1",      DcvError.IP_ADDRESS_RESERVED),
+                Arguments.of("192.168.1.1",     DcvError.IP_ADDRESS_RESERVED),
+                // Loopback
+                Arguments.of("127.0.0.1",       DcvError.IP_ADDRESS_RESERVED),
+                // Link-local
+                Arguments.of("169.254.1.1",     DcvError.IP_ADDRESS_RESERVED),
+                // Multicast
+                Arguments.of("224.0.0.1",       DcvError.IP_ADDRESS_RESERVED),
+                // Reserved
+                Arguments.of("198.51.100.1",    DcvError.IP_ADDRESS_RESERVED),
+                Arguments.of("203.0.113.1",     DcvError.IP_ADDRESS_RESERVED),
+                // IPv6 loopback
+                Arguments.of("::1",             DcvError.IP_ADDRESS_RESERVED),
+                // IPv6 link-local
+                Arguments.of("fe80::1",         DcvError.IP_ADDRESS_RESERVED),
+                // IPv6 ULA (fc00::/7)
+                Arguments.of("fc00::1",         DcvError.IP_ADDRESS_RESERVED)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideValidateDomainOrIpAddress_invalid")
+    void validateDomainOrIpAddress_invalid(String value, DcvError expectedError) {
+        InputException exception = assertThrows(InputException.class,
+                () -> domainNameUtils.validateDomainOrIpAddress(value));
+        assertTrue(exception.getErrors().contains(expectedError),
+                "expected error: " + expectedError + ", got: " + exception.getErrors());
+    }
+
+    // -----------------------------------------------------------------------
+    // validateDomainOrIpAddress — allowReservedIpAddresses bypass (test-only)
+    // -----------------------------------------------------------------------
+
+    static Stream<Arguments> provideReservedIpAddresses() {
+        return Stream.of(
+                Arguments.of("10.0.0.1"),
+                Arguments.of("172.16.0.1"),
+                Arguments.of("192.168.1.1"),
+                Arguments.of("127.0.0.1"),
+                Arguments.of("169.254.1.1"),
+                Arguments.of("224.0.0.1"),
+                Arguments.of("::1"),
+                Arguments.of("fe80::1")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideReservedIpAddresses")
+    void validateDomainOrIpAddress_allowReservedIpAddresses_bypassesReservedCheck(String reservedIp) {
+        DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
+                .allowReservedIpAddresses(true)
+                .build();
+        DomainNameUtils utils = new DomainNameUtils(new DcvContext(config));
+        assertDoesNotThrow(() -> utils.validateDomainOrIpAddress(reservedIp));
+    }
 }

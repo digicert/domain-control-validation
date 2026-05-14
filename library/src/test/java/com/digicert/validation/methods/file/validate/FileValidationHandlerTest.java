@@ -109,6 +109,64 @@ class FileValidationHandlerTest {
     }
 
     @Test
+    void testGetFileUrls_ipv4_noHttps() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .domain("1.2.3.4")
+                .build();
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(request);
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://1.2.3.4/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+    }
+
+    @Test
+    void testGetFileUrls_ipv6_bracketWrapped() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .domain("2001:db8::1")
+                .build();
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(request);
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://[2001:db8::1]/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+    }
+
+    @Test
+    void testGetFileUrls_ipv6_fullAddress_bracketWrapped() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .domain("2001:0db8:85a3:0000:0000:8a2e:0370:7334")
+                .build();
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(request);
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+    }
+
+    @Test
+    void testGetFileUrls_domain_notBracketWrapped() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(getRandomValueFileValidationRequest());
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+        assertFalse(fileUrls.get(0).contains("["));
+    }
+
+    @Test
     void testValidate_validResponse() {
         // Arrange
         when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(getMpicFileDetails(true, null, 200, "randomValue"));

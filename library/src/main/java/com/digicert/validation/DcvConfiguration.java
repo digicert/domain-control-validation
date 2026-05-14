@@ -166,6 +166,19 @@ public class DcvConfiguration {
      */
     private Level logLevelForDcvErrors = Level.WARN;
 
+    /**
+     * Flag to allow reserved/private IP addresses to pass validation without being rejected.
+     * <p>
+     * By default, validation rejects private (RFC 1918) and reserved IP addresses with
+     * {@link com.digicert.validation.enums.DcvError#IP_ADDRESS_RESERVED}. When this flag is
+     * {@code true}, that check is skipped and reserved IPs are treated as valid.
+     * <p>
+     * <strong>WARNING: This flag must never be set to {@code true} in production environments.</strong>
+     * It exists solely to support non-production test environments where validation targets
+     * (e.g., local Docker containers) use private IP address space.
+     */
+    private boolean allowReservedIpAddresses = false;
+
     /** Private constructor to prevent instantiation. */
     private DcvConfiguration() {
         // Private constructor to prevent instantiation
@@ -578,6 +591,25 @@ public class DcvConfiguration {
          */
         public DcvConfigurationBuilder logLevelForDcvErrors(Level logLevelForDcvErrors) {
             dcvConfiguration.setLogLevelForDcvErrors(logLevelForDcvErrors);
+            return this;
+        }
+
+        /**
+         * Allow reserved and private IP addresses to bypass the reserved IP check during validation.
+         * <p>
+         * <strong>WARNING: This method is intended for use in non-production test environments only.</strong>
+         * Enabling this in production would allow validation against private/reserved IP space, which
+         * violates CA/Browser Forum Baseline Requirements.
+         * <p>
+         * Use this only in acceptance or integration test configurations where validation targets
+         * reside on private IP addresses (e.g., local Docker infrastructure).
+         *
+         * @apiNote This method exists solely for test environment support. Do not call it in production code.
+         * @param allowReservedIpAddresses {@code true} to skip the reserved IP check; {@code false} (default) to enforce it
+         * @return the builder instance
+         */
+        public DcvConfigurationBuilder allowReservedIpAddresses(boolean allowReservedIpAddresses) {
+            dcvConfiguration.setAllowReservedIpAddresses(allowReservedIpAddresses);
             return this;
         }
 

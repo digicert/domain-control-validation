@@ -369,6 +369,15 @@ public enum DcvError {
     /** Error indicating an issue when creating the ACME DNS key */
     ACME_DNS_KEY_ERROR,
 
+    /**
+     * Error indicating that the IP address is in a private or reserved range and cannot be used for DCV.
+     * <p>
+     * Private ranges (RFC 1918): 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
+     * Reserved ranges include loopback, link-local, multicast, and other IANA-reserved blocks.
+     * For IPv6, only Global Unicast addresses (2000::/3) are permitted.
+     */
+    IP_ADDRESS_RESERVED,
+
     /** Error indicating that the challenge type is invalid. */
     INVALID_CHALLENGE_TYPE;
 

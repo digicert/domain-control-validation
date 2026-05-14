@@ -1,5 +1,6 @@
 package com.digicert.validation.utils;
 
+import com.digicert.validation.DcvConfiguration;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.LogEvents;
@@ -8,9 +9,13 @@ import com.digicert.validation.psl.DcvDomainName;
 import com.ibm.icu.text.IDNA;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.util.IPAddress;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -89,12 +94,22 @@ public class DomainNameUtils {
     private final PslOverrideSupplier pslOverrideSupplier;
 
     /**
+     * Whether to allow reserved/private IP addresses to bypass the reserved IP check.
+     * <p>
+     * Sourced from {@link com.digicert.validation.DcvConfiguration#isAllowReservedIpAddresses()}.
+     * Must only be {@code true} in non-production test environments.
+     */
+    private final boolean allowReservedIpAddresses;
+
+    /**
      * Constructs a new DomainNameUtils with the specified DcvContext.
      *
      * @param dcvContext context where we can find the needed dependencies and configuration
      */
     public DomainNameUtils(DcvContext dcvContext) {
         this.pslOverrideSupplier = dcvContext.get(PslOverrideSupplier.class);
+        DcvConfiguration config = dcvContext.getDcvConfiguration();
+        this.allowReservedIpAddresses = config != null && config.isAllowReservedIpAddresses();
     }
 
     /**
@@ -292,5 +307,157 @@ public class DomainNameUtils {
      */
     public static boolean isValidEmailAddress(String email) {
         return EMAIL_PATTERN.matcher(email).matches();
+    }
+
+    // -----------------------------------------------------------------------
+    // IP address helpers
+    // -----------------------------------------------------------------------
+
+    /**
+     * Checks if the given value is an IP address (IPv4 or IPv6).
+     * <p>
+     * Uses BouncyCastle {@link IPAddress#isValid(String)} for consistent, pure-parser validation
+     * with no DNS resolution side-effects.
+     *
+     * @param value the value to check
+     * @return true if the value is a valid IPv4 or IPv6 address, false otherwise
+     */
+    public static boolean isIpAddress(String value) {
+        if (StringUtils.isEmpty(value)) return false;
+        return IPAddress.isValid(value);
+    }
+
+    /**
+     * Validates the given value as either a domain name or an IP address.
+     * <p>
+     * If the value is a valid IP address (per {@link #isIpAddress(String)}), it is checked against
+     * private and reserved ranges. Private IPv4 ranges (RFC 1918), reserved IPv4 ranges, loopback,
+     * link-local, and multicast addresses are rejected with {@link DcvError#IP_ADDRESS_RESERVED}.
+     * For IPv6, only Global Unicast addresses ({@code 2000::/3}) are permitted.
+     * <p>
+     * If the value does not look like an IP address, it is validated as a domain name via
+     * {@link #validateDomainName(String)}.
+     *
+     * @param value the domain name or IP address to validate
+     * @throws InputException if the value is empty, is a private/reserved IP address,
+     *                        or is not a valid domain name
+     */
+    public void validateDomainOrIpAddress(String value) throws InputException {
+        if (StringUtils.isEmpty(value)) {
+            throw new InputException(DcvError.DOMAIN_REQUIRED);
+        }
+        if (isIpAddress(value)) {
+            if (isPrivateOrReservedIpAddress(value)) {
+                throw new InputException(DcvError.IP_ADDRESS_RESERVED);
+            }
+            return;
+        }
+        validateDomainName(value);
+    }
+
+    /**
+     * Returns true if the IP address is in a private or reserved range.
+     * <p>
+     * For IPv4: rejects RFC 1918 private ranges, loopback, link-local, multicast, and other
+     * IANA-reserved blocks (mirroring {@code ValidationUtils.isPrivateIpv4} and
+     * {@code ValidationUtils.isReservedIpv4}).
+     * <p>
+     * For IPv6: rejects all addresses outside the Global Unicast range ({@code 2000::/3}).
+     * <p>
+     * If {@code allowReservedIpAddresses} is {@code true}, this method always returns {@code false}
+     * and logs a warning instead of rejecting the address.
+     *
+     * @param ip a value already confirmed to be a valid IP address via {@link #isIpAddress(String)}
+     * @return true if the address is private or reserved and the check is enforced, false otherwise
+     */
+    private boolean isPrivateOrReservedIpAddress(String ip) {
+        boolean reserved = IPAddress.isValidIPv4(ip) ? isPrivateOrReservedIpv4(ip) : !isPublicIPv6(ip);
+        if (reserved && allowReservedIpAddresses) {
+            log.warn("event_id={} ip_address={} message=\"Reserved IP check bypassed - ensure this is running in a test environment only\"",
+                    LogEvents.RESERVED_IP_CHECK_BYPASSED, ip);
+            return false;
+        }
+        return reserved;
+    }
+
+    /**
+     * All IPv4 ranges that are private, reserved, or otherwise not permitted for DCV.
+     * Initialised once as a static constant.
+     * <p>
+     * Covers:
+     * <ul>
+     *   <li>RFC 1918 private ranges: 10/8, 172.16/12, 192.168/16</li>
+     *   <li>Loopback: 127/8 (RFC 5735)</li>
+     *   <li>Multicast: 224/4 (RFC 1112)</li>
+     *   <li>"This" network: 0/8 (RFC 1700)</li>
+     *   <li>Shared address space: 100.64/10 (RFC 6598)</li>
+     *   <li>Link-local: 169.254/16 (RFC 3927)</li>
+     *   <li>IETF protocol assignments: 192.0.0/24 (RFC 5736)</li>
+     *   <li>TEST-NET-1/2/3: 192.0.2/24, 198.51.100/24, 203.0.113/24 (RFC 5737)</li>
+     *   <li>6to4 relay anycast: 192.88.99/24 (RFC 3068)</li>
+     *   <li>Benchmarking: 198.18/15 (RFC 2544)</li>
+     *   <li>Reserved: 240/4 – 255.255.255.255 (RFC 6890)</li>
+     * </ul>
+     */
+    private static final Map<Long, Long> RESTRICTED_IPV4_RANGES = Map.ofEntries(
+            Map.entry(ipToLong("10.0.0.0"),      ipToLong("10.255.255.255")),   // RFC 1918
+            Map.entry(ipToLong("172.16.0.0"),    ipToLong("172.31.255.255")),   // RFC 1918
+            Map.entry(ipToLong("192.168.0.0"),   ipToLong("192.168.255.255")),  // RFC 1918
+            Map.entry(ipToLong("127.0.0.0"),     ipToLong("127.255.255.255")),  // loopback RFC 5735
+            Map.entry(ipToLong("224.0.0.0"),     ipToLong("239.255.255.255")),  // multicast RFC 1112
+            Map.entry(ipToLong("0.0.0.0"),       ipToLong("0.255.255.255")),    // RFC 1700
+            Map.entry(ipToLong("100.64.0.0"),    ipToLong("100.127.255.255")),  // RFC 6598
+            Map.entry(ipToLong("169.254.0.0"),   ipToLong("169.254.255.255")),  // RFC 3927 link-local
+            Map.entry(ipToLong("192.0.0.0"),     ipToLong("192.0.0.255")),      // RFC 5736
+            Map.entry(ipToLong("192.0.2.0"),     ipToLong("192.0.2.255")),      // RFC 5737
+            Map.entry(ipToLong("192.88.99.0"),   ipToLong("192.88.99.255")),    // RFC 3068
+            Map.entry(ipToLong("198.18.0.0"),    ipToLong("198.19.255.255")),   // RFC 2544
+            Map.entry(ipToLong("198.51.100.0"),  ipToLong("198.51.100.255")),   // RFC 5737
+            Map.entry(ipToLong("203.0.113.0"),   ipToLong("203.0.113.255")),    // RFC 5737
+            Map.entry(ipToLong("240.0.0.0"),     ipToLong("255.255.255.255"))   // RFC 6890
+    );
+
+    /**
+     * Returns true if the IPv4 address is in a private or reserved range.
+     * Covers RFC 1918 private ranges, loopback (127.x), link-local (169.254.x),
+     * multicast (224-239.x), and additional IANA-reserved blocks.
+     */
+    private static boolean isPrivateOrReservedIpv4(String ip) {
+        long addr = ipToLong(ip);
+        for (Map.Entry<Long, Long> entry : RESTRICTED_IPV4_RANGES.entrySet()) {
+            if (isIpInRange(addr, entry.getKey(), entry.getValue())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if the IPv6 address is publicly routable (Global Unicast, {@code 2000::/3}).
+     * Only the Global Unicast range is considered a valid public address for DCV purposes.
+     * All other ranges (loopback ::1, link-local fe80::/10, ULA fc00::/7, etc.) are rejected.
+     */
+    private static boolean isPublicIPv6(String ip) {
+        try {
+            InetAddress addr = InetAddress.getByName(ip);
+            // 2000::/3 — first 3 bits must be 001 (first byte & 0xE0 == 0x20)
+            byte[] bytes = addr.getAddress();
+            if (bytes.length != 16) return false; // not IPv6
+            return (bytes[0] & 0xE0) == 0x20;
+        } catch (UnknownHostException e) {
+            return false;
+        }
+    }
+
+    /** Converts a dotted-decimal IPv4 string to a long value for range comparisons. */
+    private static long ipToLong(String ip) {
+        String[] parts = ip.split("\\.");
+        return (Long.parseLong(parts[0]) << 24) +
+               (Long.parseLong(parts[1]) << 16) +
+               (Long.parseLong(parts[2]) << 8) +
+                Long.parseLong(parts[3]);
+    }
+
+    /** Returns true if {@code address} falls within [{@code begin}, {@code end}] inclusive. */
+    private static boolean isIpInRange(long address, long begin, long end) {
+        return address >= begin && address <= end;
     }
 }

@@ -89,7 +89,10 @@ public enum LogEvents {
     SECURITY_PROVIDER_LOAD_ERROR,
 
     /** Log event indicating a failure in creating the SSL context. Should not be reachable and would indicate a Java library mismatch. */
-    SSL_CONTEXT_CREATION_ERROR;
+    SSL_CONTEXT_CREATION_ERROR,
+
+    /** Log event indicating that a reserved/private IP address was allowed to bypass the reserved IP check due to the allowReservedIpAddresses configuration flag. */
+    RESERVED_IP_CHECK_BYPASSED;
 
     /**
      * Returns the lowercase string representation of the event.
