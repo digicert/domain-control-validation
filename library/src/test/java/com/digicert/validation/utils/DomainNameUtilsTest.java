@@ -221,6 +221,7 @@ class DomainNameUtilsTest {
     void getBaseDomainWithPslOverrides(String domain, String expectedBaseDomain) throws InputException {
         DcvContext dcvContext = mock(DcvContext.class);
         doReturn(supplierWithOverrides).when(dcvContext).get(PslOverrideSupplier.class);
+        doReturn(new DcvConfiguration.DcvConfigurationBuilder().build()).when(dcvContext).getDcvConfiguration();
         DomainNameUtils overriddenUtils = new DomainNameUtils(dcvContext);
         assertEquals(expectedBaseDomain, overriddenUtils.getBaseDomain(domain));
     }
@@ -247,6 +248,7 @@ class DomainNameUtilsTest {
     void getBaseDomainWithPslOverrides_invalid(String domain) {
         DcvContext dcvContext = mock(DcvContext.class);
         doReturn(supplierWithOverrides).when(dcvContext).get(PslOverrideSupplier.class);
+        doReturn(new DcvConfiguration.DcvConfigurationBuilder().build()).when(dcvContext).getDcvConfiguration();
         DomainNameUtils overriddenUtils = new DomainNameUtils(dcvContext);
         assertThrows(InputException.class, () -> overriddenUtils.getBaseDomain(domain));
     }
@@ -277,6 +279,7 @@ class DomainNameUtilsTest {
     void getBaseDomain_invalid(String domain) {
         DcvContext dcvContext = mock(DcvContext.class);
         doReturn(supplierWithOverrides).when(dcvContext).get(PslOverrideSupplier.class);
+        doReturn(new DcvConfiguration.DcvConfigurationBuilder().build()).when(dcvContext).getDcvConfiguration();
         DomainNameUtils overriddenUtils = new DomainNameUtils(dcvContext);
         InputException inputException = assertThrows(InputException.class, () -> overriddenUtils.getBaseDomain(domain));
         assertTrue(inputException.getErrors().contains(DcvError.DOMAIN_INVALID_INCORRECT_NAME_PATTERN));

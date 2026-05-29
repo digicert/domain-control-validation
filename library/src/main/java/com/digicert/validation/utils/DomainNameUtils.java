@@ -96,7 +96,7 @@ public class DomainNameUtils {
     /**
      * Whether to allow reserved/private IP addresses to bypass the reserved IP check.
      * <p>
-     * Sourced from {@link com.digicert.validation.DcvConfiguration#isAllowReservedIpAddresses()}.
+     * Sourced from {@link com.digicert.validation.DcvConfiguration.DcvConfigurationBuilder#allowReservedIpAddresses(boolean)}.
      * Must only be {@code true} in non-production test environments.
      */
     private final boolean allowReservedIpAddresses;
@@ -108,8 +108,7 @@ public class DomainNameUtils {
      */
     public DomainNameUtils(DcvContext dcvContext) {
         this.pslOverrideSupplier = dcvContext.get(PslOverrideSupplier.class);
-        DcvConfiguration config = dcvContext.getDcvConfiguration();
-        this.allowReservedIpAddresses = config != null && config.isAllowReservedIpAddresses();
+        this.allowReservedIpAddresses = dcvContext.getDcvConfiguration().isAllowReservedIpAddresses();
     }
 
     /**
