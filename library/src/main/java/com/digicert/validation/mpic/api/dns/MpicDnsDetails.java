@@ -13,5 +13,14 @@ import java.util.List;
 public record MpicDnsDetails(MpicDetails mpicDetails,
                              String domain,
                              List<DnsRecord> dnsRecords,
-                             DcvError dcvError) {
+                             DcvError dcvError,
+                             List<SecondaryDnsResponse> secondaryDnsResponses) {
+
+    /** Backward-compatible constructor that defaults secondary DNS responses to an empty list. */
+    public MpicDnsDetails(MpicDetails mpicDetails,
+                          String domain,
+                          List<DnsRecord> dnsRecords,
+                          DcvError dcvError) {
+        this(mpicDetails, domain, dnsRecords, dcvError, List.of());
+    }
 }

@@ -86,7 +86,7 @@ class AcmeValidatorTest {
         assertNotNull(evidence.getMpicDetails());
         assertEquals("primary-agent", evidence.getMpicDetails().primaryAgentId());
         assertEquals(DcvMethod.BR_3_2_2_4_7, evidence.getDcvMethod());
-        assertEquals("v2.1.1", DomainValidationEvidence.BR_VERSION);
+        assertEquals("v2.2.6", DomainValidationEvidence.BR_VERSION);
         assertEquals(randomValue, evidence.getRandomValue());
         assertNotNull(evidence.getValidationDate());
         assertEquals("_acme-challenge." + domain, evidence.getDnsRecordName());

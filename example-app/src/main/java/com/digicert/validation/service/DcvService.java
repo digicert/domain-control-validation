@@ -1,35 +1,21 @@
 package com.digicert.validation.service;
 
-import java.util.List;
-import java.util.Objects;
-
+import com.digicert.validation.DcvManager;
 import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.common.DomainValidationEvidence;
-import com.digicert.validation.enums.AcmeType;
-import com.digicert.validation.methods.acme.prepare.AcmePreparation;
-import com.digicert.validation.methods.acme.prepare.AcmePreparationResponse;
-import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
-import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
-import com.digicert.validation.methods.file.validate.FileValidationRequest;
-import org.springframework.stereotype.Component;
-
-import com.digicert.validation.DcvManager;
 import com.digicert.validation.common.ValidationState;
 import com.digicert.validation.controller.resource.request.DcvRequest;
 import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
-import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.enums.AcmeType;
 import com.digicert.validation.enums.ChallengeType;
-import com.digicert.validation.exceptions.DcvBaseException;
-import com.digicert.validation.exceptions.DcvException;
-import com.digicert.validation.exceptions.DomainNotFoundException;
-import com.digicert.validation.exceptions.EmailFailedException;
-import com.digicert.validation.exceptions.InvalidDcvRequestException;
-import com.digicert.validation.exceptions.PreparationException;
-import com.digicert.validation.exceptions.ValidationFailedException;
-import com.digicert.validation.exceptions.ValidationStateParsingException;
+import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.exceptions.*;
+import com.digicert.validation.methods.acme.prepare.AcmePreparation;
+import com.digicert.validation.methods.acme.prepare.AcmePreparationResponse;
+import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
 import com.digicert.validation.methods.dns.prepare.DnsPreparation;
 import com.digicert.validation.methods.dns.prepare.DnsPreparationResponse;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
@@ -37,7 +23,9 @@ import com.digicert.validation.methods.email.prepare.EmailPreparation;
 import com.digicert.validation.methods.email.prepare.EmailPreparationResponse;
 import com.digicert.validation.methods.email.prepare.EmailSource;
 import com.digicert.validation.methods.email.validate.EmailValidationRequest;
+import com.digicert.validation.methods.file.prepare.FilePreparationRequest;
 import com.digicert.validation.methods.file.prepare.FilePreparationResponse;
+import com.digicert.validation.methods.file.validate.FileValidationRequest;
 import com.digicert.validation.repository.AccountsRepository;
 import com.digicert.validation.repository.DomainsRepository;
 import com.digicert.validation.repository.entity.AccountsEntity;
@@ -45,8 +33,11 @@ import com.digicert.validation.repository.entity.DomainEntity;
 import com.digicert.validation.repository.entity.DomainRandomValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Objects;
 
 @Component
 @Slf4j
@@ -72,7 +63,7 @@ public class DcvService {
 
         try {
             switch (dcvRequest.dcvRequestType()) {
-                case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> createdEntity = submitDnsDomain(dcvRequest);
+                case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT -> createdEntity = submitDnsDomain(dcvRequest);
                 case EMAIL_CONSTRUCTED, EMAIL_DNS_TXT, EMAIL_DNS_CAA -> createdEntity = submitEmailDomain(dcvRequest);
                 case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
                 case ACME_DNS, ACME_HTTP -> createdEntity = submitAcmeDomain(dcvRequest);
@@ -92,7 +83,7 @@ public class DcvService {
         long accountId = domainEntity.getAccountId();
 
         DomainValidationEvidence evidence = switch (validateRequest.dcvRequestType) {
-            case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN -> validateDnsDomain(accountId, validationState, validateRequest);
+            case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT -> validateDnsDomain(accountId, validationState, validateRequest);
             case EMAIL_CONSTRUCTED, EMAIL_DNS_TXT, EMAIL_DNS_CAA ->
                     validateEmailDomain(validationState, validateRequest);
             case FILE_VALIDATION, FILE_VALIDATION_TOKEN ->
@@ -269,6 +260,11 @@ public class DcvService {
                 }
             }
             case DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN -> {} // No random value to check
+            case DNS_TXT_PERSISTENT -> {
+                if (!accountsRepository.existsByAccountIdAndAccountUri(domainEntity.accountId, validateRequest.accountUri)) {
+                    throw new InvalidDcvRequestException("Supplied accountUri is not owned by account");
+                }
+            }
         }
     }
 
@@ -301,6 +297,10 @@ public class DcvService {
             );
         }
 
+        if (validateRequest.dcvRequestType == DcvRequestType.DNS_TXT_PERSISTENT) {
+            requestBuilder.accountUri(validateRequest.accountUri);
+        }
+
         DnsValidationRequest dnsValidationRequest = requestBuilder.build();
 
         try {
@@ -314,6 +314,7 @@ public class DcvService {
         return switch (dcvRequestType) {
             case FILE_VALIDATION, DNS_TXT, DNS_CNAME -> ChallengeType.RANDOM_VALUE;
             case FILE_VALIDATION_TOKEN, DNS_TXT_TOKEN -> ChallengeType.REQUEST_TOKEN;
+            case DNS_TXT_PERSISTENT -> ChallengeType.PERSISTENT_VALUE;
             default -> throw new IllegalStateException("Unexpected value: " + dcvRequestType);
         };
     }
@@ -402,7 +403,7 @@ public class DcvService {
 
     private DnsType mapToDnsType(DcvRequestType dcvRequestType) throws DcvBaseException {
         return switch (dcvRequestType) {
-            case DNS_TXT, DNS_TXT_TOKEN -> DnsType.TXT;
+            case DNS_TXT, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT -> DnsType.TXT;
             case DNS_CNAME -> DnsType.CNAME;
             default -> throw new InvalidDcvRequestException("Invalid dcvRequestType, must be one of the following"
                     + List.of(DcvRequestType.values()));
@@ -410,6 +411,10 @@ public class DcvService {
     }
 
     public void createTokenForAccount(long accountId, String tokenKey) {
-        accountsRepository.save(new AccountsEntity(accountId, tokenKey));
+        accountsRepository.save(new AccountsEntity(accountId, tokenKey, null));
+    }
+
+    public void createUriForAccount(long accountId, String accountUri) {
+        accountsRepository.save(new AccountsEntity(accountId, null, accountUri));
     }
 }

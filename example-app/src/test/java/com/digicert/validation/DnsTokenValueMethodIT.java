@@ -1,6 +1,7 @@
 package com.digicert.validation;
 
 import com.digicert.validation.challenges.BasicRequestTokenData;
+import com.digicert.validation.challenges.BasicRequestTokenUtils;
 import com.digicert.validation.client.ExampleAppClient;
 import com.digicert.validation.client.PdnsClient;
 import com.digicert.validation.controller.resource.request.DcvRequest;
@@ -8,7 +9,6 @@ import com.digicert.validation.controller.resource.request.DcvRequestType;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
 import com.digicert.validation.controller.resource.response.DcvRequestStatus;
 import com.digicert.validation.controller.resource.response.DomainResource;
-import com.digicert.validation.challenges.BasicRequestTokenUtils;
 import com.digicert.validation.utils.CSRGenerator;
 import com.digicert.validation.utils.DomainUtils;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class DnsTokenValueMethodIT {
         assertCreatedDomain(dcvRequest, createdDomain);
 
         // Create PDNS DNS Text Entry for the domain with the random value
-        pdnsClient.addRandomValueToRecord(domainName, dnsTxtTokenValue, PdnsClient.PdnsRecordType.TXT);
+        pdnsClient.addValueToRecord(domainName, dnsTxtTokenValue, PdnsClient.PdnsRecordType.TXT);
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(dcvRequest.domain(), hashingValue);
@@ -88,7 +88,7 @@ class DnsTokenValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         List<String> randomValues = List.of("some-other-token-value", "some-other-token-value2", dnsTxtTokenValue, "some-other-token-value3", "some-other-token-value4");
-        pdnsClient.addRandomValueToRecord(domainName, randomValues, PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(domainName, randomValues, PdnsClient.PdnsRecordType.TXT, "");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(dcvRequest.domain(), hashingValue);

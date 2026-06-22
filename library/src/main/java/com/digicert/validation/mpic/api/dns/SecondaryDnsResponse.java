@@ -12,11 +12,25 @@ import java.util.List;
  */
 public record SecondaryDnsResponse(String agentId,
                                    AgentStatus agentStatus,
+                                   String agentRIR,
                                    DnssecDetails dnssecDetails,
                                    boolean corroborates,
                                    List<DnsRecord> dnsRecords,
                                    List<DnsRecord> cnameChain,
                                    boolean cnameChainCorroborates) {
+
+    /**
+     * Backward-compatible constructor that defaults agentRIR to "UNKNOWN".
+     */
+    public SecondaryDnsResponse(String agentId,
+                         AgentStatus agentStatus,
+                         DnssecDetails dnssecDetails,
+                         boolean corroborates,
+                         List<DnsRecord> dnsRecords,
+                         List<DnsRecord> cnameChain,
+                         boolean cnameChainCorroborates){
+        this(agentId,agentStatus,"UNKNOWN",dnssecDetails,corroborates,dnsRecords,cnameChain,cnameChainCorroborates);
+    }
 
     /** Backward-compatible constructor that defaults dnssecDetails to null. */
     public SecondaryDnsResponse(String agentId,

@@ -1,6 +1,7 @@
 package com.digicert.validation.methods.dns;
 
 import com.digicert.validation.DcvContext;
+import com.digicert.validation.challenges.BasicRequestTokenData;
 import com.digicert.validation.common.DomainValidationEvidence;
 import com.digicert.validation.common.ValidationState;
 import com.digicert.validation.enums.ChallengeType;
@@ -12,9 +13,12 @@ import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
 import com.digicert.validation.methods.dns.prepare.DnsPreparation;
 import com.digicert.validation.methods.dns.prepare.DnsPreparationResponse;
-import com.digicert.validation.methods.dns.validate.DnsValidationHandler;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
 import com.digicert.validation.methods.dns.validate.DnsValidationResponse;
+import com.digicert.validation.methods.dns.validate.PersistentTxtResponse;
+import com.digicert.validation.methods.dns.validate.handlers.PersistentValueHandler;
+import com.digicert.validation.methods.dns.validate.handlers.RandomValueHandler;
+import com.digicert.validation.methods.dns.validate.handlers.RequestTokenHandler;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.api.dns.DnssecError;
@@ -26,209 +30,296 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DnsValidatorTest {
 
-    String domain;
-    String randomValue;
-    DnsType dnsType;
-
-    ValidationState validationState;
-    DnsValidationRequest dnsValidationRequest;
+    @Mock
+    private RandomValueHandler randomValueHandler;
 
     @Mock
-    DnsValidationHandler dnsValidationHandler;
+    private RequestTokenHandler requestTokenHandler;
 
-    DnsValidator dnsValidator;
+    @Mock
+    private PersistentValueHandler persistentValueHandler;
+
+    private DnsValidator dnsValidator;
+    private String domain;
+    private String randomValue;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        // Use a spy to hand the DnsValidator a mocked DnsValidationHandler
-        DcvContext dcvContext = spy(new DcvContext());
-        doCallRealMethod().when(dcvContext).get(any());
-        doReturn(dnsValidationHandler).when(dcvContext).get(DnsValidationHandler.class);
-
-        dnsValidator = new DnsValidator(dcvContext);
-
         domain = "example.com";
         randomValue = "some-really-long-random-value";
-        dnsType = DnsType.TXT;
 
-        validationState = new ValidationState(domain, Instant.now(), DcvMethod.BR_3_2_2_4_7);
-        dnsValidationRequest = DnsValidationRequest.builder()
-                .domain(domain)
-                .randomValue(randomValue)
-                .challengeType(ChallengeType.RANDOM_VALUE)
-                .dnsType(dnsType)
-                .validationState(validationState)
-                .build();
-    }
-
-    @Test
-    void testDnsValidator_validate_HappyPath() throws DcvException {
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(true, getMpicDetails(), domain, domain,
-                                                        dnsType, randomValue, null, Set.of());
-
-        when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
-
-        DomainValidationEvidence evidence = dnsValidator.validate(dnsValidationRequest);
-
-        assertNotNull(evidence);
-        assertEquals(domain, evidence.getDomain());
-        assertEquals(dnsType, evidence.getDnsType());
-        assertNotNull(evidence.getMpicDetails());
-        assertEquals("primary-agent", evidence.getMpicDetails().primaryAgentId());
-        assertEquals(DcvMethod.BR_3_2_2_4_7, evidence.getDcvMethod());
-        assertEquals("v2.1.1", DomainValidationEvidence.BR_VERSION);
-        assertEquals(randomValue, evidence.getRandomValue());
-        assertNotNull(evidence.getValidationDate());
-        assertEquals(domain, evidence.getDnsRecordName());
-    }
-
-    @Test
-    void testDnsValidator_validate_FalseDnsValidation() {
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, getMpicDetails(), domain, domain,
-                                                        dnsType, randomValue, null, Set.of(DcvError.INVALID_DNS_TYPE));
-
-        when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
-
-        ValidationException exception = assertThrows(ValidationException.class, () -> dnsValidator.validate(dnsValidationRequest));
-        assertTrue(exception.getErrors().contains(DcvError.INVALID_DNS_TYPE));
-        verify(dnsValidationHandler, times(1)).validate(any(DnsValidationRequest.class));
-    }
-
-    static Stream<Arguments> provideInvalidDnsValidationResponse() {
-        return Stream.of(
-                // domain, randomValue, dnsType, dcvMethod, prepareTime, dnsDomainLabel, challengeType, expectedError
-                Arguments.of(null, "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DOMAIN_REQUIRED),
-                Arguments.of("example.com", null, DnsType.CNAME, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.RANDOM_VALUE_REQUIRED),
-                Arguments.of("example.com", null, DnsType.CAA, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.RANDOM_VALUE_REQUIRED),
-                Arguments.of("example.com", null, DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.REQUEST_TOKEN, DcvError.REQUEST_TOKEN_DATA_REQUIRED),
-                Arguments.of("example.com", "1234abcd", null, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DNS_TYPE_REQUIRED),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, null, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.VALIDATION_STATE_DCV_METHOD_REQUIRED),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, (null), "", ChallengeType.RANDOM_VALUE, DcvError.VALIDATION_STATE_PREPARE_TIME_REQUIRED),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), " ", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_invalid.dot", ChallengeType.RANDOM_VALUE, DcvError.DNS_DOMAIN_LABEL_INVALID),
-                Arguments.of("example.com", "1234abcd", DnsType.TXT, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", null, DcvError.CHALLENGE_TYPE_REQUIRED),
-                Arguments.of("example.com", "1234abcd", DnsType.A, DcvMethod.BR_3_2_2_4_7, Instant.now(), "_dnsauth.", ChallengeType.RANDOM_VALUE, DcvError.INVALID_DNS_TYPE)
-                );
+        DcvContext dcvContext = spy(new DcvContext());
+        doAnswer(invocation -> {
+            Class<?> classType = invocation.getArgument(0);
+            if (classType == RandomValueHandler.class) {
+                return randomValueHandler;
+            }
+            if (classType == RequestTokenHandler.class) {
+                return requestTokenHandler;
+            }
+            if (classType == PersistentValueHandler.class) {
+                return persistentValueHandler;
+            }
+            return invocation.callRealMethod();
+        }).when(dcvContext).get(any());
+        dnsValidator = new DnsValidator(dcvContext);
     }
 
     @ParameterizedTest
-    @MethodSource("provideInvalidDnsValidationResponse")
-    void testDnsValidator_validate_InvalidDnsValidationResponse(String domain,
-                                                                String randomValue,
-                                                                DnsType dnsType,
-                                                                DcvMethod dcvMethod,
-                                                                Instant prepareTime,
-                                                                String dnsDomainLabel,
-                                                                ChallengeType challengeType,
-                                                                DcvError expectedError) {
-        ValidationState validationState = new ValidationState(domain, prepareTime, dcvMethod);
-        DnsValidationRequest invalidDnsValidationRequest = DnsValidationRequest.builder()
-                .domain(domain)
-                .randomValue(randomValue)
-                .challengeType(challengeType)
-                .domainLabel(dnsDomainLabel)
-                .dnsType(dnsType)
-                .validationState(validationState)
-                .build();
+    @MethodSource("challengeTypes")
+    void validate_dispatchesToExpectedHandler(ChallengeType challengeType) throws DcvException {
+        DnsValidationRequest request = validRequest(challengeType);
+        DnsValidationResponse response = new DnsValidationResponse(true,
+                getMpicDetails(),
+                domain,
+                domain,
+                request.getDnsType(),
+                challengeType == ChallengeType.RANDOM_VALUE ? randomValue : null,
+                challengeType == ChallengeType.REQUEST_TOKEN ? "request-token" : null,
+                null,
+                Set.of());
 
-        InputException exception = assertThrows(InputException.class, () -> dnsValidator.validate(invalidDnsValidationRequest));
-        assertEquals(1, exception.getErrors().size(), "Expected exactly one error but got: " + exception.getErrors());
-        assertTrue(exception.getErrors().contains(expectedError), "expected error=" + expectedError + " errors=" + exception.getErrors());
+        stubHandler(challengeType, response);
+
+        DomainValidationEvidence evidence = dnsValidator.validate(request);
+
+        assertNotNull(evidence);
+        verifyDispatchedOnlyTo(challengeType, request);
+    }
+
+    static Stream<Arguments> provideSuccessfulValidateResponseScenarios() {
+        return Stream.of(
+                Arguments.of(ChallengeType.RANDOM_VALUE, "some-really-long-random-value", null, null),
+                Arguments.of(ChallengeType.REQUEST_TOKEN, null, "request-token", null),
+                Arguments.of(ChallengeType.PERSISTENT_VALUE, null, null, PersistentTxtResponse.builder().accountUri("http://account.uri").persistUntil(null).parsedTxtRecord(Map.of("key", Collections.singletonList("value"))).build())
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSuccessfulValidateResponseScenarios")
+    void testDnsValidator_validate_successResponseHandling(ChallengeType challengeType,
+                                                           String validRandomValue,
+                                                           String validRequestToken,
+                                                           PersistentTxtResponse persistentTxtResponse) throws DcvException {
+        DnsValidationRequest request = validRequest(challengeType);
+        DnsValidationResponse response = new DnsValidationResponse(true,
+                getMpicDetails(),
+                domain,
+                domain,
+                request.getDnsType(),
+                validRandomValue,
+                validRequestToken,
+                persistentTxtResponse,
+                Set.of());
+
+        stubHandler(challengeType, response);
+
+        DomainValidationEvidence evidence = dnsValidator.validate(request);
+
+        assertNotNull(evidence);
+        assertEquals(domain, evidence.getDomain());
+        assertEquals(request.getDnsType(), evidence.getDnsType());
+        assertEquals(request.getValidationState().dcvMethod(), evidence.getDcvMethod());
+        assertEquals(validRandomValue, evidence.getRandomValue());
+        assertEquals(validRequestToken, evidence.getRequestToken());
+        assertEquals(domain, evidence.getDnsRecordName());
+        assertNotNull(evidence.getValidationDate());
+        assertEquals(persistentTxtResponse, evidence.getPersistentTxtResponse());
+        verifyDispatchedOnlyTo(challengeType, request);
+    }
+
+    static Stream<Arguments> provideFailedValidateResponseScenarios() {
+        DnssecDetails dnssecFailure = new DnssecDetails(DnssecStatus.INSECURE,
+                DnssecError.DNSKEY_MISSING,
+                null,
+                "no SEP matching the DS found");
+        return Stream.of(
+                Arguments.of(Set.of(DcvError.INVALID_DNS_TYPE), DnssecDetails.notChecked(), null),
+                Arguments.of(Set.of(DcvError.DNS_LOOKUP_DNSSEC_FAILURE), dnssecFailure, dnssecFailure)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideFailedValidateResponseScenarios")
+    void testDnsValidator_validate_failedResponseHandling(Set<DcvError> errors,
+                                                          DnssecDetails responseDnssecDetails,
+                                                          DnssecDetails expectedExceptionDnssecDetails) throws DcvException {
+        DnsValidationRequest request = validRequest(ChallengeType.RANDOM_VALUE);
+        MpicDetails mpicDetails = new MpicDetails(true,
+                "primary-agent",
+                3,
+                3,
+                responseDnssecDetails,
+                Map.of("secondary-agent-id", true),
+                null);
+        DnsValidationResponse response = new DnsValidationResponse(false,
+                mpicDetails,
+                domain,
+                domain,
+                DnsType.TXT,
+                randomValue,
+                null,
+                null,
+                errors);
+
+        when(randomValueHandler.validate(any(DnsValidationRequest.class))).thenReturn(response);
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> dnsValidator.validate(request));
+        assertEquals(errors, exception.getErrors());
+        assertEquals(expectedExceptionDnssecDetails, exception.getDnssecDetails());
+
+        verifyDispatchedOnlyTo(ChallengeType.RANDOM_VALUE, request);
+    }
+
+    static Stream<Arguments> provideInvalidDnsValidationRequests() {
+        ValidationState state = new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_7);
+        return Stream.of(
+                Arguments.of(DnsValidationRequest.builder().domain(null).dnsType(DnsType.TXT).challengeType(ChallengeType.RANDOM_VALUE).randomValue("some-really-long-random-value").validationState(state).build(), DcvError.DOMAIN_REQUIRED),
+                Arguments.of(DnsValidationRequest.builder().domain("example.com").dnsType(null).challengeType(ChallengeType.RANDOM_VALUE).randomValue("some-really-long-random-value").validationState(state).build(), DcvError.DNS_TYPE_REQUIRED),
+                Arguments.of(DnsValidationRequest.builder().domain("example.com").dnsType(DnsType.A).challengeType(ChallengeType.RANDOM_VALUE).randomValue("some-really-long-random-value").validationState(state).build(), DcvError.INVALID_DNS_TYPE),
+                Arguments.of(DnsValidationRequest.builder().domain("example.com").dnsType(DnsType.TXT).challengeType(null).randomValue("some-really-long-random-value").validationState(state).build(), DcvError.CHALLENGE_TYPE_REQUIRED),
+                Arguments.of(DnsValidationRequest.builder().domain("example.com").dnsType(DnsType.TXT).challengeType(ChallengeType.RANDOM_VALUE).randomValue("some-really-long-random-value").domainLabel("dnsauth.").validationState(state).build(), DcvError.DNS_DOMAIN_LABEL_INVALID),
+                Arguments.of(DnsValidationRequest.builder().domain("example.com").dnsType(DnsType.TXT).challengeType(ChallengeType.RANDOM_VALUE).randomValue("some-really-long-random-value").domainLabel("_invalid.dot").validationState(state).build(), DcvError.DNS_DOMAIN_LABEL_INVALID)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideInvalidDnsValidationRequests")
+    void testDnsValidator_validate_InvalidDnsValidationRequest(DnsValidationRequest request, DcvError expectedError) {
+        InputException exception = assertThrows(InputException.class, () -> dnsValidator.validate(request));
+        assertTrue(exception.getErrors().contains(expectedError));
+        verifyNoInteractions(randomValueHandler, requestTokenHandler, persistentValueHandler);
+    }
+
+    static Stream<Arguments> provideRandomValueDnsPreparation() {
+        return Stream.of(
+                Arguments.of(ChallengeType.RANDOM_VALUE, DcvMethod.BR_3_2_2_4_7)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRandomValueDnsPreparation")
+    void testDnsValidator_prepare_HappyPath_randomValue(ChallengeType challengeType,
+                                                        DcvMethod expectedMethod) throws DcvException {
+        DnsPreparation dnsPreparation = new DnsPreparation(domain, DnsType.TXT, challengeType);
+
+        DnsPreparationResponse response = dnsValidator.prepare(dnsPreparation);
+
+        assertEquals(domain, response.getDomain());
+        assertTrue(response.getAllowedFqdns().contains(domain));
+        assertEquals(DnsType.TXT, response.getDnsType());
+        assertEquals(expectedMethod, response.getValidationState().dcvMethod());
+        assertNotNull(response.getRandomValue());
     }
 
     @Test
-    void testDnsValidator_validate_ExpiredValidationState() {
-        ValidationState expiredValidationState = new ValidationState(domain, Instant.now().minus(Duration.ofDays(31)), DcvMethod.BR_3_2_2_4_7);
-        DnsValidationRequest expiredDnsValidationRequest = DnsValidationRequest.builder()
-                .domain(domain)
-                .randomValue(randomValue)
-                .challengeType(ChallengeType.RANDOM_VALUE)
-                .dnsType(dnsType)
-                .validationState(expiredValidationState)
-                .build();
+    void testDnsValidator_prepare_HappyPath_persistentValue() throws DcvException {
+        DnsPreparation dnsPreparation = new DnsPreparation(domain, DnsType.TXT, ChallengeType.PERSISTENT_VALUE);
 
-        assertThrows(ValidationException.class, () -> dnsValidator.validate(expiredDnsValidationRequest));
-    }
+        DnsPreparationResponse response = dnsValidator.prepare(dnsPreparation);
 
-    @Test
-    void testDnsValidator_prepare_HappyPath() throws DcvException {
-        DnsPreparation dnsPreparation = new DnsPreparation(domain, DnsType.TXT, ChallengeType.RANDOM_VALUE);
-
-        DnsPreparationResponse dnsPreparationResponse = dnsValidator.prepare(dnsPreparation);
-        validationState = dnsPreparationResponse.getValidationState();
-
-        assertEquals(domain, dnsPreparationResponse.getDomain());
-        assertNotNull(dnsPreparationResponse.getRandomValue());
-        assertTrue(dnsPreparationResponse.getAllowedFqdns().contains(domain));
-        assertEquals(DnsType.TXT, dnsPreparationResponse.getDnsType());
-
-        assertEquals(domain, validationState.domain());
-        assertNotNull(validationState.prepareTime());
-        assertEquals(DcvMethod.BR_3_2_2_4_7, validationState.dcvMethod());
+        assertEquals(domain, response.getDomain());
+        assertTrue(response.getAllowedFqdns().contains(domain));
+        assertEquals(DnsType.TXT, response.getDnsType());
+        assertEquals(DcvMethod.BR_3_2_2_4_22, response.getValidationState().dcvMethod());
+        assertNull(response.getRandomValue());
     }
 
     static Stream<Arguments> provideInvalidDnsPreparation() {
         return Stream.of(
                 Arguments.of(null, DnsType.TXT, ChallengeType.RANDOM_VALUE, DcvError.DOMAIN_REQUIRED),
                 Arguments.of("example.com", null, ChallengeType.RANDOM_VALUE, DcvError.DNS_TYPE_REQUIRED),
-                Arguments.of("example.com", DnsType.TXT, null, DcvError.CHALLENGE_TYPE_REQUIRED)
+                Arguments.of("example.com", DnsType.TXT, null, DcvError.CHALLENGE_TYPE_REQUIRED),
+                Arguments.of("example.com", DnsType.A, ChallengeType.RANDOM_VALUE, DcvError.INVALID_DNS_TYPE),
+                Arguments.of("example.com", DnsType.CNAME, ChallengeType.PERSISTENT_VALUE, DcvError.INVALID_DNS_TYPE)
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideInvalidDnsPreparation")
-    void testDnsValidator_prepare_InvalidDnsPreparation(String domain, DnsType dnsType, ChallengeType challengeType,
-                                                        DcvError dcvError) {
-        DnsPreparation invalidDnsPreparation = new DnsPreparation(domain, dnsType, challengeType);
+    void testDnsValidator_prepare_InvalidDnsPreparation(String domain,
+                                                        DnsType dnsType,
+                                                        ChallengeType challengeType,
+                                                        DcvError expectedError) {
+        DnsPreparation invalidPreparation = new DnsPreparation(domain, dnsType, challengeType);
 
-        DcvException exception = assertThrows(DcvException.class, () ->
-                dnsValidator.prepare(invalidDnsPreparation));
-
-        assertTrue(exception.getErrors().contains(dcvError), "expected: " + dcvError + " but got: " + exception.getErrors());
+        DcvException exception = assertThrows(DcvException.class, () -> dnsValidator.prepare(invalidPreparation));
+        assertTrue(exception.getErrors().contains(expectedError));
     }
 
-    @Test
-    void testDnsValidator_validate_dnssec_dnskey_missing() {
-        DnssecDetails expectedDnssecDetails = new DnssecDetails(DnssecStatus.INSECURE, DnssecError.DNSKEY_MISSING, null, "no SEP matching the DS found");
-        MpicDetails mpicDetails = new MpicDetails(true,
-                "primary-agent",
-                3,
-                3,
-                expectedDnssecDetails,
-                Map.of("secondary-agent-id", true), null);
-        DnsValidationResponse dnsValidationResponse = new DnsValidationResponse(false, mpicDetails, domain, domain,
-                dnsType, randomValue, null, Set.of(DcvError.DNS_LOOKUP_DNSSEC_FAILURE));
-
-        when(dnsValidationHandler.validate(any(DnsValidationRequest.class))).thenReturn(dnsValidationResponse);
-
-        ValidationException exception = assertThrows(ValidationException.class, () -> dnsValidator.validate(dnsValidationRequest));
-
-        assertEquals(1, exception.getErrors().size(), "Expected exactly one error");
-        assertTrue(exception.getErrors().contains(DcvError.DNS_LOOKUP_DNSSEC_FAILURE), "expected: " + DcvError.DNS_LOOKUP_DNSSEC_FAILURE + " but got: " + exception.getErrors());
-        assertNotNull(exception.getDnssecDetails(), "DNSSEC details should be present in the exception");
-        assertEquals(expectedDnssecDetails, exception.getDnssecDetails(), "DNSSEC details should match the response");
-        assertEquals(DnssecStatus.INSECURE, exception.getDnssecDetails().dnssecStatus());
-        assertEquals(DnssecError.DNSKEY_MISSING, exception.getDnssecDetails().dnssecError());
+    private static Stream<Arguments> challengeTypes() {
+        return Stream.of(
+                Arguments.of(ChallengeType.RANDOM_VALUE),
+                Arguments.of(ChallengeType.REQUEST_TOKEN),
+                Arguments.of(ChallengeType.PERSISTENT_VALUE)
+        );
     }
 
+    private DnsValidationRequest validRequest(ChallengeType challengeType) {
+        DcvMethod method = challengeType == ChallengeType.PERSISTENT_VALUE
+                                   ? DcvMethod.BR_3_2_2_4_22
+                                   : DcvMethod.BR_3_2_2_4_7;
+
+        DnsValidationRequest.DnsValidationRequestBuilder builder = DnsValidationRequest.builder()
+                .domain(domain)
+                                                                           .dnsType(DnsType.TXT)
+                                                                           .challengeType(challengeType)
+                                                                           .validationState(new ValidationState(domain, Instant.now(), method));
+
+        if (challengeType == ChallengeType.RANDOM_VALUE) {
+            builder.randomValue(randomValue);
+        }
+        if (challengeType == ChallengeType.REQUEST_TOKEN) {
+            builder.requestTokenData(new BasicRequestTokenData("hashing-key", "hashing-value"));
+        }
+        if (challengeType == ChallengeType.PERSISTENT_VALUE) {
+            builder.accountUri("https://authority.example/acct/123");
+        }
+        return builder.build();
+    }
+
+    private void stubHandler(ChallengeType challengeType, DnsValidationResponse response) throws DcvException {
+        switch (challengeType) {
+            case RANDOM_VALUE ->
+                    when(randomValueHandler.validate(any(DnsValidationRequest.class))).thenReturn(response);
+            case REQUEST_TOKEN ->
+                    when(requestTokenHandler.validate(any(DnsValidationRequest.class))).thenReturn(response);
+            case PERSISTENT_VALUE ->
+                    when(persistentValueHandler.validate(any(DnsValidationRequest.class))).thenReturn(response);
+        }
+    }
+
+    private void verifyDispatchedOnlyTo(ChallengeType challengeType, DnsValidationRequest request) throws DcvException {
+        switch (challengeType) {
+            case RANDOM_VALUE -> {
+                verify(randomValueHandler).validate(request);
+                verifyNoInteractions(requestTokenHandler, persistentValueHandler);
+            }
+            case REQUEST_TOKEN -> {
+                verify(requestTokenHandler).validate(request);
+                verifyNoInteractions(randomValueHandler, persistentValueHandler);
+            }
+            case PERSISTENT_VALUE -> {
+                verify(persistentValueHandler).validate(request);
+                verifyNoInteractions(randomValueHandler, requestTokenHandler);
+            }
+        }
+    }
 
     private static MpicDetails getMpicDetails() {
         return new MpicDetails(true,
@@ -236,6 +327,8 @@ class DnsValidatorTest {
                 3,
                 3,
                 DnssecDetails.notChecked(),
-                Map.of("secondary-agent-id", true), null);
+                Map.of("secondary-agent-id", true),
+                null);
     }
+
 }

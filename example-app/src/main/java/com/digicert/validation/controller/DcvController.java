@@ -1,8 +1,8 @@
 package com.digicert.validation.controller;
 
 import com.digicert.validation.controller.resource.request.DcvRequest;
-import com.digicert.validation.controller.resource.response.DomainResource;
 import com.digicert.validation.controller.resource.request.ValidateRequest;
+import com.digicert.validation.controller.resource.response.DomainResource;
 import com.digicert.validation.exceptions.DcvBaseException;
 import com.digicert.validation.service.DcvService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,4 +45,10 @@ public class DcvController {
         dcvService.createTokenForAccount(accountId, tokenKey);
     }
 
+    @PostMapping("/accounts/{accountId}/account-uri")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createAccountUri(@PathVariable("accountId") long accountId,
+                                 @RequestParam("accountUri") String accountUri) {
+        dcvService.createUriForAccount(accountId, accountUri);
+    }
 }

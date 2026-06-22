@@ -48,7 +48,7 @@ class AcmeDnsMethodIT {
         // and then placed under the "_acme-challenge" subdomain.
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
         String dnsTxtValue = computeDnsTxtValue(randomValue + "." + hashingKey);
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of(dnsTxtValue), PdnsClient.PdnsRecordType.TXT, "_acme-challenge");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), List.of(dnsTxtValue), PdnsClient.PdnsRecordType.TXT, "_acme-challenge");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.ACME_DNS);
@@ -76,7 +76,7 @@ class AcmeDnsMethodIT {
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
         String dnsTxtValue = computeDnsTxtValue(randomValue + "." + hashingKey);
         List<String> dnsValues = List.of(dnsTxtValue, "some-other-value", "another-value");
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), dnsValues, PdnsClient.PdnsRecordType.TXT, "_acme-challenge");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), dnsValues, PdnsClient.PdnsRecordType.TXT, "_acme-challenge");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.ACME_DNS);

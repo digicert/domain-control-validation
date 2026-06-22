@@ -20,4 +20,7 @@ public class AccountsEntity {
 
     @Column(name = "token_key")
     public String tokenKey;
+
+    @Column(name = "account_uri")
+    public String accountUri;
 }

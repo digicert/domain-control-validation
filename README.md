@@ -49,6 +49,13 @@ Supported Methods
 * The validate step will make http calls (http on port 80 and https on port 443) to the domain at the provided file name (or the
   configurable default). If the random value is found at the location, the DCV can be considered complete.
 
+### [DNS TXT Record with Persistent Value](https://github.com/cabforum/servercert/blob/main/docs/BR.md#322422-dns-txt-record-with-persistent-value)
+* The validate step always checks a TXT record at `_validation-persist.<fqdn>`.
+* The request must include `accountUri`, and the TXT record must include an allowed `issuer-domain-name` and matching `accounturi` in valid issue-value syntax.
+* `persistUntil` is optional and, when present, is treated as a Unix timestamp expiration for the record.
+* MPIC corroboration is required, and corroborating perspectives must also observe a valid record for the same `accounturi`.
+* The library validates persistent TXT evidence semantics, while BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling integration/client.
+
 API Documentation
 -----------------
 The domain-control-validation library provides a set of APIs to perform domain control validation (DCV) as per the CAB Forum baseline requirements. Below are examples of how to use the library in your project.  

@@ -1,6 +1,7 @@
 package com.digicert.validation.mpic;
 
 import com.digicert.validation.mpic.api.dns.DnssecDetails;
+import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.Map;
  * a map of agent IDs to their corroboration status,
  * and the CNAME chain if present.
  */
+@Builder
 public record MpicDetails(boolean corroborated,
                           String primaryAgentId,
                           long secondaryServersChecked,

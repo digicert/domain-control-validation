@@ -30,5 +30,13 @@ public enum ChallengeType {
      * It is useful to note that because request tokens are not supplied by the CA, it is possible to skip the
      * preparation step when using request tokens.
      */
-    REQUEST_TOKEN
+    REQUEST_TOKEN,
+
+    /**
+     * Specify that the domain control validation method will use a persistent DNS TXT value as defined in BR 3.2.2.4.22.
+     * <p>
+     * This challenge type is only valid for DNS TXT validation and requires checking an issue-value containing
+     * issuer-domain-name and accounturi semantics.
+     */
+    PERSISTENT_VALUE
 }

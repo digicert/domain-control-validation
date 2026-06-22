@@ -15,6 +15,7 @@ public class ExampleDCVConfiguration {
         DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder()
                 // set the DNS servers to use for DNS lookups
                 .dnsServers(List.of("localhost:10000"))
+                .allowedIssuerDomains(List.of("authority.example"))
                 // Configured to match the value configured in powerdns docker container
                 .pslOverrideSupplier(customPslOverrideSupplier)
                 .mpicClientInterface(mpicClientImpl)

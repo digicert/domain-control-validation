@@ -43,6 +43,9 @@ public class DnsValidationRequest {
     /** An optional domain label for the DNS record. Must begin with an underscore (_) if provided. */
     private final String domainLabel;
 
+    /** The account URI expected in the persistent DNS TXT issue-value. Only used for PERSISTENT_VALUE challenge type. */
+    private final String accountUri;
+
     /**
      * Private constructor to prevent instantiation without using the builder.
      *
@@ -59,7 +62,8 @@ public class DnsValidationRequest {
                                  String randomValue,
                                  RequestTokenData requestTokenData,
                                  ValidationState validationState,
-                                 String domainLabel) {
+                                 String domainLabel,
+                                 String accountUri) {
         // Default constructor
         this.domain = domain;
         this.dnsType = dnsType;
@@ -68,5 +72,6 @@ public class DnsValidationRequest {
         this.requestTokenData = requestTokenData;
         this.validationState = validationState;
         this.domainLabel = domainLabel;
+        this.accountUri = accountUri;
     }
 }
