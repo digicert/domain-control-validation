@@ -98,6 +98,43 @@ public enum DcvError {
      */
     DNS_DOMAIN_LABEL_INVALID,
 
+    /** Error indicating that accountUri is required for persistent DNS TXT validation. */
+    ACCOUNT_URI_REQUIRED,
+
+    /** Error indicating that accountUri is not a valid URI. */
+    INVALID_ACCOUNT_URI,
+
+    /** Error indicating the accountUri value in DNS does not match the expected request value. */
+    ACCOUNT_URI_MISMATCH,
+
+    /** Error indicating that allowed issuer domains configuration is required for persistent DNS TXT validation. */
+    ALLOWED_ISSUER_DOMAINS_REQUIRED,
+
+    /** Error indicating that issuer-domain-name is not in the configured allowed issuer domains list. */
+    ISSUER_DOMAIN_NAME_NOT_ALLOWED,
+
+    /** Error indicating that issuer-domain-name is missing or blank in a persistent DNS TXT issue-value. */
+    ISSUER_DOMAIN_NAME_REQUIRED,
+
+    /** Error indicating that persistUntil is invalid. */
+    INVALID_PERSIST_UNTIL,
+
+    /** Error indicating that persistent DNS TXT issue-value is malformed or has invalid formatting. */
+    INVALID_ISSUE_VALUE_FORMAT,
+
+    /** Error indicating that persistUntil has expired and cannot be used for validation evidence. */
+    PERSISTENT_RECORD_EXPIRED,
+
+    /**
+     * Error indicating that multiple accounturi values were found in the issue-value of a persistent DNS TXT record.
+     */
+    MULTIPLE_ACCOUNT_URI,
+
+    /**
+     * Error indicating that multiple persistuntil values were found in the issue-value of a persistent DNS TXT record.
+     */
+    MULTIPLE_PERSIST_UNTIL,
+
     /**
      * Error indicating that the domain name is a top-level domain.
      * This error occurs when the domain name is a top-level domain (TLD), which is not allowed in
@@ -330,9 +367,10 @@ public enum DcvError {
     ACME_THUMBPRINT_REQUIRED,
 
     /** Error indicating an issue when creating the ACME DNS key */
-    ACME_DNS_KEY_ERROR
-    ;
+    ACME_DNS_KEY_ERROR,
 
+    /** Error indicating that the challenge type is invalid. */
+    INVALID_CHALLENGE_TYPE;
 
 
     /**

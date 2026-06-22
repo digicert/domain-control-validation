@@ -5,12 +5,7 @@ import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DnsType;
 import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.mpic.api.MpicStatus;
-import com.digicert.validation.mpic.api.dns.DnsRecord;
-import com.digicert.validation.mpic.api.dns.DnssecDetails;
-import com.digicert.validation.mpic.api.dns.MpicDnsDetails;
-import com.digicert.validation.mpic.api.dns.MpicDnsResponse;
-import com.digicert.validation.mpic.api.dns.PrimaryDnsResponse;
-import com.digicert.validation.mpic.api.dns.SecondaryDnsResponse;
+import com.digicert.validation.mpic.api.dns.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -35,12 +30,12 @@ public class MpicDnsService {
     }
 
     /**
-     * Retrieves MPIC DNS details for a list of domains.
+     * Retrieves MPIC DNS details for a domain.
      * It will return the first valid and corroborated MPIC response or the first MPIC response with an error.
      *
      * @param domain  Domain name to validate
      * @param dnsType The type of DNS records to retrieve (e.g., TXT, CNAME)
-     * @return List of MpicDnsDetails containing the MPIC details, domain, DNS records, and any errors encountered
+     * @return MpicDnsDetails containing the MPIC details, domain, DNS records, and any errors encountered
      */
     public MpicDnsDetails getDnsDetails(String domain, DnsType dnsType) {
         return getDnsDetails(domain, dnsType, null);
@@ -177,7 +172,8 @@ public class MpicDnsService {
         return new MpicDnsDetails(mpicDetails,
                 domain,
                 mpicDnsResponse.primaryDnsResponse().dnsRecords(),
-                dcvError);
+                dcvError,
+                secondaryResponses);
     }
 
     private DnssecDetails extractDnssecDetails(MpicDnsResponse mpicDnsResponse) {

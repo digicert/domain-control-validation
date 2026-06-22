@@ -18,6 +18,9 @@ import lombok.Setter;
 import org.slf4j.event.Level;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Configuration class for Domain Control Validation (DCV).
@@ -50,6 +53,15 @@ public class DcvConfiguration {
      * Domain Label that begins with an underscore character."
      */
     private String dnsDomainLabel = "_dnsauth.";
+
+    /**
+     *issuer-domain-name values that are allowed for BR 3.2.2.4.22 persistent DNS TXT validation.
+     * <p>
+     * This setting is only required when the {@code PERSISTENT_VALUE} challenge type is used.
+     * ACME dns-persist-01 specifies that this list must not contain more than 10 values.
+     *
+     */
+    private Set<String> allowedIssuerDomains = Set.of();
 
     /**
      * The validity period in days for random values generated during the DCV process.
@@ -246,6 +258,55 @@ public class DcvConfiguration {
 
             dcvConfiguration.setDnsDomainLabel(dnsDomainLabel);
             return this;
+        }
+
+        /**
+         * Set the allowed issuer domains for persistent DNS TXT validation (BR 3.2.2.4.22).
+         * <p>
+         * This value is required when validating {@code ChallengeType.PERSISTENT_VALUE} requests.
+         * It is not required for other challenge types.
+         *
+         * @param allowedIssuerDomains list of issuer domains allowed for persistent DNS validation
+         * @return the builder instance
+         * @throws IllegalArgumentException if the list contains null/blank entries or contains more than 10 values
+         */
+        public DcvConfigurationBuilder allowedIssuerDomains(List<String> allowedIssuerDomains) {
+            if (allowedIssuerDomains == null) {
+                throw new IllegalArgumentException("allowedIssuerDomains cannot be null");
+            }
+
+            if (allowedIssuerDomains.isEmpty()) {
+                throw new IllegalArgumentException("allowedIssuerDomains cannot be empty");
+            }
+            if (allowedIssuerDomains.size() > 10) {
+                throw new IllegalArgumentException("allowedIssuerDomains cannot contain more than 10 values");
+            }
+
+            Set<String> normalizedAllowedIssuerDomains = allowedIssuerDomains.stream()
+                    .map(this::validateAndNormalizeIssuerDomain)
+                                                                 .collect(Collectors.toSet());
+
+            dcvConfiguration.setAllowedIssuerDomains(normalizedAllowedIssuerDomains);
+            return this;
+        }
+
+        private String validateAndNormalizeIssuerDomain(String issuerDomain) {
+            if (issuerDomain == null || issuerDomain.isBlank()) {
+                throw new IllegalArgumentException("allowedIssuerDomains cannot contain null or blank values");
+            }
+            return removeTrailingDot(issuerDomain);
+        }
+
+        private static String removeTrailingDot(String domain) {
+            if (domain == null) {
+                return null;
+            }
+
+            String normalized = domain.trim().toLowerCase(Locale.ROOT);
+            if (normalized.endsWith(".")) {
+                return normalized.substring(0, normalized.length() - 1);
+            }
+            return normalized;
         }
 
         /**

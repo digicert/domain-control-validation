@@ -240,6 +240,44 @@ DnsValidationRequest request = DnsValidationRequest.builder()
 DnsValidationResponse response = dnsValidationHandler.validate(request);
 ```
 
+### BR 3.2.2.4.22 - DNS TXT Record with Persistent Value
+
+This method validates a persistent TXT record at a fixed DNS label and uses explicit account binding.
+
+#### Persistent configuration requirements
+- `DcvConfiguration.allowedIssuerDomains` is required when `ChallengeType.PERSISTENT_VALUE` is used.
+- Allowed issuer domains are normalized to lowercase and without a trailing dot.
+
+#### Persistent DNS behavior
+- Lookup target is always `_validation-persist.<fqdn>`.
+- `dnsType` must be `TXT`.
+- Request must include `accountUri` in `DnsValidationRequest`.
+- TXT record must include:
+  - issuer-domain-name in `allowedIssuerDomains`
+  - `accounturi` matching request `accountUri`
+  - optional `persistUntil` (base-10 unix timestamp)
+- A record is considered expired only when current validation time is after `persistUntil`.
+
+#### Corroboration behavior
+- MPIC corroboration is required.
+- Corroborating secondary perspectives must also observe a valid record containing the same `accounturi`.
+
+#### Compliance boundary
+- BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling integration/client.
+
+#### Persistent validation request example
+```java
+DnsValidationRequest request = DnsValidationRequest.builder()
+        .domain("example.com")
+        .dnsType(DnsType.TXT)
+        .challengeType(ChallengeType.PERSISTENT_VALUE)
+        .accountUri("https://authority.example/acct/123")
+        .validationState(prepare.getValidationState())
+        .build();
+
+DomainValidationEvidence evidence = dnsValidator.validate(request);
+```
+
 
 ### BR: 3.2.2.4.4 / 3.2.2.4.13 / 3.2.2.4.14 - Constructed Email / DNS CAA Contact / DNS TXT Contact
 #### EmailPreparationRequest - Email Preparation

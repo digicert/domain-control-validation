@@ -36,7 +36,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.TXT);
+        pdnsClient.addValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.TXT);
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -56,7 +56,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -76,8 +76,8 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of("some-other-value"), PdnsClient.PdnsRecordType.TXT, "_dnsauth");
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), List.of("some-other-value"), PdnsClient.PdnsRecordType.TXT, "_dnsauth");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -97,7 +97,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), "some-wierd-text " + randomValue + " more text", PdnsClient.PdnsRecordType.TXT);
+        pdnsClient.addValueToRecord(dcvRequest.domain(), "some-wierd-text " + randomValue + " more text", PdnsClient.PdnsRecordType.TXT);
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -117,7 +117,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.TXT);
+        pdnsClient.addValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.TXT);
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -137,7 +137,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), List.of(randomValue), PdnsClient.PdnsRecordType.TXT, "");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -158,7 +158,7 @@ class DnsRandomValueMethodIT {
         // Create PDNS DNS Text Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
         List<String> dnsValues = List.of(randomValue, "some-other-value", "another-value");
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), dnsValues, PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(dcvRequest.domain(), dnsValues, PdnsClient.PdnsRecordType.TXT, "");
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_TXT);
@@ -178,7 +178,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS CNAME Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.CNAME);
+        pdnsClient.addValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.CNAME);
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_CNAME);
@@ -198,7 +198,7 @@ class DnsRandomValueMethodIT {
 
         // Create PDNS CNAME Entry for the domain with the random value
         String randomValue = createdDomain.getRandomValueDetails().getFirst().getRandomValue();
-        pdnsClient.addRandomValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.CNAME);
+        pdnsClient.addValueToRecord(dcvRequest.domain(), randomValue, PdnsClient.PdnsRecordType.CNAME);
 
         // Validate the domain
         ValidateRequest validateRequest = getValidateRequest(createdDomain, DcvRequestType.DNS_CNAME);

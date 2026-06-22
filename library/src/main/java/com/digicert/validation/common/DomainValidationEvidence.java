@@ -2,7 +2,9 @@ package com.digicert.validation.common;
 
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.methods.dns.validate.PersistentTxtResponse;
 import com.digicert.validation.mpic.MpicDetails;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -16,6 +18,7 @@ import java.time.Instant;
  * specific to the validation method. It is used to maintain a record of
  * domain validation activities for auditing and compliance purposes.
  */
+@AllArgsConstructor
 @Getter
 @Builder
 @ToString
@@ -35,7 +38,7 @@ public class DomainValidationEvidence {
      *      number, they used to validate every domain.
      * </pre>
      */
-    public static final String BR_VERSION = "v2.1.1";
+    public static final String BR_VERSION = "v2.2.6";
 
     /** The instant when the domain validation was completed. */
     private final Instant validationDate;
@@ -104,6 +107,14 @@ public class DomainValidationEvidence {
      */
     private final MpicDetails mpicDetails;
 
+
+    /**
+     * PERSISTENT TXT: The parsed fields from a persistent TXT record used for validation.
+     * <p>
+     * Only populated when using the PERSISTENT_TXT challenge type; otherwise NULL.
+     */
+    private final PersistentTxtResponse persistentTxtResponse;
+
     /**
      * Constructs a new DomainValidationEvidence with the specified parameters.
      * <p>
@@ -133,16 +144,17 @@ public class DomainValidationEvidence {
                                      String randomValue,
                                      String acmeThumbprint,
                                      MpicDetails mpicDetails) {
-        this.domain = domain;
-        this.dcvMethod = dcvMethod;
-        this.validationDate = validationDate;
-        this.emailAddress = emailAddress;
-        this.fileUrl = fileUrl;
-        this.dnsType = dnsType;
-        this.dnsRecordName = dnsRecordName;
-        this.requestToken = requestToken;
-        this.randomValue = randomValue;
-        this.acmeThumbprint = acmeThumbprint;
-        this.mpicDetails = mpicDetails;
+        this(domain,
+                dcvMethod,
+                validationDate,
+                emailAddress,
+                fileUrl,
+                dnsType,
+                dnsRecordName,
+                requestToken,
+                randomValue,
+                acmeThumbprint,
+                mpicDetails,
+                null);
     }
 }

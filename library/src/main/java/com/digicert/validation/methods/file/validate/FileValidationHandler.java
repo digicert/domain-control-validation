@@ -80,24 +80,18 @@ public class FileValidationHandler {
      * @return the file validation response
      */
     public FileValidationResponse validate(FileValidationRequest validationRequest) {
-        switch (validationRequest.getChallengeType()) {
-            case RANDOM_VALUE -> {
-                return performValidationForRandomValue(validationRequest);
-            }
-            case REQUEST_TOKEN -> {
-                return performValidationForRequestToken(validationRequest);
-            }
-        }
-
-        // We should never get here because the challenge type is validated before this method is called
-        return buildFileValidationResponse(
-                new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.CHALLENGE_TYPE_REQUIRED)),
-                null,
-                validationRequest,
-                null,
-                null);
+        return switch (validationRequest.getChallengeType()) {
+            case RANDOM_VALUE -> performValidationForRandomValue(validationRequest);
+            case REQUEST_TOKEN -> performValidationForRequestToken(validationRequest);
+            // We should never get here because the challenge type is validated before this method is called
+            default -> buildFileValidationResponse(
+                    new ChallengeValidationResponse(Optional.empty(), Set.of(DcvError.CHALLENGE_TYPE_REQUIRED)),
+                    null,
+                    validationRequest,
+                    null,
+                    null);
+        };
     }
-
     private FileValidationResponse performValidationForRandomValue(FileValidationRequest validationRequest) {
         List<String> fileUrls = getFileUrls(validationRequest);
 
@@ -207,6 +201,7 @@ public class FileValidationHandler {
         return switch (fileValidationRequest.getChallengeType()) {
             case RANDOM_VALUE -> randomValueValidator.validate(fileValidationRequest.getRandomValue(), fileContent);
             case REQUEST_TOKEN -> requestTokenValidator.validate(fileValidationRequest.getRequestTokenData(), fileContent);
+            default -> throw new IllegalStateException("Unexpected value: " + fileValidationRequest.getChallengeType());
         };
     }
 

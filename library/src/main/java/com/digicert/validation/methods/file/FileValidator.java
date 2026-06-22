@@ -3,10 +3,10 @@ package com.digicert.validation.methods.file;
 import com.digicert.validation.DcvContext;
 import com.digicert.validation.common.DomainValidationEvidence;
 import com.digicert.validation.common.ValidationState;
+import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.enums.DcvError;
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.enums.LogEvents;
-import com.digicert.validation.enums.ChallengeType;
 import com.digicert.validation.exceptions.DcvException;
 import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
@@ -210,6 +210,7 @@ public class FileValidator {
                     throw new InputException(DcvError.REQUEST_TOKEN_DATA_REQUIRED);
                 }
             }
+            case PERSISTENT_VALUE -> throw new InputException(DcvError.INVALID_CHALLENGE_TYPE);
         }
     }
 

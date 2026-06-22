@@ -12,6 +12,7 @@ public class ValidateRequest {
     public String filename;
     public String emailAddress;
     public String randomValue;
+    public String accountUri;
 
     public String tokenValue;
 

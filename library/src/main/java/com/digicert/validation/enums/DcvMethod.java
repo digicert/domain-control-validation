@@ -25,6 +25,7 @@ import lombok.Getter;
  *     <li>3.2.2.4.15 / 16 / 17 -> Phone Contact - Not Supported</li>
  *     <li><b>3.2.2.4.18 -> File Validation</b></li>
  *     <li><b>3.2.2.4.19 -> ACME HTTP Validation</b></li>
+ *     <li><b>3.2.2.4.22 -> DNS TXT Record with Persistent Value</b></li>
  *     <li>3.2.2.4.20 -> TLS</li>
  *   </ul>
  *
@@ -95,6 +96,14 @@ public enum DcvMethod {
      * location on their web server.
      */
     BR_3_2_2_4_19("3.2.2.4.19"),
+
+    /**
+     * DNS TXT Record with Persistent Value.
+     * <p>
+     * This method validates control by checking a Persistent DCV TXT record placed at the fixed
+     * _validation-persist label and validating accounturi semantics.
+     */
+    BR_3_2_2_4_22("3.2.2.4.22"),
 
     /**
      * Represents an unknown or unsupported DCV method.

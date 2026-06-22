@@ -9,15 +9,15 @@ import com.digicert.validation.exceptions.InputException;
 import com.digicert.validation.exceptions.ValidationException;
 import com.digicert.validation.methods.dns.prepare.DnsPreparation;
 import com.digicert.validation.methods.dns.prepare.DnsPreparationResponse;
-import com.digicert.validation.methods.dns.validate.DnsValidationHandler;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
 import com.digicert.validation.methods.dns.validate.DnsValidationResponse;
+import com.digicert.validation.methods.dns.validate.handlers.PersistentValueHandler;
+import com.digicert.validation.methods.dns.validate.handlers.RandomValueHandler;
+import com.digicert.validation.methods.dns.validate.handlers.RequestTokenHandler;
 import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import com.digicert.validation.mpic.api.dns.DnssecStatus;
 import com.digicert.validation.random.RandomValueGenerator;
-import com.digicert.validation.random.RandomValueVerifier;
 import com.digicert.validation.utils.DomainNameUtils;
-import com.digicert.validation.utils.StateValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
 
@@ -39,23 +39,32 @@ import java.util.List;
 @Slf4j
 public class DnsValidator {
 
-    /** Utility class for generating random values */
+    /**
+     * Utility class for generating random values
+     */
     private final RandomValueGenerator randomValueGenerator;
 
-    /** Handler for DNS Validation */
-    private final DnsValidationHandler dnsValidationHandler;
-
-    /** Utility class for random value verification */
-    private final RandomValueVerifier randomValueVerifier;
-
-    /** Utility class for domain name operations */
+    /**
+     * Utility class for domain name operations
+     */
     private final DomainNameUtils domainNameUtils;
 
-    /** List of allowed DNS Types for DNS Validation */
+    /**
+     * List of allowed DNS Types for DNS Validation
+     */
     private final List<DnsType> allowedDnsTypes = List.of(DnsType.CNAME, DnsType.TXT, DnsType.CAA);
 
-    /** The log level used for logging errors related to domain control validation (DCV). */
+    /**
+     * The log level used for logging errors related to domain control validation (DCV).
+     */
     private final Level logLevelForDcvErrors;
+
+    /**
+     * various challenge type validation handlers
+     */
+    private final PersistentValueHandler persistentValueHandler;
+    private final RequestTokenHandler requestTokenHandler;
+    private final RandomValueHandler randomValueHandler;
 
     /**
      * Constructor for DnsValidator
@@ -67,10 +76,11 @@ public class DnsValidator {
      */
     public DnsValidator(DcvContext dcvContext) {
         this.randomValueGenerator = dcvContext.get(RandomValueGenerator.class);
-        this.dnsValidationHandler = dcvContext.get(DnsValidationHandler.class);
-        this.randomValueVerifier = dcvContext.get(RandomValueVerifier.class);
         this.domainNameUtils = dcvContext.get(DomainNameUtils.class);
-        logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
+        this.logLevelForDcvErrors = dcvContext.getDcvConfiguration().getLogLevelForDcvErrors();
+        this.persistentValueHandler = dcvContext.get(PersistentValueHandler.class);
+        this.requestTokenHandler = dcvContext.get(RequestTokenHandler.class);
+        this.randomValueHandler = dcvContext.get(RandomValueHandler.class);
     }
 
     /**
@@ -88,11 +98,14 @@ public class DnsValidator {
 
         verifyDnsPreparation(dnsPreparation);
 
-        DnsPreparationResponse.DnsPreparationResponseBuilder dnsPreparationResponseBuilder = DnsPreparationResponse.builder()
-                .dnsType(dnsPreparation.dnsType())
-                .domain(dnsPreparation.domain())
-                .allowedFqdns(domainNameUtils.getDomainAndParents(dnsPreparation.domain()))
-                .validationState(new ValidationState(dnsPreparation.domain(), Instant.now(), DcvMethod.BR_3_2_2_4_7));
+        DnsPreparationResponse.DnsPreparationResponseBuilder dnsPreparationResponseBuilder =
+                DnsPreparationResponse.builder()
+                        .dnsType(dnsPreparation.dnsType())
+                        .domain(dnsPreparation.domain())
+                        .allowedFqdns(domainNameUtils.getDomainAndParents(dnsPreparation.domain()))
+                        .validationState(new ValidationState(dnsPreparation.domain(),
+                                Instant.now(),
+                                getExpectedDcvMethod(dnsPreparation.challengeType())));
 
         if (dnsPreparation.challengeType() == ChallengeType.RANDOM_VALUE) {
             dnsPreparationResponseBuilder.randomValue(randomValueGenerator.generateRandomString());
@@ -121,7 +134,13 @@ public class DnsValidator {
 
         verifyDnsValidationRequest(dnsValidationRequest);
 
-        DnsValidationResponse dnsValidationResponse = dnsValidationHandler.validate(dnsValidationRequest);
+        DnsValidationResponse dnsValidationResponse = switch (dnsValidationRequest.getChallengeType()) {
+            case RANDOM_VALUE -> this.randomValueHandler.validate(dnsValidationRequest);
+            case REQUEST_TOKEN -> this.requestTokenHandler.validate(dnsValidationRequest);
+            case PERSISTENT_VALUE -> this.persistentValueHandler.validate(dnsValidationRequest);
+            default -> throw new IllegalStateException("Unexpected value: " + dnsValidationRequest.getChallengeType());
+        };
+
 
         if (dnsValidationResponse.isValid()) {
             // Set the timestamp of when the validation was completed
@@ -140,8 +159,8 @@ public class DnsValidator {
                     dnsValidationResponse.errors());
 
             if (dnsValidationResponse.mpicDetails() != null &&
-                    dnsValidationResponse.mpicDetails().dnssecDetails() != null &&
-                    !DnssecStatus.NOT_CHECKED.equals(dnsValidationResponse.mpicDetails().dnssecDetails().dnssecStatus())) {
+                        dnsValidationResponse.mpicDetails().dnssecDetails() != null &&
+                        !DnssecStatus.NOT_CHECKED.equals(dnsValidationResponse.mpicDetails().dnssecDetails().dnssecStatus())) {
                 DnssecDetails dnssecDetails = dnsValidationResponse.mpicDetails().dnssecDetails();
                 throw new ValidationException(dnsValidationResponse.errors(), dnssecDetails);
             }
@@ -162,16 +181,17 @@ public class DnsValidator {
                                                                     DnsValidationResponse dnsValidationResponse,
                                                                     Instant validationInstant) {
         return DomainValidationEvidence.builder()
-                .domain(dnsValidationRequest.getDomain())
-                .dcvMethod(dnsValidationRequest.getValidationState().dcvMethod())
-                .validationDate(validationInstant)
-                // DNS Specific Values
-                .mpicDetails(dnsValidationResponse.mpicDetails())
-                .dnsType(dnsValidationRequest.getDnsType())
-                .dnsRecordName(dnsValidationResponse.dnsRecordName())
-                .randomValue(dnsValidationResponse.validRandomValue())
-                .requestToken(dnsValidationResponse.validRequestToken())
-                .build();
+                       .domain(dnsValidationRequest.getDomain())
+                       .dcvMethod(dnsValidationRequest.getValidationState().dcvMethod())
+                       .validationDate(validationInstant)
+                       // DNS Specific Values
+                       .mpicDetails(dnsValidationResponse.mpicDetails())
+                       .dnsType(dnsValidationRequest.getDnsType())
+                       .dnsRecordName(dnsValidationResponse.dnsRecordName())
+                       .randomValue(dnsValidationResponse.validRandomValue())
+                       .requestToken(dnsValidationResponse.validRequestToken())
+                       .persistentTxtResponse(dnsValidationResponse.persistentTxtResponse())
+                       .build();
     }
 
     /**
@@ -205,20 +225,6 @@ public class DnsValidator {
                 throw new InputException(DcvError.DNS_DOMAIN_LABEL_INVALID);
             }
         }
-
-        StateValidationUtils.verifyValidationState(request.getValidationState(), DcvMethod.BR_3_2_2_4_7);
-
-        switch (request.getChallengeType()) {
-            case RANDOM_VALUE -> {
-                Instant instant = request.getValidationState().prepareTime();
-                randomValueVerifier.verifyRandomValue(request.getRandomValue(), instant);
-            }
-            case REQUEST_TOKEN -> {
-                if (request.getRequestTokenData() == null) {
-                    throw new InputException(DcvError.REQUEST_TOKEN_DATA_REQUIRED);
-                }
-            }
-        }
     }
 
     /**
@@ -238,9 +244,22 @@ public class DnsValidator {
             throw new InputException(DcvError.CHALLENGE_TYPE_REQUIRED);
         }
 
+        if (dnsPreparation.challengeType() == ChallengeType.PERSISTENT_VALUE && dnsPreparation.dnsType() != DnsType.TXT) {
+            throw new InputException(DcvError.INVALID_DNS_TYPE);
+        }
+
         if (!allowedDnsTypes.contains(dnsPreparation.dnsType())) {
             throw new InputException(DcvError.INVALID_DNS_TYPE);
         }
 
     }
+
+    private DcvMethod getExpectedDcvMethod(ChallengeType challengeType) {
+        return switch (challengeType) {
+            case RANDOM_VALUE, REQUEST_TOKEN -> DcvMethod.BR_3_2_2_4_7;
+            case PERSISTENT_VALUE -> DcvMethod.BR_3_2_2_4_22;
+            default -> throw new IllegalStateException("Unexpected value: " + challengeType);
+        };
+    }
+
 }

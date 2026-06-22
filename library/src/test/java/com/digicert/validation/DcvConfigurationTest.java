@@ -5,6 +5,7 @@ import com.digicert.validation.challenges.RequestTokenValidator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -75,6 +76,47 @@ class DcvConfigurationTest {
                 .build();
 
         assertEquals(expectedDnsDomainLabel, config.getDnsDomainLabel());
+    }
+
+    @Test
+    void testAllowedIssuerDomains_HappyPath() {
+        DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
+                .allowedIssuerDomains(List.of("Authority.EXAMPLE", "issuer.example."))
+                .build();
+
+        assertEquals(Set.of("authority.example", "issuer.example"), Set.copyOf(config.getAllowedIssuerDomains()));
+    }
+
+    @Test
+    void testAllowedIssuerDomains_Null() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new DcvConfiguration.DcvConfigurationBuilder().allowedIssuerDomains(null).build());
+        assertEquals("allowedIssuerDomains cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void testAllowedIssuerDomains_Empty() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new DcvConfiguration.DcvConfigurationBuilder().allowedIssuerDomains(List.of()).build());
+        assertEquals("allowedIssuerDomains cannot be empty", exception.getMessage());
+    }
+
+    @Test
+    void testAllowedIssuerDomains_BlankEntry() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new DcvConfiguration.DcvConfigurationBuilder().allowedIssuerDomains(List.of("authority.example", " ")).build());
+        assertEquals("allowedIssuerDomains cannot contain null or blank values", exception.getMessage());
+    }
+
+    @Test
+    void testAllowedIssuerDomains_TooManyValues() {
+        List<String> issuerDomains = List.of(
+                "one.example", "two.example", "three.example", "four.example", "five.example",
+                "six.example", "seven.example", "eight.example", "nine.example", "ten.example", "eleven.example");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new DcvConfiguration.DcvConfigurationBuilder().allowedIssuerDomains(issuerDomains).build());
+        assertEquals("allowedIssuerDomains cannot contain more than 10 values", exception.getMessage());
     }
 
     @Test

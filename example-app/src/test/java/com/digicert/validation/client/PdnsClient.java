@@ -1,5 +1,6 @@
 package com.digicert.validation.client;
 
+import com.digicert.validation.methods.dns.validate.handlers.PersistentValueHandler;
 import com.digicert.validation.methods.email.prepare.provider.DnsCaaEmailProvider;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
@@ -32,14 +33,25 @@ public class PdnsClient {
 
     public void createLocalhostARecord(String domain) {
         // Configured to match the PowerDNS server running in the docker-compose file
-        addRandomValueToRecord(domain, List.of("127.0.0.1"), PdnsRecordType.A, "");
+        addValueToRecord(domain, List.of("127.0.0.1"), PdnsRecordType.A, "");
     }
 
-    public void addRandomValueToRecord(String domain, String randomValue, PdnsRecordType pdnsRecordType) {
-        addRandomValueToRecord(domain, List.of(randomValue), pdnsRecordType, "_dnsAuth");
+    public void addValueToRecord(String domain, String randomValue, PdnsRecordType pdnsRecordType) {
+        addValueToRecord(domain, List.of(randomValue), pdnsRecordType, "_dnsAuth");
     }
 
-    public void addRandomValueToRecord(String domain, List<String> randomValues, PdnsRecordType pdnsRecordType, String recordNamePrefix) {
+    public void addPersistentTxtValue(String domain, String persistentIssueValue) {
+        addValueToRecord(
+                domain,
+                List.of(persistentIssueValue),
+                PdnsRecordType.TXT,
+                PersistentValueHandler.PERSISTENT_DNS_LABEL.substring(
+                        0,
+                        PersistentValueHandler.PERSISTENT_DNS_LABEL.length() - 1)
+        );
+    }
+
+    public void addValueToRecord(String domain, List<String> randomValues, PdnsRecordType pdnsRecordType, String recordNamePrefix) {
         String domainId = domain + ".";
 
         ResponseEntity<String> zoneRecord = restTemplate.exchange(PDNS_BASE_URL + "/{domainId}", HttpMethod.GET, null, String.class, domainId);

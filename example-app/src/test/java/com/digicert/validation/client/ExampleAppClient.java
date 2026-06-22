@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +46,17 @@ public class ExampleAppClient {
         assertEquals(DcvRequestStatus.VALID, domainResource.getStatus());
     }
 
+    public HttpStatusCode validateDomainExpectingFailure(ValidateRequest validateRequest, long domainId) {
+        ResponseEntity<Void> response = testRestTemplate.exchange(
+                "/domains/{domainId}",
+                HttpMethod.PUT,
+                new HttpEntity<>(validateRequest),
+                Void.class,
+                domainId);
+
+        return response.getStatusCode();
+    }
+
     public DomainResource getDomainResource(long domainId) {
         ResponseEntity<DomainResource> getResponse = testRestTemplate.getForEntity("/domains/" + domainId, DomainResource.class);
 
@@ -54,5 +66,14 @@ public class ExampleAppClient {
 
     public void submitAccountTokenKey(long accountId, String tokenKey) {
         testRestTemplate.postForEntity("/accounts/{accountId}/tokens?tokenKey={tokenKey}", null, Void.class, accountId, tokenKey);
+    }
+
+    public void submitAccountUri(long accountId, String accountUri) {
+        testRestTemplate.postForEntity(
+                "/accounts/{accountId}/account-uri?accountUri={accountUri}",
+                null,
+                Void.class,
+                accountId,
+                accountUri);
     }
 }

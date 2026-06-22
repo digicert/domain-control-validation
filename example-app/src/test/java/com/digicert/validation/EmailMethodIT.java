@@ -63,7 +63,7 @@ class EmailMethodIT {
         // add email as a dns txt record
         String prefixedDomainName = String.format("%s.%s", DnsTxtEmailProvider.DNS_TXT_EMAIL_AUTHORIZATION_PREFIX,
                 dcvRequest.domain());
-        pdnsClient.addRandomValueToRecord(prefixedDomainName, List.of("admin@"+dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(prefixedDomainName, List.of("admin@" + dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
 
         // submit domain
         DomainResource domainResource = exampleAppClient.submitDnsDomain(dcvRequest);
@@ -143,7 +143,7 @@ class EmailMethodIT {
         // add email as a dns txt record that does not match the domain
         String mismatchedDnsDomain = "email-mismatch-alt-" + token + ".com";
         assertNotEquals(dcvRequest.domain(), mismatchedDnsDomain);
-        pdnsClient.addRandomValueToRecord(mismatchedDnsDomain, List.of("admin@"+dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(mismatchedDnsDomain, List.of("admin@" + dcvRequest.domain()), PdnsClient.PdnsRecordType.TXT, "");
 
         // submit domain
         assertTrue(exampleAppClient.submitDnsDomainExpectingFail(dcvRequest));
@@ -163,7 +163,7 @@ class EmailMethodIT {
         // add email as a dns txt record
         String prefixedDomainName = String.format("%s.%s", DnsTxtEmailProvider.DNS_TXT_EMAIL_AUTHORIZATION_PREFIX,
                 dcvRequest.domain());
-        pdnsClient.addRandomValueToRecord(prefixedDomainName, emails, PdnsClient.PdnsRecordType.TXT, "");
+        pdnsClient.addValueToRecord(prefixedDomainName, emails, PdnsClient.PdnsRecordType.TXT, "");
 
         // submit domain
         DomainResource domainResource = exampleAppClient.submitDnsDomain(dcvRequest);
