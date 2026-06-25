@@ -66,12 +66,12 @@ class FileValidatorTest {
 
     @Test
     void testVerifyFileValidationRequest_ipv6_withBR_3_2_2_5_1_shouldSucceed() {
-        // Arrange
+        // Arrange — use a genuinely public IPv6 address (ARIN allocation); 2001:db8:: is documentation-only and is rejected
         FileValidationRequest request = FileValidationRequest.builder()
-                .domain("2001:db8::1")
+                .domain("2600::1")
                 .randomValue(defaultRandomValue)
                 .challengeType(ChallengeType.RANDOM_VALUE)
-                .validationState(new ValidationState("2001:db8::1", Instant.now(), DcvMethod.BR_3_2_2_5_1))
+                .validationState(new ValidationState("2600::1", Instant.now(), DcvMethod.BR_3_2_2_5_1))
                 .build();
         // Act & Assert
         assertDoesNotThrow(() -> fileValidator.verifyFileValidationRequest(request));
@@ -176,7 +176,8 @@ class FileValidatorTest {
 
     @Test
     void prepare_withIpv6Address_shouldUseBR_3_2_2_5_1Method() throws DcvException {
-        FilePreparationRequest request = new FilePreparationRequest("2001:db8::1");
+        // Use a genuinely public IPv6 address (ARIN allocation); 2001:db8:: is documentation-only and is rejected
+        FilePreparationRequest request = new FilePreparationRequest("2600::1");
         FilePreparationResponse response = fileValidator.prepare(request);
         assertEquals(DcvMethod.BR_3_2_2_5_1, response.getValidationState().dcvMethod());
     }
@@ -229,6 +230,36 @@ class FileValidatorTest {
     void fileValidationPreparationResponse_InvalidCustomFilename() {
         FilePreparationRequest filePreparationRequest = new FilePreparationRequest("example.com", "invalid*filename.txt", ChallengeType.RANDOM_VALUE);
         assertThrows(IllegalArgumentException.class, () -> fileValidator.prepare(filePreparationRequest));
+    }
+
+    @Test
+    void verifyFileValidationRequest_randomValueInFilename_shouldThrowChallengeValueInRequestNotAllowed() {
+        // The random value must not appear in the GET request URL (BR requirement).
+        // Embedding it in the filename would expose it on the wire pre-fetch.
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("example.com")
+                .randomValue(defaultRandomValue)
+                .filename(defaultRandomValue + ".txt")   // random value embedded in filename
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_18))
+                .build();
+        InputException exception = assertThrows(InputException.class,
+                () -> fileValidator.verifyFileValidationRequest(request));
+        assertTrue(exception.getErrors().contains(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED));
+    }
+
+    @Test
+    void verifyFileValidationRequest_invalidFilenameFormat_shouldThrowIllegalArgumentException() {
+        // Filename validation must also run in the validate path, not only in prepare.
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("example.com")
+                .randomValue(defaultRandomValue)
+                .filename("invalid*filename.txt")   // '*' is not an allowed filename character
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_18))
+                .build();
+        assertThrows(IllegalArgumentException.class,
+                () -> fileValidator.verifyFileValidationRequest(request));
     }
 
     @Test

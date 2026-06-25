@@ -399,6 +399,50 @@ class FileValidationHandlerTest {
                 .build();
     }
 
+    @Test
+    void testValidate_randomValueInFilename_shouldFail_withChallengeValueInRequestNotAllowed() {
+        // Final-gate check: if the located random value is embedded in the caller-supplied
+        // filename, it was already present in the GET request URL and must be rejected.
+        String randomValue = "randomValue";
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .filename(randomValue + ".txt")   // secret embedded in filename
+                .build();
+        MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, randomValue);
+        when(mpicFileService.getMpicFileDetails(anyList(), eq(randomValue))).thenReturn(mpicFileDetails);
+        ChallengeValidationResponse challengeValidationResponse =
+                new ChallengeValidationResponse(Optional.of(randomValue), null);
+        when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
+
+        FileValidationResponse response = fileValidationHandler.validate(request);
+
+        assertFalse(response.isValid());
+        assertTrue(response.errors().contains(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED));
+        assertNull(response.validRandomValue());
+    }
+
+    @Test
+    void testValidate_requestTokenInFilename_shouldFail_withChallengeValueInRequestNotAllowed() {
+        // Final-gate check for request tokens: the token value is only known post-fetch, so
+        // the pre-fetch guard in FileValidator cannot catch it. The handler's final gate must.
+        String tokenValue = "some-token-value";
+        FileValidationRequest request = getRequestTokenFileValidationRequestBuilder()
+                .filename(tokenValue + ".txt")   // token embedded in filename
+                .build();
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_SUCCESS);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        ChallengeValidationResponse challengeValidationResponse =
+                new ChallengeValidationResponse(Optional.of(tokenValue), null);
+        when(requestTokenValidator.validate(any(), eq(tokenValue))).thenReturn(challengeValidationResponse);
+        when(mpicFileService.getMpicFileDetails(eq(primaryFileResponse.fileUrl()), eq(tokenValue)))
+                .thenReturn(getMpicFileDetails(true, null, 200, tokenValue));
+
+        FileValidationResponse response = fileValidationHandler.validate(request);
+
+        assertFalse(response.isValid());
+        assertTrue(response.errors().contains(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED));
+        assertNull(response.validRequestToken());
+    }
+
 
     private FileValidationRequest.FileValidationRequestBuilder getRandomValueFileValidationRequestBuilder() {
         return FileValidationRequest.builder()

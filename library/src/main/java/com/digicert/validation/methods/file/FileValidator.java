@@ -194,10 +194,17 @@ public class FileValidator {
      * This method validates the values in the provided {@link FileValidationRequest}. It checks the domain, validation
      * state, and challenge type, ensuring that all required fields are present and valid. For random values, it
      * verifies the entropy and expiration. For request tokens, it checks the presence of the request token data.
+     * <p>
+     * A caller-supplied filename is also validated for format, and — for random-value challenges — rejected
+     * pre-fetch if the random value appears in the filename. Embedding the secret in the URL would expose it
+     * on the wire and in server access logs regardless of the file's contents, violating the BR requirement
+     * that the challenge material must not appear in the request.
      *
      * @param fileValidationRequest The validation verification request
-     * @throws DcvException If entropy level is insufficient, the random value has expired, or the request token data
-     * is missing.
+     * @throws DcvException If entropy level is insufficient, the random value has expired, the request token data
+     * is missing, or a challenge value is found in the caller-supplied filename.
+     * @throws IllegalArgumentException If the caller-supplied filename contains invalid characters or exceeds the
+     * maximum length.
      */
     void verifyFileValidationRequest(FileValidationRequest fileValidationRequest) throws DcvException {
 
@@ -207,10 +214,23 @@ public class FileValidator {
                 : DcvMethod.BR_3_2_2_4_18;
         StateValidationUtils.verifyValidationState(fileValidationRequest.getValidationState(), expectedMethod);
 
+        // Validate the caller-supplied filename format (mirrors the check done in verifyFilePreparation).
+        if (StringUtils.isNotBlank(fileValidationRequest.getFilename())) {
+            FilenameUtils.validateFilename(fileValidationRequest.getFilename());
+        }
+
         switch (fileValidationRequest.getChallengeType()) {
             case RANDOM_VALUE -> {
                 Instant instant = fileValidationRequest.getValidationState().prepareTime();
                 randomValueVerifier.verifyRandomValue(fileValidationRequest.getRandomValue(), instant);
+                // Pre-fetch guard: reject before any HTTP request is made if the random value is
+                // embedded in the filename. The secret would travel in the URL on the wire
+                // regardless of the HTTP response, violating the BR "must not appear in the request" rule.
+                if (StringUtils.isNotBlank(fileValidationRequest.getFilename())
+                        && StringUtils.isNotBlank(fileValidationRequest.getRandomValue())
+                        && fileValidationRequest.getFilename().contains(fileValidationRequest.getRandomValue())) {
+                    throw new InputException(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED);
+                }
             }
             case REQUEST_TOKEN -> {
                 if (fileValidationRequest.getRequestTokenData() == null) {

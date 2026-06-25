@@ -409,10 +409,10 @@ class DomainNameUtilsTest {
                 Arguments.of("1.2.3.4"),
                 Arguments.of("203.0.114.42"),    // outside the RFC 5737 doc range
                 Arguments.of("8.8.8.8"),
-                // Valid public IPv6 (Global Unicast 2000::/3)
-                Arguments.of("2001:db8::1"),
-                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334"),
-                Arguments.of("2600::1")
+                // Valid public IPv6 (Global Unicast 2000::/3, outside IANA special-purpose sub-ranges)
+                Arguments.of("2600::1"),          // ARIN allocation — genuinely public
+                Arguments.of("2607:f8b0::1"),     // Google — genuinely public
+                Arguments.of("2400::1")           // APNIC allocation — genuinely public
         );
     }
 
@@ -455,7 +455,15 @@ class DomainNameUtilsTest {
                 // IPv6 link-local
                 Arguments.of("fe80::1",         DcvError.IP_ADDRESS_RESERVED),
                 // IPv6 ULA (fc00::/7)
-                Arguments.of("fc00::1",         DcvError.IP_ADDRESS_RESERVED)
+                Arguments.of("fc00::1",         DcvError.IP_ADDRESS_RESERVED),
+                // IPv6 documentation prefix 2001:db8::/32 (RFC 3849) — must be rejected like IPv4 TEST-NET
+                Arguments.of("2001:db8::1",              DcvError.IP_ADDRESS_RESERVED),
+                Arguments.of("2001:0db8:85a3:0000:0000:8a2e:0370:7334", DcvError.IP_ADDRESS_RESERVED),
+                // IPv6 IETF Protocol Assignments 2001::/23 — Teredo, benchmarking, ORCHID
+                Arguments.of("2001::1",          DcvError.IP_ADDRESS_RESERVED),  // Teredo 2001::/32
+                Arguments.of("2001:2::1",        DcvError.IP_ADDRESS_RESERVED),  // benchmarking 2001:2::/48
+                Arguments.of("2001:10::1",       DcvError.IP_ADDRESS_RESERVED),  // ORCHID 2001:10::/28
+                Arguments.of("2001:20::1",       DcvError.IP_ADDRESS_RESERVED)   // ORCHID v2 2001:20::/28
         );
     }
 

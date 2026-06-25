@@ -372,7 +372,7 @@ public class DomainNameUtils {
     private boolean isPrivateOrReservedIpAddress(String ip) {
         boolean reserved = IPAddress.isValidIPv4(ip) ? isPrivateOrReservedIpv4(ip) : !isPublicIPv6(ip);
         if (reserved && allowReservedIpAddresses) {
-            log.warn("event_id={} ip_address={} message=\"Reserved IP check bypassed - ensure this is running in a test environment only\"",
+            log.error("event_id={} ip_address={} message=\"Reserved IP check bypassed - ensure this is running in a test environment only\"",
                     LogEvents.RESERVED_IP_CHECK_BYPASSED, ip);
             return false;
         }
@@ -430,17 +430,37 @@ public class DomainNameUtils {
     }
 
     /**
-     * Returns true if the IPv6 address is publicly routable (Global Unicast, {@code 2000::/3}).
-     * Only the Global Unicast range is considered a valid public address for DCV purposes.
-     * All other ranges (loopback ::1, link-local fe80::/10, ULA fc00::/7, etc.) are rejected.
+     * Returns true if the IPv6 address is publicly routable (Global Unicast, {@code 2000::/3})
+     * and is not an IANA special-purpose block reserved within that range.
+     * <p>
+     * Passes the Global Unicast guard ({@code 2000::/3}, first 3 bits {@code 001}) and then
+     * rejects the following IANA-reserved sub-ranges (mirroring the IPv4 TEST-NET / reserved
+     * block treatment):
+     * <ul>
+     *   <li>{@code 2001:db8::/32} — documentation prefix (RFC 3849)</li>
+     *   <li>{@code 2001::/23} — IETF Protocol Assignments, covering Teredo ({@code 2001::/32}),
+     *       benchmarking ({@code 2001:2::/48}), ORCHID ({@code 2001:10::/28}),
+     *       and ORCHID v2 ({@code 2001:20::/28})</li>
+     * </ul>
+     * All other ranges (loopback {@code ::1}, link-local {@code fe80::/10},
+     * ULA {@code fc00::/7}, etc.) are also rejected because they fall outside {@code 2000::/3}.
      */
     private static boolean isPublicIPv6(String ip) {
         try {
             InetAddress addr = InetAddress.getByName(ip);
-            // 2000::/3 — first 3 bits must be 001 (first byte & 0xE0 == 0x20)
             byte[] bytes = addr.getAddress();
             if (bytes.length != 16) return false; // not IPv6
-            return (bytes[0] & 0xE0) == 0x20;
+            // Must be in Global Unicast range 2000::/3 (first 3 bits = 001)
+            if ((bytes[0] & 0xE0) != 0x20) return false;
+            // Reject 2001:db8::/32 — documentation prefix (RFC 3849), not a real routable address.
+            // Equivalent to IPv4 TEST-NET-1/2/3 rejection.
+            if (bytes[0] == 0x20 && bytes[1] == 0x01
+                    && bytes[2] == 0x0d && bytes[3] == (byte) 0xb8) return false;
+            // Reject 2001::/23 — IETF Protocol Assignments (covers Teredo 2001::/32,
+            // benchmarking 2001:2::/48, ORCHID 2001:10::/28, ORCHID v2 2001:20::/28).
+            // The /23 mask means bytes[0]==0x20, bytes[1]==0x01, top-7 bits of bytes[2]==0x00.
+            if (bytes[0] == 0x20 && bytes[1] == 0x01 && (bytes[2] & 0xFE) == 0x00) return false;
+            return true;
         } catch (UnknownHostException e) {
             return false;
         }

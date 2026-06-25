@@ -178,6 +178,23 @@ public class FileValidationHandler {
             validRequestToken = challengeResponse.challengeValue().orElse(null);
         }
 
+        // Final gate: if the located challenge value is present in the caller-supplied filename the
+        // secret was embedded in the GET request URL (on the wire and in access logs), which violates
+        // the BR requirement that challenge material must not appear in the request.
+        // This catches request tokens (whose value is only known post-fetch) and redundantly
+        // guards random values alongside the pre-fetch check in FileValidator.verifyFileValidationRequest.
+        if (challengeResponse.challengeValue().isPresent()
+                && StringUtils.isNotBlank(validationRequest.getFilename())
+                && validationRequest.getFilename().contains(challengeResponse.challengeValue().get())) {
+            return FileValidationResponse.builder()
+                    .isValid(false)
+                    .domain(validationRequest.getDomain())
+                    .fileUrl(fileUrl)
+                    .challengeType(challengeType)
+                    .errors(Set.of(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED))
+                    .build();
+        }
+
         return FileValidationResponse.builder()
                 .isValid(challengeResponse.challengeValue().isPresent())
                 .mpicDetails(mpicDetails)

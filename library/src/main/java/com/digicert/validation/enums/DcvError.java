@@ -378,6 +378,27 @@ public enum DcvError {
      */
     IP_ADDRESS_RESERVED,
 
+    /**
+     * Error indicating that a challenge value (random value or request token) appears in the
+     * caller-supplied filename, which would expose the secret in the GET request URL.
+     * <p>
+     * The CA/Browser Forum Baseline Requirements state that the challenge material
+     * "MUST NOT appear in the request." If the filename embeds the random value or a
+     * derived request token, that secret travels in the URL on the wire and in server
+     * access logs regardless of the file's contents, violating this requirement.
+     * <p>
+     * This error is raised:
+     * <ul>
+     *   <li><em>Pre-fetch</em> (in {@code FileValidator.verifyFileValidationRequest}) when a
+     *       random value is detected in the filename — before any HTTP request is made.</li>
+     *   <li><em>Post-fetch</em> (in {@code FileValidationHandler.buildFileValidationResponse})
+     *       when the located challenge value (random value or request token) is found in the
+     *       filename — the final gate that also covers request tokens whose value is only
+     *       known after the fetch.</li>
+     * </ul>
+     */
+    CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED,
+
     /** Error indicating that the challenge type is invalid. */
     INVALID_CHALLENGE_TYPE;
 
