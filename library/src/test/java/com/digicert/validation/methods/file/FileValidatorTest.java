@@ -52,6 +52,60 @@ class FileValidatorTest {
     }
 
     @Test
+    void testVerifyFileValidationRequest_ipv4_withBR_3_2_2_5_1_shouldSucceed() {
+        // Arrange
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("1.2.3.4")
+                .randomValue(defaultRandomValue)
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("1.2.3.4", Instant.now(), DcvMethod.BR_3_2_2_5_1))
+                .build();
+        // Act & Assert
+        assertDoesNotThrow(() -> fileValidator.verifyFileValidationRequest(request));
+    }
+
+    @Test
+    void testVerifyFileValidationRequest_ipv6_withBR_3_2_2_5_1_shouldSucceed() {
+        // Arrange — use a genuinely public IPv6 address (ARIN allocation); 2001:db8:: is documentation-only and is rejected
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("2600::1")
+                .randomValue(defaultRandomValue)
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("2600::1", Instant.now(), DcvMethod.BR_3_2_2_5_1))
+                .build();
+        // Act & Assert
+        assertDoesNotThrow(() -> fileValidator.verifyFileValidationRequest(request));
+    }
+
+    @Test
+    void testVerifyFileValidationRequest_ipv4_withBR_3_2_2_4_18_shouldThrowInvalidDcvMethod() {
+        // Arrange — IP address subject but wrong DCV method (domain method)
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("1.2.3.4")
+                .randomValue(defaultRandomValue)
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("1.2.3.4", Instant.now(), DcvMethod.BR_3_2_2_4_18))
+                .build();
+        // Act & Assert
+        InputException exception = assertThrows(InputException.class, () -> fileValidator.verifyFileValidationRequest(request));
+        assertTrue(exception.getErrors().contains(DcvError.INVALID_DCV_METHOD));
+    }
+
+    @Test
+    void testVerifyFileValidationRequest_domain_withBR_3_2_2_5_1_shouldThrowInvalidDcvMethod() {
+        // Arrange — domain subject but wrong DCV method (IP method)
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("example.com")
+                .randomValue(defaultRandomValue)
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_5_1))
+                .build();
+        // Act & Assert
+        InputException exception = assertThrows(InputException.class, () -> fileValidator.verifyFileValidationRequest(request));
+        assertTrue(exception.getErrors().contains(DcvError.INVALID_DCV_METHOD));
+    }
+
+    @Test
     void testVerifyFileValidationRequest_InvalidDomain() {
         // Arrange
         FileValidationRequest request = getRandomValueFileValidationRequest()
@@ -114,6 +168,43 @@ class FileValidatorTest {
     }
 
     @Test
+    void prepare_withIpv4Address_shouldUseBR_3_2_2_5_1Method() throws DcvException {
+        FilePreparationRequest request = new FilePreparationRequest("1.2.3.4");
+        FilePreparationResponse response = fileValidator.prepare(request);
+        assertEquals(DcvMethod.BR_3_2_2_5_1, response.getValidationState().dcvMethod());
+    }
+
+    @Test
+    void prepare_withIpv6Address_shouldUseBR_3_2_2_5_1Method() throws DcvException {
+        // Use a genuinely public IPv6 address (ARIN allocation); 2001:db8:: is documentation-only and is rejected
+        FilePreparationRequest request = new FilePreparationRequest("2600::1");
+        FilePreparationResponse response = fileValidator.prepare(request);
+        assertEquals(DcvMethod.BR_3_2_2_5_1, response.getValidationState().dcvMethod());
+    }
+
+    @Test
+    void prepare_withDomainName_shouldUseBR_3_2_2_4_18Method() throws DcvException {
+        FilePreparationRequest request = new FilePreparationRequest("example.com");
+        FilePreparationResponse response = fileValidator.prepare(request);
+        assertEquals(DcvMethod.BR_3_2_2_4_18, response.getValidationState().dcvMethod());
+    }
+
+    @Test
+    void prepare_withPrivateIpv4_shouldThrowIpAddressReserved() {
+        FilePreparationRequest request = new FilePreparationRequest("192.168.1.1");
+        InputException exception = assertThrows(InputException.class, () -> fileValidator.prepare(request));
+        assertTrue(exception.getErrors().contains(DcvError.IP_ADDRESS_RESERVED));
+    }
+
+    @Test
+    void prepare_withPrivateIpv6_shouldThrowIpAddressReserved() {
+        // fe80::/10 is link-local — not a Global Unicast address
+        FilePreparationRequest request = new FilePreparationRequest("fe80::1");
+        InputException exception = assertThrows(InputException.class, () -> fileValidator.prepare(request));
+        assertTrue(exception.getErrors().contains(DcvError.IP_ADDRESS_RESERVED));
+    }
+
+    @Test
     void fileValidationPreparationShouldThrowValidationExceptionForNullDomain() {
         FilePreparationRequest filePreparationRequest = new FilePreparationRequest(null);
         InputException exception = assertThrows(InputException.class, () -> fileValidator.prepare(filePreparationRequest));
@@ -139,6 +230,36 @@ class FileValidatorTest {
     void fileValidationPreparationResponse_InvalidCustomFilename() {
         FilePreparationRequest filePreparationRequest = new FilePreparationRequest("example.com", "invalid*filename.txt", ChallengeType.RANDOM_VALUE);
         assertThrows(IllegalArgumentException.class, () -> fileValidator.prepare(filePreparationRequest));
+    }
+
+    @Test
+    void verifyFileValidationRequest_randomValueInFilename_shouldThrowChallengeValueInRequestNotAllowed() {
+        // The random value must not appear in the GET request URL (BR requirement).
+        // Embedding it in the filename would expose it on the wire pre-fetch.
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("example.com")
+                .randomValue(defaultRandomValue)
+                .filename(defaultRandomValue + ".txt")   // random value embedded in filename
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_18))
+                .build();
+        InputException exception = assertThrows(InputException.class,
+                () -> fileValidator.verifyFileValidationRequest(request));
+        assertTrue(exception.getErrors().contains(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED));
+    }
+
+    @Test
+    void verifyFileValidationRequest_invalidFilenameFormat_shouldThrowIllegalArgumentException() {
+        // Filename validation must also run in the validate path, not only in prepare.
+        FileValidationRequest request = FileValidationRequest.builder()
+                .domain("example.com")
+                .randomValue(defaultRandomValue)
+                .filename("invalid*filename.txt")   // '*' is not an allowed filename character
+                .challengeType(ChallengeType.RANDOM_VALUE)
+                .validationState(new ValidationState("example.com", Instant.now(), DcvMethod.BR_3_2_2_4_18))
+                .build();
+        assertThrows(IllegalArgumentException.class,
+                () -> fileValidator.verifyFileValidationRequest(request));
     }
 
     @Test

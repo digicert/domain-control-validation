@@ -109,6 +109,64 @@ class FileValidationHandlerTest {
     }
 
     @Test
+    void testGetFileUrls_ipv4_noHttps() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .domain("1.2.3.4")
+                .build();
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(request);
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://1.2.3.4/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+    }
+
+    @Test
+    void testGetFileUrls_ipv6_bracketWrapped() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .domain("2001:db8::1")
+                .build();
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(request);
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://[2001:db8::1]/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+    }
+
+    @Test
+    void testGetFileUrls_ipv6_fullAddress_bracketWrapped() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .domain("2001:0db8:85a3:0000:0000:8a2e:0370:7334")
+                .build();
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(request);
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+    }
+
+    @Test
+    void testGetFileUrls_domain_notBracketWrapped() {
+        // Arrange
+        DcvConfiguration dcvConfiguration = new DcvConfiguration.DcvConfigurationBuilder().fileValidationCheckHttps(false).build();
+        initializeMocks(dcvConfiguration);
+        // Act
+        List<String> fileUrls = fileValidationHandler.getFileUrls(getRandomValueFileValidationRequest());
+        // Assert
+        assertEquals(1, fileUrls.size());
+        assertEquals("http://example.com/.well-known/pki-validation/fileauth.txt", fileUrls.get(0));
+        assertFalse(fileUrls.get(0).contains("["));
+    }
+
+    @Test
     void testValidate_validResponse() {
         // Arrange
         when(mpicFileService.getMpicFileDetails(anyList(), eq("randomValue"))).thenReturn(getMpicFileDetails(true, null, 200, "randomValue"));
@@ -339,6 +397,50 @@ class FileValidationHandlerTest {
     private FileValidationRequest getRandomValueFileValidationRequest() {
         return getRandomValueFileValidationRequestBuilder()
                 .build();
+    }
+
+    @Test
+    void testValidate_randomValueInFilename_shouldFail_withChallengeValueInRequestNotAllowed() {
+        // Final-gate check: if the located random value is embedded in the caller-supplied
+        // filename, it was already present in the GET request URL and must be rejected.
+        String randomValue = "randomValue";
+        FileValidationRequest request = getRandomValueFileValidationRequestBuilder()
+                .filename(randomValue + ".txt")   // secret embedded in filename
+                .build();
+        MpicFileDetails mpicFileDetails = getMpicFileDetails(true, null, 200, randomValue);
+        when(mpicFileService.getMpicFileDetails(anyList(), eq(randomValue))).thenReturn(mpicFileDetails);
+        ChallengeValidationResponse challengeValidationResponse =
+                new ChallengeValidationResponse(Optional.of(randomValue), null);
+        when(randomValueValidator.validate(anyString(), anyString())).thenReturn(challengeValidationResponse);
+
+        FileValidationResponse response = fileValidationHandler.validate(request);
+
+        assertFalse(response.isValid());
+        assertTrue(response.errors().contains(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED));
+        assertNull(response.validRandomValue());
+    }
+
+    @Test
+    void testValidate_requestTokenInFilename_shouldFail_withChallengeValueInRequestNotAllowed() {
+        // Final-gate check for request tokens: the token value is only known post-fetch, so
+        // the pre-fetch guard in FileValidator cannot catch it. The handler's final gate must.
+        String tokenValue = "some-token-value";
+        FileValidationRequest request = getRequestTokenFileValidationRequestBuilder()
+                .filename(tokenValue + ".txt")   // token embedded in filename
+                .build();
+        PrimaryFileResponse primaryFileResponse = getPrimaryFileResponse(AgentStatus.FILE_SUCCESS);
+        when(mpicFileService.getPrimaryOnlyFileResponse(anyList())).thenReturn(primaryFileResponse);
+        ChallengeValidationResponse challengeValidationResponse =
+                new ChallengeValidationResponse(Optional.of(tokenValue), null);
+        when(requestTokenValidator.validate(any(), eq(tokenValue))).thenReturn(challengeValidationResponse);
+        when(mpicFileService.getMpicFileDetails(eq(primaryFileResponse.fileUrl()), eq(tokenValue)))
+                .thenReturn(getMpicFileDetails(true, null, 200, tokenValue));
+
+        FileValidationResponse response = fileValidationHandler.validate(request);
+
+        assertFalse(response.isValid());
+        assertTrue(response.errors().contains(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED));
+        assertNull(response.validRequestToken());
     }
 
 

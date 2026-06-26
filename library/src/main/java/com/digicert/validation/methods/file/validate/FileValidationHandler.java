@@ -12,6 +12,7 @@ import com.digicert.validation.mpic.api.AgentStatus;
 import com.digicert.validation.mpic.api.file.PrimaryFileResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.util.IPAddress;
 
 import java.util.List;
 import java.util.Optional;
@@ -177,6 +178,23 @@ public class FileValidationHandler {
             validRequestToken = challengeResponse.challengeValue().orElse(null);
         }
 
+        // Final gate: if the located challenge value is present in the caller-supplied filename the
+        // secret was embedded in the GET request URL (on the wire and in access logs), which violates
+        // the BR requirement that challenge material must not appear in the request.
+        // This catches request tokens (whose value is only known post-fetch) and redundantly
+        // guards random values alongside the pre-fetch check in FileValidator.verifyFileValidationRequest.
+        if (challengeResponse.challengeValue().isPresent()
+                && StringUtils.isNotBlank(validationRequest.getFilename())
+                && validationRequest.getFilename().contains(challengeResponse.challengeValue().get())) {
+            return FileValidationResponse.builder()
+                    .isValid(false)
+                    .domain(validationRequest.getDomain())
+                    .fileUrl(fileUrl)
+                    .challengeType(challengeType)
+                    .errors(Set.of(DcvError.CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED))
+                    .build();
+        }
+
         return FileValidationResponse.builder()
                 .isValid(challengeResponse.challengeValue().isPresent())
                 .mpicDetails(mpicDetails)
@@ -217,11 +235,12 @@ public class FileValidationHandler {
      * @return the list of file URLs
      */
     public List<String> getFileUrls(FileValidationRequest fileValidationRequest) {
+        String host = formatHostForUrl(fileValidationRequest.getDomain());
         String domainPath;
         if (StringUtils.isNotBlank(fileValidationRequest.getFilename())) {
-            domainPath = fileValidationRequest.getDomain() + FILE_PATH + fileValidationRequest.getFilename();
+            domainPath = host + FILE_PATH + fileValidationRequest.getFilename();
         } else {
-            domainPath = fileValidationRequest.getDomain() + FILE_PATH + defaultFileValidationFilename;
+            domainPath = host + FILE_PATH + defaultFileValidationFilename;
         }
         if (fileValidationCheckHttps) {
             if (fileValidationCheckHttpsFirst) {
@@ -233,5 +252,22 @@ public class FileValidationHandler {
         else {
             return List.of("http://" + domainPath);
         }
+    }
+
+    /**
+     * Formats the host portion of a URL.
+     * <p>
+     * IPv6 addresses must be enclosed in brackets per RFC 2732 when used in URLs
+     * (e.g., {@code http://[2001:db8::1]/.well-known/...}). IPv4 addresses and
+     * domain names are returned unchanged.
+     *
+     * @param domainOrIp the domain name or IP address
+     * @return the host string suitable for use in a URL
+     */
+    private static String formatHostForUrl(String domainOrIp) {
+        if (IPAddress.isValidIPv6(domainOrIp)) {
+            return "[" + domainOrIp + "]";
+        }
+        return domainOrIp;
     }
 }

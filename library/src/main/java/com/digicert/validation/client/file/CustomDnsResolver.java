@@ -4,7 +4,7 @@ import com.digicert.validation.DcvContext;
 import com.digicert.validation.client.dns.DnsClient;
 import com.digicert.validation.enums.DnsType;
 import org.apache.hc.client5.http.SystemDefaultDnsResolver;
-import org.xbill.DNS.ARecord;
+import org.bouncycastle.util.IPAddress;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -36,17 +36,26 @@ public class CustomDnsResolver extends SystemDefaultDnsResolver {
      * Resolves the given host name to an array of InetAddress objects using the DnsClient.
      * <p>
      * This method overrides the resolve method of the SystemDefaultDnsResolver to provide custom DNS
-     * resolution logic. It uses the DnsClient to perform the A record DNS lookup.
-     * The A records are then converted to InetAddress objects, which are returned as the
-     * result. If the DNS lookup fails or an error occurs, an UnknownHostException is thrown with a detailed
-     * error message.
+     * resolution logic. If the host is already an IP address literal (IPv4 or IPv6), it is resolved
+     * directly via the system resolver without performing a DNS lookup — DNS A-record queries for bare
+     * IP addresses are meaningless and will always fail. The check is performed using
+     * {@link IPAddress#isValid(String)}, a pure-parser check that performs no DNS queries and handles
+     * both IPv4 and IPv6 literals correctly regardless of canonical form.
+     * <p>
+     * For domain names, the DnsClient performs an A-record lookup using the CA-managed DNS servers
+     * required by the CA/Browser Forum Baseline Requirements.
      *
-     * @param host The host name to resolve.
-     * @return An array of InetAddress objects for the given host name.
+     * @param host The host name (or IP address literal) to resolve.
+     * @return An array of InetAddress objects for the given host.
      * @throws UnknownHostException If the host name cannot be resolved.
      */
     @Override
     public InetAddress[] resolve(String host) throws UnknownHostException {
+        // IP address literals need no DNS lookup — delegate directly to the system resolver.
+        if (IPAddress.isValid(host)) {
+            return super.resolve(host);
+        }
+
         try {
 
             return dnsClient.getDnsData(List.of(host), DnsType.A)

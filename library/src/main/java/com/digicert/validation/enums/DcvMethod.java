@@ -16,6 +16,7 @@ import lombok.Getter;
  *     <li>3.2.2.4.6 -> NOT Allowed</li>
  *     <li><b>3.2.2.4.7 - DNS Change</b></li>
  *     <li>3.2.2.4.8 -> IP Address - Not Supported</li>
+ *     <li><b>3.2.2.5.1 -> Agreed-Upon Change to Website (IP Address)</b></li>
  *     <li>3.2.2.4.9 -> NOT Allowed</li>
  *     <li>3.2.2.4.10 -> NOT Allowed</li>
  *     <li>3.2.2.4.11 -> NOT Allowed</li>
@@ -87,6 +88,18 @@ public enum DcvMethod {
      * request token confirms control over the FQDN.
      */
     BR_3_2_2_4_18("3.2.2.4.18"),
+
+    /**
+     * Agreed-Upon Change to Website — IP Address.
+     * <p>
+     * This method is used for IP address DCV. The file validation mechanism is identical to
+     * {@link #BR_3_2_2_4_18} (same {@code /.well-known/pki-validation/} path, same challenge types),
+     * but is recorded under BR section 3.2.2.5.1 for IP address subjects.
+     * <p>
+     * Note: BR 3.2.2.4.8 (IP Address) has been deprecated in the current Baseline Requirements.
+     * This method supersedes it.
+     */
+    BR_3_2_2_5_1("3.2.2.5.1"),
 
     /**
      * ACME HTTP Challenge.

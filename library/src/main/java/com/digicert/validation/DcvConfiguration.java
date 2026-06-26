@@ -3,6 +3,7 @@ package com.digicert.validation;
 import com.digicert.validation.challenges.BasicRandomValueValidator;
 import com.digicert.validation.challenges.RandomValueValidator;
 import com.digicert.validation.challenges.RequestTokenValidator;
+import com.digicert.validation.enums.LogEvents;
 import com.digicert.validation.mpic.MpicClientInterface;
 import com.digicert.validation.mpic.NoopMpicClientImpl;
 import com.digicert.validation.psl.PslDataProvider;
@@ -15,6 +16,8 @@ import com.digicert.validation.utils.PslOverrideSupplier;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import java.util.List;
@@ -166,6 +169,25 @@ public class DcvConfiguration {
      */
     private Level logLevelForDcvErrors = Level.WARN;
 
+    /**
+     * Flag to allow reserved/private IP addresses to pass validation without being rejected.
+     * <p>
+     * By default, validation rejects private (RFC 1918) and reserved IP addresses with
+     * {@link com.digicert.validation.enums.DcvError#IP_ADDRESS_RESERVED}. When this flag is
+     * {@code true}, that check is skipped and reserved IPs are treated as valid.
+     * <p>
+     * <strong>WARNING: This flag must never be set to {@code true} in production environments.</strong>
+     * It exists solely to support non-production test environments where validation targets
+     * (e.g., local Docker containers) use private IP address space.
+     * <p>
+     * The bypass takes effect inside
+     * {@link com.digicert.validation.utils.DomainNameUtils#validateDomainOrIpAddress(String)}:
+     * when {@code true}, {@code DomainNameUtils.isPrivateOrReservedIpAddress} returns {@code false}
+     * even for reserved IPs, allowing them through validation instead of raising
+     * {@link com.digicert.validation.enums.DcvError#IP_ADDRESS_RESERVED}.
+     */
+    private boolean allowReservedIpAddresses = false;
+
     /** Private constructor to prevent instantiation. */
     private DcvConfiguration() {
         // Private constructor to prevent instantiation
@@ -173,6 +195,8 @@ public class DcvConfiguration {
 
     /** Builder class for Domain Control Validation (DCV) configuration. */
     public static class DcvConfigurationBuilder {
+
+        private static final Logger log = LoggerFactory.getLogger(DcvConfigurationBuilder.class);
 
         /** The DcvConfiguration instance to be built. */
         private final DcvConfiguration dcvConfiguration = new DcvConfiguration();
@@ -582,6 +606,25 @@ public class DcvConfiguration {
         }
 
         /**
+         * Allow reserved and private IP addresses to bypass the reserved IP check during validation.
+         * <p>
+         * <strong>WARNING: This method is intended for use in non-production test environments only.</strong>
+         * Enabling this in production would allow validation against private/reserved IP space, which
+         * violates CA/Browser Forum Baseline Requirements.
+         * <p>
+         * Use this only in acceptance or integration test configurations where validation targets
+         * reside on private IP addresses (e.g., local Docker infrastructure).
+         *
+         * @apiNote This method exists solely for test environment support. Do not call it in production code.
+         * @param allowReservedIpAddresses {@code true} to skip the reserved IP check; {@code false} (default) to enforce it
+         * @return the builder instance
+         */
+        public DcvConfigurationBuilder allowReservedIpAddresses(boolean allowReservedIpAddresses) {
+            dcvConfiguration.setAllowReservedIpAddresses(allowReservedIpAddresses);
+            return this;
+        }
+
+        /**
          * Build the DcvConfiguration instance.
          * <p>
          * This method constructs a `DcvConfiguration` instance using the parameters set in the builder and ensures
@@ -591,6 +634,11 @@ public class DcvConfiguration {
          */
         public DcvConfiguration build() {
             PslDataProvider.getInstance().loadDefaultData();
+            if (dcvConfiguration.isAllowReservedIpAddresses()) {
+                log.error("event_id={} message=\"allowReservedIpAddresses=true is BR-prohibited in production; " +
+                        "enable only in non-production test environments\"",
+                        LogEvents.RESERVED_IP_CHECK_BYPASSED);
+            }
             return dcvConfiguration;
         }
     }
