@@ -615,7 +615,7 @@ public class DcvConfiguration {
          * Use this only in acceptance or integration test configurations where validation targets
          * reside on private IP addresses (e.g., local Docker infrastructure).
          *
-         * @apiNote This method exists solely for test environment support. Do not call it in production code.
+         * <p><strong>Note:</strong> This method exists solely for test environment support. Do not call it in production code.
          * @param allowReservedIpAddresses {@code true} to skip the reserved IP check; {@code false} (default) to enforce it
          * @return the builder instance
          */

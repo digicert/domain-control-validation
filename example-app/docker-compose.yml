@@ -22,7 +22,7 @@ services:
       - ./nginx/www/:/var/www/:ro
 
   dnsService:
-    image: pschiffe/pdns-mysql
+    image: pschiffe/pdns-mysql:4.9
     container_name: dnsService
     hostname: pdns.localhost.com
     ports:
