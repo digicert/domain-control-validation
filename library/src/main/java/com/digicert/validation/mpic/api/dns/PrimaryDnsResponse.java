@@ -10,6 +10,14 @@ import java.util.List;
  * This record encapsulates the agent ID, agent status, DNSSEC validation details, DNS records retrieved,
  * the type of DNS record requested, the domain for which the DNS validation was performed,
  * and the CNAME chain if present.
+ *
+ * @param agentId         the identifier of the primary MPIC agent
+ * @param agentStatus     the status reported by the agent for this DNS request
+ * @param dnssecDetails   the DNSSEC validation details, or {@code null} if not checked
+ * @param dnsRecords      the DNS records retrieved by the primary agent
+ * @param requestedType   the type of DNS record that was requested
+ * @param requestedDomain the domain for which DNS validation was performed
+ * @param cnameChain      the chain of CNAME records encountered during DNS resolution, if any
  */
 public record PrimaryDnsResponse (String agentId,
                                   AgentStatus agentStatus,

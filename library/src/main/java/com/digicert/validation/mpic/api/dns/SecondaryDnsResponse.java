@@ -9,6 +9,15 @@ import java.util.List;
  * This record encapsulates the agent ID, agent status, DNSSEC validation details,
  * whether the response corroborates with the primary DNS response,
  * the list of DNS records retrieved, the CNAME chain if present, and whether the CNAME chain corroborates.
+ *
+ * @param agentId                 the identifier of the secondary MPIC agent
+ * @param agentStatus             the status reported by the agent for this DNS request
+ * @param agentRIR                the Regional Internet Registry associated with the agent
+ * @param dnssecDetails           the DNSSEC validation details, or {@code null} if not checked
+ * @param corroborates            {@code true} if this secondary response corroborates the primary response
+ * @param dnsRecords              the DNS records retrieved by the secondary agent
+ * @param cnameChain              the chain of CNAME records encountered during DNS resolution, if any
+ * @param cnameChainCorroborates  {@code true} if the CNAME chain corroborates the primary agent's CNAME chain
  */
 public record SecondaryDnsResponse(String agentId,
                                    AgentStatus agentStatus,

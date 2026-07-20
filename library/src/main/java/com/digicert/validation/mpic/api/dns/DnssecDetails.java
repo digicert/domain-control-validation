@@ -4,6 +4,11 @@ package com.digicert.validation.mpic.api.dns;
  * Represents the details of DNSSEC validation for a DNS response.
  * This record encapsulates the DNSSEC validation status, any error that occurred,
  * and details about where and what the error was.
+ *
+ * @param dnssecStatus   the result of DNSSEC validation
+ * @param dnssecError    the specific DNSSEC error encountered, or {@code null} if none
+ * @param errorLocation  the DNS name where the DNSSEC error was detected, or {@code null} if none
+ * @param errorDetails   a human-readable description of the error, or {@code null} if none
  */
 public record DnssecDetails(
     DnssecStatus dnssecStatus,

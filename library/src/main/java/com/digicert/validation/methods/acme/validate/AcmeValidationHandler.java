@@ -53,6 +53,7 @@ public class AcmeValidationHandler {
      *
      * @param request the DNS validation request
      * @return the ACME validation response
+     * @throws ValidationException if the ACME validation fails
      */
     public AcmeValidationResponse validate(AcmeValidationRequest request) throws ValidationException {
         return switch (request.getAcmeType()) {

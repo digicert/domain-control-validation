@@ -15,6 +15,14 @@ import java.util.Map;
  * the DNSSEC validation details,
  * a map of agent IDs to their corroboration status,
  * and the CNAME chain if present.
+ *
+ * @param corroborated                  {@code true} if the MPIC corroboration was successful
+ * @param primaryAgentId                the identifier of the primary MPIC agent
+ * @param secondaryServersChecked       the number of secondary servers that were checked
+ * @param secondaryServersCorroborated  the number of secondary servers that corroborated the result
+ * @param dnssecDetails                 the DNSSEC validation details for this response
+ * @param agentIdToCorroboration        a map from agent ID to whether that agent corroborated
+ * @param cnameChain                    the CNAME chain encountered during DNS resolution, if any
  */
 @Builder
 public record MpicDetails(boolean corroborated,
