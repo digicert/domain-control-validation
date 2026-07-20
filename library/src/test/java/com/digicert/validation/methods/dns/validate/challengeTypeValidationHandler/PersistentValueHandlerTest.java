@@ -96,6 +96,7 @@ class PersistentValueHandlerTest {
         assertTrue(response.errors().isEmpty());
         assertNotNull(response.persistentTxtResponse());
         assertEquals(ACCOUNT_URI, response.persistentTxtResponse().accountUri());
+        assertEquals(issuerDomain, response.persistentTxtResponse().issuerDomainName());
     }
 
     @Test

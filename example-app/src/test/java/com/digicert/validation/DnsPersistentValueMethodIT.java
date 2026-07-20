@@ -79,6 +79,7 @@ class DnsPersistentValueMethodIT {
         assertNotNull(persistentTxtResponse);
         assertEquals(accountUri, persistentTxtResponse.get("accountUri"));
         assertEquals(persistUntilEpoch, ((Number) persistentTxtResponse.get("persistUntil")).longValue());
+        assertEquals("authority.example", persistentTxtResponse.get("issuerDomainName"));
     }
 
     @Test

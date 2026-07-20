@@ -106,7 +106,7 @@ class DnsValidatorTest {
         return Stream.of(
                 Arguments.of(ChallengeType.RANDOM_VALUE, "some-really-long-random-value", null, null),
                 Arguments.of(ChallengeType.REQUEST_TOKEN, null, "request-token", null),
-                Arguments.of(ChallengeType.PERSISTENT_VALUE, null, null, PersistentTxtResponse.builder().accountUri("http://account.uri").persistUntil(null).parsedTxtRecord(Map.of("key", Collections.singletonList("value"))).build())
+                Arguments.of(ChallengeType.PERSISTENT_VALUE, null, null, PersistentTxtResponse.builder().accountUri("http://account.uri").persistUntil(null).parsedTxtRecord(Map.of("key", Collections.singletonList("value"))).issuerDomainName("authority.example").build())
         );
     }
 
