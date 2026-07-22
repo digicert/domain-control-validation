@@ -11,7 +11,8 @@ import java.util.Map;
  * @param accountUri the matched account URI from the issue-value
  * @param persistUntil the optional persistUntil timestamp from the issue-value
  * @param parsedTxtRecord the parsed txt record as a map (tag to values)
+ * @param issuerDomainName the issuer domain name from the issue-value (original case preserved)
  */
 @Builder
-public record PersistentTxtResponse(String accountUri, Long persistUntil, Map<String, List<String>> parsedTxtRecord) {
+public record PersistentTxtResponse(String accountUri, Long persistUntil, Map<String, List<String>> parsedTxtRecord, String issuerDomainName) {
 }

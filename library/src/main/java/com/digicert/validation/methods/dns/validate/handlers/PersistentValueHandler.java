@@ -186,7 +186,9 @@ public final class PersistentValueHandler {
         return PersistentTxtResponse.builder()
                        .accountUri(accountUri)
                        .persistUntil(persistUntil)
-                       .parsedTxtRecord(parsedIssueValue.parameters()).build();
+                       .parsedTxtRecord(parsedIssueValue.parameters())
+                       .issuerDomainName(parsedIssueValue.issuerDomainName())
+                       .build();
     }
 
     private static Long tryParseLong(String value) {
