@@ -12,7 +12,9 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 public class CaaValue extends DnsValue {
+    /** The tag field of the CAA record (e.g., {@code issue}, {@code issuewild}, {@code iodef}). */
     private String tag;
+    /** The flag field of the CAA record, used to indicate criticality. */
     private int flag;
 
     /** Creates a new {@code CaaValue} with all fields set to their default values. */

@@ -17,6 +17,8 @@ public record DnssecDetails(
     String errorDetails
 ) {
     /**
+     * Compact constructor that validates required fields.
+     *
      * @throws IllegalArgumentException if dnssecStatus is null
      */
     public DnssecDetails {
@@ -29,6 +31,8 @@ public record DnssecDetails(
 
     /**
      * Returns a shared instance indicating that DNSSEC validation was not performed.
+     *
+     * @return a singleton {@code DnssecDetails} with status {@link DnssecStatus#NOT_CHECKED}
      */
     public static DnssecDetails notChecked() {
         return NOT_CHECKED;

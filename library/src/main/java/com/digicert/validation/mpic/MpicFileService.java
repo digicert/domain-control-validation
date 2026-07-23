@@ -19,6 +19,11 @@ import java.util.Map;
 
 import static com.digicert.validation.mpic.api.AgentStatus.FILE_SUCCESS;
 
+/**
+ * Service for retrieving and mapping MPIC (Multi-Perspective Corroboration) file validation responses.
+ * Wraps the {@link MpicClientInterface} to provide structured {@link com.digicert.validation.methods.file.validate.MpicFileDetails}
+ * objects with error normalization.
+ */
 @Slf4j
 public class MpicFileService {
 
@@ -147,6 +152,12 @@ public class MpicFileService {
         return dcvError;
     }
 
+    /**
+     * Maps an {@link AgentStatus} from a file validation agent response to the corresponding {@link DcvError}.
+     *
+     * @param agentStatus the agent status to map
+     * @return the corresponding {@link DcvError}, or {@link DcvError#MPIC_INVALID_RESPONSE} for unrecognized statuses
+     */
     public static DcvError mapAgentStatusToDcvError(AgentStatus agentStatus) {
         return switch (agentStatus) {
             case FILE_BAD_REQUEST -> DcvError.FILE_VALIDATION_BAD_REQUEST;

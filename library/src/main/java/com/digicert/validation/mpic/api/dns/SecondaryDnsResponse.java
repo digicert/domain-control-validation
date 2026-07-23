@@ -30,6 +30,14 @@ public record SecondaryDnsResponse(String agentId,
 
     /**
      * Backward-compatible constructor that defaults agentRIR to "UNKNOWN".
+     *
+     * @param agentId                the identifier of the secondary MPIC agent
+     * @param agentStatus            the status reported by the agent for this DNS request
+     * @param dnssecDetails          the DNSSEC validation details, or {@code null} if not checked
+     * @param corroborates           {@code true} if this secondary response corroborates the primary response
+     * @param dnsRecords             the DNS records retrieved by the secondary agent
+     * @param cnameChain             the chain of CNAME records encountered during DNS resolution, if any
+     * @param cnameChainCorroborates {@code true} if the CNAME chain corroborates the primary agent's CNAME chain
      */
     public SecondaryDnsResponse(String agentId,
                          AgentStatus agentStatus,
@@ -41,7 +49,16 @@ public record SecondaryDnsResponse(String agentId,
         this(agentId,agentStatus,"UNKNOWN",dnssecDetails,corroborates,dnsRecords,cnameChain,cnameChainCorroborates);
     }
 
-    /** Backward-compatible constructor that defaults dnssecDetails to null. */
+    /**
+     * Backward-compatible constructor that defaults dnssecDetails to null.
+     *
+     * @param agentId                the identifier of the secondary MPIC agent
+     * @param agentStatus            the status reported by the agent for this DNS request
+     * @param corroborates           {@code true} if this secondary response corroborates the primary response
+     * @param dnsRecords             the DNS records retrieved by the secondary agent
+     * @param cnameChain             the chain of CNAME records encountered during DNS resolution, if any
+     * @param cnameChainCorroborates {@code true} if the CNAME chain corroborates the primary agent's CNAME chain
+     */
     public SecondaryDnsResponse(String agentId,
                                 AgentStatus agentStatus,
                                 boolean corroborates,

@@ -27,7 +27,16 @@ public record PrimaryDnsResponse(String agentId,
                                   String requestedDomain,
                                   List<DnsRecord> cnameChain) {
 
-    /** Backward-compatible constructor that defaults dnssecDetails to null. */
+    /**
+     * Backward-compatible constructor that defaults dnssecDetails to null.
+     *
+     * @param agentId         the identifier of the primary MPIC agent
+     * @param agentStatus     the status reported by the agent for this DNS request
+     * @param dnsRecords      the DNS records retrieved by the primary agent
+     * @param requestedType   the type of DNS record that was requested
+     * @param requestedDomain the domain for which DNS validation was performed
+     * @param cnameChain      the chain of CNAME records encountered during DNS resolution, if any
+     */
     public PrimaryDnsResponse(String agentId,
                               AgentStatus agentStatus,
                               List<DnsRecord> dnsRecords,

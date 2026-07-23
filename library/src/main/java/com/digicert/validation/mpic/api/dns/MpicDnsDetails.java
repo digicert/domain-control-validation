@@ -22,7 +22,14 @@ public record MpicDnsDetails(MpicDetails mpicDetails,
                              DcvError dcvError,
                              List<SecondaryDnsResponse> secondaryDnsResponses) {
 
-    /** Backward-compatible constructor that defaults secondary DNS responses to an empty list. */
+    /**
+     * Backward-compatible constructor that defaults secondary DNS responses to an empty list.
+     *
+     * @param mpicDetails  the MPIC corroboration summary for this DNS validation
+     * @param domain       the domain name being validated
+     * @param dnsRecords   the DNS records retrieved during validation
+     * @param dcvError     any DCV error encountered during DNS retrieval, or {@code null} if none
+     */
     public MpicDnsDetails(MpicDetails mpicDetails,
                           String domain,
                           List<DnsRecord> dnsRecords,

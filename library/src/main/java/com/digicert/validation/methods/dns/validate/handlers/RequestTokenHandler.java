@@ -36,6 +36,11 @@ public final class RequestTokenHandler {
     private final MpicDnsService mpicDnsService;
     private final RequestTokenValidator requestTokenValidator;
 
+    /**
+     * Constructs a new {@code RequestTokenHandler} with the specified context.
+     *
+     * @param dcvContext context providing the necessary dependencies and configuration
+     */
     public RequestTokenHandler(DcvContext dcvContext) {
         this.dnsDomainLabel = dcvContext.getDcvConfiguration().getDnsDomainLabel();
         mpicDnsService = dcvContext.get(MpicDnsService.class);

@@ -17,7 +17,7 @@ public interface MpicClientInterface {
      * @param domain            The domain to query.
      * @param dnsType           The type of DNS record to query (e.g., TXT, CNAME).
      * @param challengeValue    The challenge value to look for in the DNS records. This can be null if not applicable.
-     * @return
+     * @return the MPIC DNS response containing corroboration details and DNS records
      */
     MpicDnsResponse getMpicDnsResponse(String domain, DnsType dnsType, String challengeValue);
 

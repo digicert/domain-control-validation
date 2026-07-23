@@ -48,6 +48,11 @@ public final class PersistentValueHandler {
     private final Set<String> allowedIssuerDomains;
 
 
+    /**
+     * Constructs a new {@code PersistentValueHandler} with the specified context.
+     *
+     * @param dcvContext context providing the necessary dependencies and configuration
+     */
     public PersistentValueHandler(DcvContext dcvContext) {
         this.mpicDnsService = dcvContext.get(MpicDnsService.class);
         this.allowedIssuerDomains = dcvContext.getDcvConfiguration().getAllowedIssuerDomains();

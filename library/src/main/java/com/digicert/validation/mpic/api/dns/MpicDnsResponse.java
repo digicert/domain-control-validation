@@ -24,7 +24,15 @@ public record MpicDnsResponse(PrimaryDnsResponse primaryDnsResponse,
                                String errorMessage,
                                DnssecDetails dnssecDetails) {
 
-    /** Backward-compatible constructor that defaults dnssecDetails to null. */
+    /**
+     * Backward-compatible constructor that defaults dnssecDetails to null.
+     *
+     * @param primaryDnsResponse      the response from the primary MPIC agent
+     * @param secondaryDnsResponses   the responses from secondary MPIC agents
+     * @param mpicStatus              the overall MPIC corroboration status
+     * @param numAgentCorroborations  the number of agents that corroborated the primary response
+     * @param errorMessage            an error message if the MPIC request failed, or {@code null} if none
+     */
     public MpicDnsResponse(PrimaryDnsResponse primaryDnsResponse,
                            List<SecondaryDnsResponse> secondaryDnsResponses,
                            MpicStatus mpicStatus,

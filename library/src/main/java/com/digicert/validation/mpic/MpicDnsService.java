@@ -15,6 +15,11 @@ import java.util.Map;
 
 import static com.digicert.validation.mpic.api.AgentStatus.DNS_LOOKUP_SUCCESS;
 
+/**
+ * Service for retrieving and mapping MPIC (Multi-Perspective Corroboration) DNS validation responses.
+ * Wraps the {@link MpicClientInterface} to provide structured {@link com.digicert.validation.mpic.api.dns.MpicDnsDetails}
+ * objects with error normalization.
+ */
 @Slf4j
 public class MpicDnsService {
 

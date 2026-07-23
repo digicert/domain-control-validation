@@ -14,6 +14,7 @@ import java.util.Set;
  */
 @Getter
 public class AcmeValidationException extends ValidationException{
+    /** The ACME validation request that triggered this exception. */
     private final AcmeValidationRequest acmeValidationRequest;
 
     /**
