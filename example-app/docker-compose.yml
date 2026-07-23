@@ -1,8 +1,44 @@
 services:
 
+  ssl-init:
+    image: alpine:3.21
+    command:
+      - sh
+      - -c
+      - |
+          set -e
+          if [ ! -f /ssl/server-cert.pem ]; then
+            apk add --no-cache openssl
+            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+              -keyout /ssl/ca-key.pem \
+              -out /ssl/ca-cert.pem \
+              -subj '/CN=MySQL-CA'
+            openssl req -nodes -newkey rsa:2048 \
+              -keyout /ssl/server-key.pem \
+              -out /ssl/server-req.pem \
+              -subj '/CN=mysqldb' \
+              -addext 'subjectAltName=DNS:mysqldb'
+            openssl x509 -req -days 3650 \
+              -in /ssl/server-req.pem \
+              -CA /ssl/ca-cert.pem -CAkey /ssl/ca-key.pem \
+              -CAcreateserial -out /ssl/server-cert.pem \
+              -copy_extensions copyall
+            chmod 644 /ssl/*.pem
+            rm -f /ssl/ca-key.pem /ssl/server-req.pem /ssl/ca-cert.pem.srl
+          fi
+    volumes:
+      - ssl-certs:/ssl
+
   mysqldb:
     image: mysql:latest
     container_name: mysqldb
+    depends_on:
+      ssl-init:
+        condition: service_completed_successfully
+    command:
+      - --ssl-cert=/ssl/server-cert.pem
+      - --ssl-key=/ssl/server-key.pem
+      - --ssl-ca=/ssl/ca-cert.pem
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: example_app
@@ -12,6 +48,13 @@ services:
       - "3306:3306"
     volumes:
       - ./db-init:/docker-entrypoint-initdb.d
+      - ssl-certs:/ssl:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot_password", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   nginx:
     image: nginx:latest
@@ -22,7 +65,7 @@ services:
       - ./nginx/www/:/var/www/:ro
 
   dnsService:
-    image: pschiffe/pdns-mysql:4.9
+    image: pschiffe/pdns-mysql
     container_name: dnsService
     hostname: pdns.localhost.com
     ports:
@@ -30,7 +73,18 @@ services:
       - "10000:53/udp"
       - "8081:8081"
     depends_on:
-      - mysqldb
+      ssl-init:
+        condition: service_completed_successfully
+      mysqldb:
+        condition: service_healthy
+    volumes:
+      - ssl-certs:/ssl:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "-H", "X-API-Key: secret", "http://localhost:8081/api/v1/servers/localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     environment:
       - TZ=America/Denver
       - PDNS_gmysql_host=mysqldb
@@ -38,6 +92,8 @@ services:
       - PDNS_gmysql_user=pdns
       - PDNS_gmysql_password=pdns
       - PDNS_gmysql_dbname=pdns
+      - PDNS_gmysql_ssl=yes
+      - MYSQL_CLIENT_EXTRA_PARAMS=--ssl-ca=/ssl/ca-cert.pem
 #      - PDNS_master=yes
       - PDNS_api=yes
       - PDNS_api_key=secret
@@ -50,3 +106,6 @@ services:
       - PDNS_allow_axfr_ips=172.0.0.0/8,127.0.0.0/8,192.0.0.0/8,10.0.0.0/8
       - PDNS_allow_dnsupdate_from=172.0.0.0/8,127.0.0.0/8,192.0.0.0/8,10.0.0.0/8
       - PDNS_only_notify=0.0.0.0
+
+volumes:
+  ssl-certs:
