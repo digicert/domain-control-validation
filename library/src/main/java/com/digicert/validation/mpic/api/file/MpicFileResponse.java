@@ -15,7 +15,7 @@ import java.util.List;
  * @param numAgentCorroborations   the number of agents that corroborated the primary response
  * @param errorMessage             an error message if the MPIC request failed, or {@code null} if none
  */
-public record MpicFileResponse (PrimaryFileResponse primaryFileResponse,
+public record MpicFileResponse(PrimaryFileResponse primaryFileResponse,
                                 List<SecondaryFileResponse> secondaryFileResponses,
                                 MpicStatus mpicStatus,
                                 long numAgentCorroborations,

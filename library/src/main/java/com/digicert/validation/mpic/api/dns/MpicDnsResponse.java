@@ -17,7 +17,7 @@ import java.util.List;
  * @param errorMessage            an error message if the MPIC request failed, or {@code null} if none
  * @param dnssecDetails           the DNSSEC validation details, or {@code null} if not checked
  */
-public record MpicDnsResponse (PrimaryDnsResponse primaryDnsResponse,
+public record MpicDnsResponse(PrimaryDnsResponse primaryDnsResponse,
                                List<SecondaryDnsResponse> secondaryDnsResponses,
                                MpicStatus mpicStatus,
                                long numAgentCorroborations,

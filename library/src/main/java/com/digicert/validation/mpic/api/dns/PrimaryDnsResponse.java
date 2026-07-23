@@ -19,7 +19,7 @@ import java.util.List;
  * @param requestedDomain the domain for which DNS validation was performed
  * @param cnameChain      the chain of CNAME records encountered during DNS resolution, if any
  */
-public record PrimaryDnsResponse (String agentId,
+public record PrimaryDnsResponse(String agentId,
                                   AgentStatus agentStatus,
                                   DnssecDetails dnssecDetails,
                                   List<DnsRecord> dnsRecords,

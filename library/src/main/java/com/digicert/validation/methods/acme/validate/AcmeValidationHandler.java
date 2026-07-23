@@ -51,7 +51,7 @@ public class AcmeValidationHandler {
     /**
      * This method performs the ACME validation based on the given ACME validation request.
      *
-     * @param request the DNS validation request
+     * @param request the ACME validation request
      * @return the ACME validation response
      * @throws ValidationException if the ACME validation fails
      */

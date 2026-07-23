@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Represents the details of a DNS validation method for MPIC (Multi-Perspective Corroboration).
  * This record encapsulates the MPIC details, the domain being validated, the DNS records associated with it,
- * and any errors encountered while retrieving the MPIC response
+ * and any errors encountered while retrieving the MPIC response.
  *
  * @param mpicDetails            the MPIC corroboration summary for this DNS validation
  * @param domain                 the domain name being validated
