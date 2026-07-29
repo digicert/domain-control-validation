@@ -32,6 +32,11 @@ public final class RandomValueHandler {
     private final RandomValueValidator randomValueValidator;
     private final RandomValueVerifier randomValueVerifier;
 
+    /**
+     * Constructs a new {@code RandomValueHandler} with the specified context.
+     *
+     * @param dcvContext context providing the necessary dependencies and configuration
+     */
     public RandomValueHandler(DcvContext dcvContext) {
         mpicDnsService = dcvContext.get(MpicDnsService.class);
         dnsDomainLabel = dcvContext.getDcvConfiguration().getDnsDomainLabel();

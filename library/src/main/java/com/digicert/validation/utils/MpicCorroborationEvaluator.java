@@ -17,6 +17,14 @@ public final class MpicCorroborationEvaluator {
     private MpicCorroborationEvaluator() {
     }
 
+    /**
+     * Determines whether the MPIC corroboration thresholds are met.
+     *
+     * @param totalSecondaryAgentCount      the total number of secondary agents that participated
+     * @param totalCorroboratingAgentCount  the number of secondary agents that corroborated the primary
+     * @param uniqueCorroboratingRegions    the number of distinct regions from which corroboration was received
+     * @return {@code true} if both the required corroboration count and regional diversity are satisfied
+     */
     public static boolean corroborates(long totalSecondaryAgentCount,
                                        long totalCorroboratingAgentCount,
                                        long uniqueCorroboratingRegions){

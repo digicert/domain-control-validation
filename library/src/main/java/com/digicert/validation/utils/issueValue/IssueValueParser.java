@@ -31,6 +31,14 @@ public final class IssueValueParser {
     private IssueValueParser() {
     }
 
+    /**
+     * Parses an issue-value string into a {@link ParsedIssueValue}.
+     * Never throws; any parsing failure is captured in {@link ParsedIssueValue#parseException()}.
+     *
+     * @param input the raw issue-value string to parse (may be null or quoted)
+     * @return a {@link ParsedIssueValue} containing the parsed issuer domain name, parameters,
+     *         and any parsing exception encountered
+     */
     public static ParsedIssueValue parse(String input) {
         String issuerDomainName = null;
         try {
@@ -127,10 +135,21 @@ public final class IssueValueParser {
         return new IssueValueParsingException(DcvError.INVALID_ISSUE_VALUE_FORMAT,input);
     }
 
+    /**
+     * Unchecked exception thrown internally when issue-value parsing fails.
+     * Carries the specific {@link DcvError} that describes the failure reason.
+     */
     @Getter
     public static class IssueValueParsingException extends RuntimeException {
+        /** The DCV error code describing the parsing failure. */
         private final DcvError dcvError;
 
+        /**
+         * Constructs an {@code IssueValueParsingException} with the specified error code and message.
+         *
+         * @param error   the DCV error code describing the failure
+         * @param message a human-readable description of the failure
+         */
         public IssueValueParsingException(DcvError error,String message) {
             super(message);
             this.dcvError = error;

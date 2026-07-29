@@ -15,6 +15,10 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public class NoopMpicClientImpl implements MpicClientInterface {
 
+    /** Creates a new {@code NoopMpicClientImpl}. */
+    public NoopMpicClientImpl() {
+    }
+
     @Override
     public MpicDnsResponse getMpicDnsResponse(String domain, DnsType dnsType, String challengeValue) {
         throw new NotImplementedException("NoopMpicClientImpl is not meant to be used and does not support DNS requests - define your own MpicClientInterface object");

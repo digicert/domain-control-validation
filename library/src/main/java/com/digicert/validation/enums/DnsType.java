@@ -30,6 +30,13 @@ public enum DnsType {
     /** Resource Record Signature, which is used in DNSSEC to provide authenticity and integrity of DNS records. */
     RRSIG;
 
+    /**
+     * Converts an integer DNS type code to the corresponding {@link DnsType} enum constant.
+     *
+     * @param type the integer DNS record type code as defined in {@link org.xbill.DNS.Type}
+     * @return the matching {@link DnsType} constant
+     * @throws IllegalArgumentException if the type code does not correspond to a supported DNS type
+     */
     public static DnsType fromInt(int type) {
         return switch (type) {
             case Type.A -> A;

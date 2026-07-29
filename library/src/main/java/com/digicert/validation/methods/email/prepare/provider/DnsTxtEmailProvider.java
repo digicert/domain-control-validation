@@ -92,6 +92,12 @@ public class DnsTxtEmailProvider implements EmailProvider {
         return new EmailDetails(emailDnsDetails, mpicDnsDetails.mpicDetails());
     }
 
+    /**
+     * Normalizes an email address extracted from a DNS TXT record by stripping surrounding double quotes.
+     *
+     * @param dnsValue the raw DNS TXT record value
+     * @return the normalized email address with leading and trailing quotes removed
+     */
     public static String normalizeEmailAddress(String dnsValue) {
         // String the beginning and end quote off the dnsValue
         return dnsValue.trim().replaceAll("^\"|\"$", "");

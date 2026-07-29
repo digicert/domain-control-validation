@@ -3,7 +3,6 @@ package com.digicert.validation.client.dns;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 /**
  * Represents a DNS CAA (Certification Authority Authorization) record.
@@ -12,8 +11,13 @@ import lombok.NoArgsConstructor;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
-@NoArgsConstructor
 public class CaaValue extends DnsValue {
+    /** The tag field of the CAA record (e.g., {@code issue}, {@code issuewild}, {@code iodef}). */
     private String tag;
+    /** The flag field of the CAA record, used to indicate criticality. */
     private int flag;
+
+    /** Creates a new {@code CaaValue} with all fields set to their default values. */
+    public CaaValue() {
+    }
 }
