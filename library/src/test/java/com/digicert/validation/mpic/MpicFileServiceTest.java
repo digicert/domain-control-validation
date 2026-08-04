@@ -245,6 +245,12 @@ class MpicFileServiceTest {
         assertNull(details.mpicDetails().dnssecDetails().errorDetails());
     }
 
+    @Test
+    void mapAgentStatusToDcvError_returnsFileValidationTimeoutWhenAgentStatusIsNull() {
+        DcvError result = MpicFileService.mapAgentStatusToDcvError(null);
+        assertEquals(DcvError.MPIC_INVALID_RESPONSE, result);
+    }
+
     static Stream<Arguments> agentStatusToErrorMapping() {
         return Stream.of(
                 Arguments.of(FILE_BAD_REQUEST, DcvError.FILE_VALIDATION_BAD_REQUEST),

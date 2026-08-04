@@ -148,6 +148,9 @@ public class MpicFileService {
     }
 
     public static DcvError mapAgentStatusToDcvError(AgentStatus agentStatus) {
+        if (agentStatus == null) {
+            return DcvError.MPIC_INVALID_RESPONSE;
+        }
         return switch (agentStatus) {
             case FILE_BAD_REQUEST -> DcvError.FILE_VALIDATION_BAD_REQUEST;
             case FILE_CLIENT_ERROR -> DcvError.FILE_VALIDATION_CLIENT_ERROR;
