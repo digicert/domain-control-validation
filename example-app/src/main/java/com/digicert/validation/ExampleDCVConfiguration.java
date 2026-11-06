@@ -16,6 +16,8 @@ public class ExampleDCVConfiguration {
                 // set the DNS servers to use for DNS lookups
                 .dnsServers(List.of("localhost:10000"))
                 .allowedIssuerDomains(List.of("authority.example"))
+                // Account-hash URI prefixes accepted for ACME dns-persist-01 accounturi values
+                .accountHashPrefixes(List.of("https://authority.example/account-hash/"))
                 // Configured to match the value configured in powerdns docker container
                 .pslOverrideSupplier(customPslOverrideSupplier)
                 .mpicClientInterface(mpicClientImpl)

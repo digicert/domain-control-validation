@@ -400,7 +400,13 @@ public enum DcvError {
     CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED,
 
     /** Error indicating that the challenge type is invalid. */
-    INVALID_CHALLENGE_TYPE;
+    INVALID_CHALLENGE_TYPE,
+
+    /**
+     * Error indicating that a supplied account-key thumbprint is not a canonical RFC 7638 SHA-256 JWK
+     * Thumbprint: the unpadded base64url encoding of a 32-octet digest, 43 ASCII characters.
+     */
+    INVALID_ACCOUNT_THUMBPRINT;
 
 
     /**

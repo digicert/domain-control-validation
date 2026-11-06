@@ -67,6 +67,24 @@ public class DcvConfiguration {
     private Set<String> allowedIssuerDomains = Set.of();
 
     /**
+     * The CA's {@code accountHashPrefix} values used when computing/matching hashed {@code accounturi} values for
+     * the ACME {@code acme-dns-persist-01} persistent-value DNS challenge
+     * ({@code AcmeValidator#validatePersistentDns}).
+     * <p>
+     * Per {@code draft-ietf-acme-dns-persist-02} Section 4.1, the hashed URI is formed by concatenating a prefix,
+     * a hash-algorithm identifier, a "/" separator, and a base64url hash value: {@code <accountHashPrefix><hash-alg>/<base64url hash value>}.
+     * Each prefix must be chosen such that appending the remaining components yields a valid URI
+     * (for example, {@code https://ca.example/account-hash/}).
+     * <p>
+     * More than one prefix may be configured (e.g. during a prefix rotation, or when multiple directory
+     * endpoints/brands advertise different prefixes): the library computes and checks a candidate hash for
+     * every configured prefix, in addition to every supplied account-key thumbprint and both domain forms.
+     * <p>
+     * Only required when calling {@code AcmeValidator#validatePersistentDns}.
+     */
+    private Set<String> accountHashPrefixes = Set.of();
+
+    /**
      * The validity period in days for random values generated during the DCV process.
      * <p>
      * The baseline requirements specify that random values cannot be valid after 30 days. For purposes of this
@@ -287,8 +305,8 @@ public class DcvConfiguration {
         /**
          * Set the allowed issuer domains for persistent DNS TXT validation (BR 3.2.2.4.22).
          * <p>
-         * This value is required when validating {@code ChallengeType.PERSISTENT_VALUE} requests.
-         * It is not required for other challenge types.
+         * This value is required when validating {@code ChallengeType.PERSISTENT_VALUE} requests or when
+         * calling {@code AcmeValidator#validatePersistentDns}. It is not required otherwise.
          *
          * @param allowedIssuerDomains list of issuer domains allowed for persistent DNS validation
          * @return the builder instance
@@ -312,6 +330,37 @@ public class DcvConfiguration {
 
             dcvConfiguration.setAllowedIssuerDomains(normalizedAllowedIssuerDomains);
             return this;
+        }
+
+        /**
+         * Set the CA's {@code accountHashPrefix} values used for ACME persistent DNS TXT validation
+         * (see {@link DcvConfiguration#accountHashPrefixes}). Accepts one or more prefixes; the library
+         * will try every configured prefix (combined with every supplied thumbprint and domain form) when
+         * matching a record.
+         *
+         * @param accountHashPrefixes list of one or more account-hash URI prefixes
+         * @return the builder instance
+         * @throws IllegalArgumentException if the list is null, empty, or contains null/blank entries
+         */
+        public DcvConfigurationBuilder accountHashPrefixes(List<String> accountHashPrefixes) {
+            if (accountHashPrefixes == null) {
+                throw new IllegalArgumentException("accountHashPrefixes cannot be null");
+            }
+            if (accountHashPrefixes.isEmpty()) {
+                throw new IllegalArgumentException("accountHashPrefixes cannot be empty");
+            }
+            Set<String> validatedPrefixes = accountHashPrefixes.stream()
+                    .map(this::validateAccountHashPrefix)
+                    .collect(Collectors.toSet());
+            dcvConfiguration.setAccountHashPrefixes(validatedPrefixes);
+            return this;
+        }
+
+        private String validateAccountHashPrefix(String accountHashPrefix) {
+            if (accountHashPrefix == null || accountHashPrefix.isBlank()) {
+                throw new IllegalArgumentException("accountHashPrefixes cannot contain null or blank values");
+            }
+            return accountHashPrefix;
         }
 
         private String validateAndNormalizeIssuerDomain(String issuerDomain) {
