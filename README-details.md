@@ -277,7 +277,24 @@ DnsValidationRequest request = DnsValidationRequest.builder()
 
 DomainValidationEvidence evidence = dnsValidator.validate(request);
 ```
+### BR 3.2.2.4.22 - ACME dns-persist-01 ([IETF draft `draft-ietf-acme-dns-persist-02`](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist-02))
 
+ACME `dns-persist-01` is a dedicated flow (`AcmeValidator.validatePersistentDns`), separate from the ACME `dns-01` and `http-01` methods that use temporary challenge values.
+
+#### ACME persistent DNS behavior
+- The validate step checks a TXT record at `_validation-persist.<fqdn>`; no random value is required.
+- The request includes the raw ACME `accountUri` and one or more current or historical `accountThumbprints` (RFC 7638 SHA-256 JWK thumbprints).
+- The library computes the hashed `accounturi` for both the exact domain and the domain-independent `*` form (which does not itself authorize wildcard issuance). A record matches when its single `accounturi` is `<accountHashPrefix>sha-256/<hash>`, using a prefix from `DcvConfiguration.accountHashPrefixes(...)`.
+- The record must also include an allowed `issuer-domain-name`. The `persistUntil` parameter is optional; when present, it must be an unexpired Unix timestamp. `policy=wildcard` is surfaced in the response, but enforcement is owned by the calling integration/client.
+
+#### Corroboration behavior
+- MPIC corroboration is required, and corroborating perspectives must observe the same `accounturi`.
+
+#### ACME response
+- The response includes the matched thumbprint.
+
+#### Compliance boundary
+- Account/key verification, authorization scope, and BR 3.2.2.4.22 10-day reuse enforcement are owned by the client.
 
 ### BR: 3.2.2.4.4 / 3.2.2.4.13 / 3.2.2.4.14 - Constructed Email / DNS CAA Contact / DNS TXT Contact
 #### EmailPreparationRequest - Email Preparation

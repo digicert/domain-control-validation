@@ -56,6 +56,15 @@ Supported Methods
 * MPIC corroboration is required, and corroborating perspectives must also observe a valid record for the same `accounturi`.
 * The library validates persistent TXT evidence semantics, while BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling integration/client.
 
+### [ACME dns-persist-01](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist-02) (BR 3.2.2.4.22 and IETF draft `draft-ietf-acme-dns-persist-02`)
+* ACME `dns-persist-01` is a dedicated flow (`AcmeValidator.validatePersistentDns`), separate from the ACME `dns-01` and `http-01` methods that use temporary challenge values. The validate step checks a TXT record at `_validation-persist.<fqdn>`; no random value is required.
+* The request includes the raw ACME `accountUri` and one or more current or historical `accountThumbprints` (RFC 7638 SHA-256 JWK thumbprints).
+* The library computes the hashed `accounturi` for both the exact domain and the domain-independent `*` form (which does not itself authorize wildcard issuance). A record matches when its single `accounturi` is `<accountHashPrefix>sha-256/<hash>`, using a prefix from `DcvConfiguration.accountHashPrefixes(...)`.
+* The record must also include an allowed `issuer-domain-name`. The `persistUntil` parameter is optional; when present, it must be an unexpired Unix timestamp. `policy=wildcard` is surfaced in the response, but enforcement is owned by the calling integration/client.
+* MPIC corroboration is required, and corroborating perspectives must observe the same `accounturi`.
+* The response includes the matched thumbprint. Account/key verification, authorization scope, and BR 3.2.2.4.22 10-day reuse enforcement are owned by the client.
+
+
 API Documentation
 -----------------
 The domain-control-validation library provides a set of APIs to perform domain control validation (DCV) as per the CAB Forum baseline requirements. Below are examples of how to use the library in your project.  
