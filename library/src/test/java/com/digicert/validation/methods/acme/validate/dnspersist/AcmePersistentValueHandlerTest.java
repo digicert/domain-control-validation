@@ -630,6 +630,47 @@ class AcmePersistentValueHandlerTest {
     }
 
     @Test
+    void validate_duplicatePolicyParameter_isRejected() {
+        // policy=wildcard widens scope, so two policy parameters make the record invalid instead of silently using the first.
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord record = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + EXACT_HASH + "; policy=wildcard; policy=wildcard");
+        DnsRecord otherRecord = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-256/unrelated");
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(List.of(otherRecord, record)));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
+
+        assertTrue(exception.getErrors().contains(DcvError.MULTIPLE_POLICY));
+    }
+
+    @Test
+    void validate_unsupportedHashAlgorithm_isReportedAsMalformed() {
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord record = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-512/" + EXACT_HASH.substring(EXACT_HASH.lastIndexOf('/') + 1));
+        DnsRecord mismatchRecord = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-256/unrelated");
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(List.of(mismatchRecord, record)));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
+
+        assertTrue(exception.getErrors().contains(DcvError.INVALID_ISSUE_VALUE_FORMAT));
+        assertFalse(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
+    }
+
+    @Test
+    void validate_unsupportedHashAlgorithmRecordIsFilteredOut_validRecordStillValidates() throws Exception {
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord unsupported = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-512/" + EXACT_HASH.substring(EXACT_HASH.lastIndexOf('/') + 1));
+        DnsRecord valid = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + EXACT_HASH);
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(List.of(unsupported, valid)));
+        when(mpicDnsService.getDnsDetails(RECORD_NAME, DnsType.TXT, EXACT_HASH))
+                .thenReturn(mpicDetails(List.of(unsupported, valid), List.of(
+                        secondary("s1", "ARIN", valid, true), secondary("s2", "RIPE", valid, true))));
+
+        AcmeDnsPersistValidationResponse response = handler.validate(request);
+
+        assertEquals(ACTIVE_THUMBPRINT, response.acmePersistentTxtResponse().matchedThumbprint());
+    }
+
+    @Test
     void validate_recordWithoutAccountUri_reportsAccountUriRequired() {
         AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
         DnsRecord record = dnsRecord(RECORD_NAME, "authority.example");

@@ -366,16 +366,17 @@ public final class AcmePersistentValueHandler {
         List<MatchResult> matchResults = new ArrayList<>();
         for (ParsedIssueValue parsedRecord : parsedRecords) {
             CandidateHash matched = matches.get(parsedRecord);
-            if (matched == null && hasAccountUri(parsedRecord)) {
+            if (matched == null && isMatchable(parsedRecord)) {
                 parsedRecord.addDcvErrors(Set.of(DcvError.ACCOUNT_URI_MISMATCH));
             }
             matchResults.add(new MatchResult(matched, parsedRecord));
         }
 
-        // Prefer exposing a record with only a persistUntil error when available.
+        // Prefer exposing a record with only a persistUntil or duplicate-policy error when available.
         Optional<MatchResult> invalidPersistUntil = matchResults.stream()
                                                              .filter(result -> result.parsedIssueValue().dcvErrors().size() == 1)
-                                                             .filter(result -> hasPersistUntilError(result.parsedIssueValue()))
+                                                             .filter(result -> hasPersistUntilError(result.parsedIssueValue())
+                                                                                       || result.parsedIssueValue().dcvErrors().contains(DcvError.MULTIPLE_POLICY))
                                                              .findFirst();
         if (invalidPersistUntil.isPresent()) {
             return invalidPersistUntil.get();
@@ -386,6 +387,14 @@ public final class AcmePersistentValueHandler {
                                                                    .findFirst();
         if (validAccountInvalidIssuer.isPresent()) {
             return validAccountInvalidIssuer.get();
+        }
+
+        // A record whose accounturi uses an unsupported hash algorithm is reported as malformed.
+        Optional<MatchResult> unsupportedHashAlgorithm = matchResults.stream()
+                                                                  .filter(result -> hasUnsupportedHashAlgorithm(result.parsedIssueValue()))
+                                                                  .findFirst();
+        if (unsupportedHashAlgorithm.isPresent()) {
+            return unsupportedHashAlgorithm.get();
         }
 
         Optional<MatchResult> accountUriMismatchOnly = matchResults.stream()
@@ -401,7 +410,8 @@ public final class AcmePersistentValueHandler {
 
     /**
      * Matches each record's {@code accounturi} values against the candidate hashes, filling {@code matches}
-     * with the first candidate found for each record. Records without an {@code accounturi} are skipped.
+     * with the first candidate found for each record. Records without an {@code accounturi}, or whose
+     * {@code accounturi} uses an unsupported hash algorithm, are skipped.
      * <p>
      * For each thumbprint (in the caller-supplied order) the exact-domain and {@code *} opt-out hashes are
      * computed once. A record's value is a match when it ends with that hash and equals
@@ -411,7 +421,7 @@ public final class AcmePersistentValueHandler {
      */
     private MatchResult findMatchingCandidates(List<ParsedIssueValue> records, AcmeDnsPersistValidationRequest request,
                                                Map<ParsedIssueValue, CandidateHash> matches) {
-        List<ParsedIssueValue> recordsWithAccountUri = records.stream().filter(AcmePersistentValueHandler::hasAccountUri).toList();
+        List<ParsedIssueValue> recordsWithAccountUri = records.stream().filter(this::isMatchable).toList();
         String canonicalDomain = canonicalizeDomainForHashing(request.getDomain());
 
         for (String thumbprint : request.getAccountThumbprints()) {
@@ -456,7 +466,7 @@ public final class AcmePersistentValueHandler {
         return accountUris != null && !accountUris.isEmpty();
     }
 
-    /** Errors that do not depend on which candidate hash matches: issuer, persistUntil, missing/multiple accounturi. */
+    /** Errors that do not depend on which candidate hash matches: issuer, persistUntil, accounturi and policy problems. */
     private Set<DcvError> getRecordErrors(ParsedIssueValue issueValue) {
         Set<DcvError> errors = new HashSet<>();
         errors.addAll(getIssuerDomainErrors(issueValue));
@@ -467,7 +477,46 @@ public final class AcmePersistentValueHandler {
         } else if (accountUriList.size() > 1) {
             errors.add(DcvError.MULTIPLE_ACCOUNT_URI);
         }
+        if (hasUnsupportedHashAlgorithm(issueValue)) {
+            errors.add(DcvError.INVALID_ISSUE_VALUE_FORMAT);
+        }
+        List<String> policyList = issueValue.parameters().get(POLICY_KEY);
+        if (policyList != null && policyList.size() > 1) {
+            errors.add(DcvError.MULTIPLE_POLICY);
+        }
         return errors;
+    }
+
+    /** A record can be matched against candidate hashes when it has an accounturi with a supported hash algorithm. */
+    private boolean isMatchable(ParsedIssueValue issueValue) {
+        return hasAccountUri(issueValue) && !hasUnsupportedHashAlgorithm(issueValue);
+    }
+
+    private boolean hasUnsupportedHashAlgorithm(ParsedIssueValue issueValue) {
+        List<String> accountUris = issueValue.parameters().get(ACCOUNT_URI_KEY);
+        return accountUris != null && accountUris.stream().anyMatch(this::usesUnsupportedHashAlgorithm);
+    }
+
+    /**
+     * An accounturi has the form {@code <accountHashPrefix><hash-alg>/<hash>}. It uses an unsupported algorithm
+     * when, for a configured prefix, the segment after the prefix is some {@code <alg>/} other than
+     * {@code sha-256/} and no configured prefix gives {@code sha-256/}.
+     */
+    private boolean usesUnsupportedHashAlgorithm(String accountUri) {
+        boolean otherAlgorithm = false;
+        for (String prefix : accountHashPrefixes) {
+            if (!accountUri.startsWith(prefix)) {
+                continue;
+            }
+            String rest = accountUri.substring(prefix.length());
+            if (rest.startsWith(AcmeAccountUriHasher.HASH_ALGORITHM_IDENTIFIER + "/")) {
+                return false;
+            }
+            if (rest.indexOf('/') > 0) {
+                otherAlgorithm = true;
+            }
+        }
+        return otherAlgorithm;
     }
 
     private static Set<DcvError> getPersistUntilErrors(ParsedIssueValue issueValue) {

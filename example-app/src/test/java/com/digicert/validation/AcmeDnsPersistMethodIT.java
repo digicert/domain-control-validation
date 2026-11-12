@@ -252,6 +252,34 @@ class AcmeDnsPersistMethodIT {
         assertRejectedAndStillPending(validateRequest(domainName, accountUri, List.of("not-a-valid-thumbprint")), domain);
     }
 
+    @Test
+    @DisplayName("ACME-PERSIST-IT-13: record with more than one policy parameter is rejected")
+    void validate_duplicatePolicyParameter_isRejected() {
+        String domainName = DomainUtils.getRandomDomainName(2, "com");
+        String accountUri = newAccountUri();
+        String thumbprint = newThumbprint();
+
+        DomainResource domain = submitDomain(domainName, accountUri);
+        pdnsClient.addPersistentTxtValue(domainName,
+                issueValue(ISSUER_DOMAIN, CONFIGURED_PREFIX, hash(domainName, thumbprint, accountUri), "policy=wildcard", "policy=wildcard"));
+
+        assertRejectedAndStillPending(validateRequest(domainName, accountUri, List.of(thumbprint)), domain);
+    }
+
+    @Test
+    @DisplayName("ACME-PERSIST-IT-14: accounturi with an unsupported hash algorithm is rejected as malformed")
+    void validate_unsupportedHashAlgorithm_isRejected() {
+        String domainName = DomainUtils.getRandomDomainName(2, "com");
+        String accountUri = newAccountUri();
+        String thumbprint = newThumbprint();
+
+        DomainResource domain = submitDomain(domainName, accountUri);
+        pdnsClient.addPersistentTxtValue(domainName,
+                ISSUER_DOMAIN + "; accounturi=" + CONFIGURED_PREFIX + "sha-512/" + hash(domainName, thumbprint, accountUri));
+
+        assertRejectedAndStillPending(validateRequest(domainName, accountUri, List.of(thumbprint)), domain);
+    }
+
     // ---- Helpers ----
 
     private void assertRejectedAndStillPending(ValidateRequest validateRequest, DomainResource domain) {

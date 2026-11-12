@@ -136,6 +136,11 @@ public enum DcvError {
     MULTIPLE_PERSIST_UNTIL,
 
     /**
+     * Error indicating that multiple policy values were found in the issue-value of an ACME persistent DNS TXT record.
+     */
+    MULTIPLE_POLICY,
+
+    /**
      * Error indicating that the domain name is a top-level domain.
      * This error occurs when the domain name is a top-level domain (TLD), which is not allowed in
      * this context. TLDs are not specific enough for validation purposes, and a more specific domain
