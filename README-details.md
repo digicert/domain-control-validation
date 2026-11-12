@@ -296,7 +296,7 @@ ACME `dns-persist-01` is a dedicated flow (`AcmeValidator.validatePersistentDns`
 - The validate step checks a TXT record at `_validation-persist.<fqdn>`; no random value is required.
 - The request includes the raw ACME `accountUri` and one or more current or historical `accountThumbprints` (RFC 7638 SHA-256 JWK thumbprints), in the order they should be tried.
 - The library computes the hashed `accounturi` for both the exact domain and the domain-independent `*` form (which does not itself authorize wildcard issuance). A record matches when its single `accounturi` is `<accountHashPrefix>sha-256/<hash>`, using a prefix from `DcvConfiguration.accountHashPrefixes(...)`, where `<hash>` is `base64url(SHA-256(len(domain) || domain || thumbprint || accountUri))`.
-- The record must also include an allowed `issuer-domain-name`, exactly one `accounturi` using a supported hash algorithm, and at most one `persistUntil` and one `policy` parameter. The `persistUntil` parameter is optional; when present, it must be an unexpired Unix timestamp. `policy=wildcard` is surfaced in the response, but enforcement is owned by the calling application.
+- The record must also include an allowed `issuer-domain-name`, exactly one well-formed `accounturi` (`<accountHashPrefix>sha-256/<hash>`), and at most one `persistUntil` and one `policy` parameter. The `persistUntil` parameter is optional; when present, it must be an unexpired Unix timestamp. `policy=wildcard` is surfaced in the response, but enforcement is owned by the calling application.
 
 #### Corroboration behavior
 - MPIC corroboration is required, and corroborating perspectives must observe the same `accounturi`.

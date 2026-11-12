@@ -248,7 +248,7 @@ class AcmePersistentValueHandlerTest {
     }
 
     @Test
-    void validate_noConfiguredPrefixMatches_fails() throws Exception {
+    void validate_accountUriOutsideConfiguredPrefixes_isReportedAsMalformed() throws Exception {
         String differentPrefix = "https://ca.example/account-hash-v2/";
         DcvConfiguration config = new DcvConfiguration.DcvConfigurationBuilder()
                 .allowedIssuerDomains(List.of("authority.example"))
@@ -266,7 +266,8 @@ class AcmePersistentValueHandlerTest {
                 .thenReturn(primaryDnsResponse(dnsRecord(RECORD_NAME, issueValue)));
 
         ValidationException exception = assertThrows(ValidationException.class, () -> handlerWithDifferentPrefix.validate(request));
-        assertTrue(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
+        assertTrue(exception.getErrors().contains(DcvError.INVALID_ISSUE_VALUE_FORMAT));
+        assertFalse(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
         verify(mpicDnsService, never()).getDnsDetails(any(), any(), any());
     }
 
@@ -640,6 +641,40 @@ class AcmePersistentValueHandlerTest {
         ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
 
         assertTrue(exception.getErrors().contains(DcvError.MULTIPLE_POLICY));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("malformedAccountUris")
+    void validate_malformedAccountUri_isReportedAsMalformed(String description, String accountUriValue) {
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord record = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + accountUriValue);
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(record));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
+
+        assertTrue(exception.getErrors().contains(DcvError.INVALID_ISSUE_VALUE_FORMAT));
+        assertFalse(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
+    }
+
+    static Stream<Arguments> malformedAccountUris() {
+        return Stream.of(
+                Arguments.of("no prefix at all", "not-an-account-hash-uri"),
+                Arguments.of("prefix that is not configured", "https://other-ca.example/account-hash/sha-256/abc"),
+                Arguments.of("configured prefix without an algorithm segment", ACCOUNT_HASH_PREFIX + "abc"),
+                Arguments.of("unsupported hash algorithm", ACCOUNT_HASH_PREFIX + "sha-512/abc")
+        );
+    }
+
+    @Test
+    void validate_wellFormedAccountUriWithWrongHash_isStillAMismatch() {
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord record = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-256/someOtherHashValue");
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(record));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
+
+        assertTrue(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
+        assertFalse(exception.getErrors().contains(DcvError.INVALID_ISSUE_VALUE_FORMAT));
     }
 
     @Test

@@ -389,12 +389,12 @@ public final class AcmePersistentValueHandler {
             return validAccountInvalidIssuer.get();
         }
 
-        // A record whose accounturi uses an unsupported hash algorithm is reported as malformed.
-        Optional<MatchResult> unsupportedHashAlgorithm = matchResults.stream()
-                                                                  .filter(result -> hasUnsupportedHashAlgorithm(result.parsedIssueValue()))
+        // A record whose accounturi is malformed (outside the configured prefixes, or an unsupported hash algorithm) is reported as malformed.
+        Optional<MatchResult> malformedAccountUri = matchResults.stream()
+                                                                  .filter(result -> hasMalformedAccountUri(result.parsedIssueValue()))
                                                                   .findFirst();
-        if (unsupportedHashAlgorithm.isPresent()) {
-            return unsupportedHashAlgorithm.get();
+        if (malformedAccountUri.isPresent()) {
+            return malformedAccountUri.get();
         }
 
         Optional<MatchResult> accountUriMismatchOnly = matchResults.stream()
@@ -411,7 +411,7 @@ public final class AcmePersistentValueHandler {
     /**
      * Matches each record's {@code accounturi} values against the candidate hashes, filling {@code matches}
      * with the first candidate found for each record. Records without an {@code accounturi}, or whose
-     * {@code accounturi} uses an unsupported hash algorithm, are skipped.
+     * {@code accounturi} is malformed, are skipped.
      * <p>
      * For each thumbprint (in the caller-supplied order) the exact-domain and {@code *} opt-out hashes are
      * computed once. A record's value is a match when it ends with that hash and equals
@@ -477,7 +477,7 @@ public final class AcmePersistentValueHandler {
         } else if (accountUriList.size() > 1) {
             errors.add(DcvError.MULTIPLE_ACCOUNT_URI);
         }
-        if (hasUnsupportedHashAlgorithm(issueValue)) {
+        if (hasMalformedAccountUri(issueValue)) {
             errors.add(DcvError.INVALID_ISSUE_VALUE_FORMAT);
         }
         List<String> policyList = issueValue.parameters().get(POLICY_KEY);
@@ -487,36 +487,29 @@ public final class AcmePersistentValueHandler {
         return errors;
     }
 
-    /** A record can be matched against candidate hashes when it has an accounturi with a supported hash algorithm. */
+    /** A record can be matched against candidate hashes when it has a well-formed accounturi. */
     private boolean isMatchable(ParsedIssueValue issueValue) {
-        return hasAccountUri(issueValue) && !hasUnsupportedHashAlgorithm(issueValue);
+        return hasAccountUri(issueValue) && !hasMalformedAccountUri(issueValue);
     }
 
-    private boolean hasUnsupportedHashAlgorithm(ParsedIssueValue issueValue) {
+    private boolean hasMalformedAccountUri(ParsedIssueValue issueValue) {
         List<String> accountUris = issueValue.parameters().get(ACCOUNT_URI_KEY);
-        return accountUris != null && accountUris.stream().anyMatch(this::usesUnsupportedHashAlgorithm);
+        return accountUris != null && accountUris.stream().anyMatch(this::isMalformedAccountUri);
     }
 
     /**
-     * An accounturi has the form {@code <accountHashPrefix><hash-alg>/<hash>}. It uses an unsupported algorithm
-     * when, for a configured prefix, the segment after the prefix is some {@code <alg>/} other than
-     * {@code sha-256/} and no configured prefix gives {@code sha-256/}.
+     * An accounturi must have the form {@code <configured accountHashPrefix>sha-256/<hash>}. A value that does not
+     * start with a configured prefix followed by {@code sha-256/} is malformed: this covers values outside the
+     * configured prefixes as well as unsupported hash algorithms. A well-formed value with the wrong hash is a
+     * normal mismatch, not malformed.
      */
-    private boolean usesUnsupportedHashAlgorithm(String accountUri) {
-        boolean otherAlgorithm = false;
+    private boolean isMalformedAccountUri(String accountUri) {
         for (String prefix : accountHashPrefixes) {
-            if (!accountUri.startsWith(prefix)) {
-                continue;
-            }
-            String rest = accountUri.substring(prefix.length());
-            if (rest.startsWith(AcmeAccountUriHasher.HASH_ALGORITHM_IDENTIFIER + "/")) {
+            if (accountUri.startsWith(prefix + AcmeAccountUriHasher.HASH_ALGORITHM_IDENTIFIER + "/")) {
                 return false;
             }
-            if (rest.indexOf('/') > 0) {
-                otherAlgorithm = true;
-            }
         }
-        return otherAlgorithm;
+        return true;
     }
 
     private static Set<DcvError> getPersistUntilErrors(ParsedIssueValue issueValue) {
