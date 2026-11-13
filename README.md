@@ -54,7 +54,16 @@ Supported Methods
 * The request must include `accountUri`, and the TXT record must include an allowed `issuer-domain-name` and matching `accounturi` in valid issue-value syntax.
 * `persistUntil` is optional and, when present, is treated as a Unix timestamp expiration for the record.
 * MPIC corroboration is required, and corroborating perspectives must also observe a valid record for the same `accounturi`.
-* The library validates persistent TXT evidence semantics, while BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling integration/client.
+* The library validates persistent TXT evidence semantics, while BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling application.
+
+### [ACME dns-persist-01](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist-02) (BR 3.2.2.4.22 and IETF draft `draft-ietf-acme-dns-persist-02`)
+* ACME `dns-persist-01` is a dedicated flow (`AcmeValidator.validatePersistentDns`), separate from the ACME `dns-01` and `http-01` methods that use temporary challenge values. The validate step checks a TXT record at `_validation-persist.<fqdn>`; no random value is required.
+* The request includes the raw ACME `accountUri` and one or more current or historical `accountThumbprints` (RFC 7638 SHA-256 JWK thumbprints).
+* The library computes the hashed `accounturi` for both the exact domain and the domain-independent `*` form (which does not itself authorize wildcard issuance). A record matches when its single `accounturi` is `<accountHashPrefix>sha-256/<hash>`, using a prefix from `DcvConfiguration.accountHashPrefixes(...)`.
+* The record must also include an allowed `issuer-domain-name`, exactly one well-formed `accounturi` (`<accountHashPrefix>sha-256/<hash>`), and at most one `persistUntil` and one `policy` parameter. The `persistUntil` parameter is optional; when present, it must be an unexpired Unix timestamp. `policy=wildcard` is surfaced in the response, but enforcement is owned by the calling application.
+* MPIC corroboration is required, and corroborating perspectives must observe the same `accounturi`.
+* The response includes the matched thumbprint. The calling application owns account/key verification (the account URI and thumbprints are used as supplied), authorization scope, the BR 3.2.2.4.22 10-day reuse limit, and recording which method was used.
+
 
 API Documentation
 -----------------

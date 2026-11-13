@@ -2,6 +2,7 @@ package com.digicert.validation.common;
 
 import com.digicert.validation.enums.DcvMethod;
 import com.digicert.validation.enums.DnsType;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmePersistentTxtResponse;
 import com.digicert.validation.methods.dns.validate.PersistentTxtResponse;
 import com.digicert.validation.mpic.MpicDetails;
 import lombok.AllArgsConstructor;
@@ -116,6 +117,14 @@ public class DomainValidationEvidence {
     private final PersistentTxtResponse persistentTxtResponse;
 
     /**
+     * ACME PERSISTENT TXT: The parsed fields from an ACME persistent DNS TXT record used for
+     * {@code acme-dns-persist-01} validation.
+     * <p>
+     * Only populated when the DCV method was validated via {@code AcmeValidator.validatePersistentDns}; otherwise NULL.
+     */
+    private final AcmePersistentTxtResponse acmePersistentTxtResponse;
+
+    /**
      * Constructs a new DomainValidationEvidence with the specified parameters.
      * <p>
      * This constructor is private to enforce the use of the builder pattern for creating
@@ -155,6 +164,7 @@ public class DomainValidationEvidence {
                 randomValue,
                 acmeThumbprint,
                 mpicDetails,
+                null,
                 null);
     }
 }
