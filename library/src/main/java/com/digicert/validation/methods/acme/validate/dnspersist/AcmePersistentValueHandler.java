@@ -277,14 +277,14 @@ public final class AcmePersistentValueHandler {
      * A single candidate hashed URI, along with the thumbprint, account-hash prefix, and domain-form
      * that produced it.
      */
-    private record CandidateHash(String thumbprint, String accountHashPrefix, boolean wildcardOptOut, String hashedUri) {
+    record CandidateHash(String thumbprint, String accountHashPrefix, boolean wildcardOptOut, String hashedUri) {
     }
 
     /**
      * The result of matching a parsed issue-value against the candidate hashes: the matched candidate
      * (if any) and the parsed issue-value with any accumulated DCV errors.
      */
-    private record MatchResult(CandidateHash matchedCandidate, ParsedIssueValue parsedIssueValue) {
+    record MatchResult(CandidateHash matchedCandidate, ParsedIssueValue parsedIssueValue) {
     }
 
     /**
@@ -372,40 +372,60 @@ public final class AcmePersistentValueHandler {
             matchResults.add(new MatchResult(matched, parsedRecord));
         }
 
-        // Prefer exposing a record with only a persistUntil or duplicate-policy error when available.
-        Optional<MatchResult> invalidPersistUntil = matchResults.stream()
-                                                             .filter(result -> result.parsedIssueValue().dcvErrors().size() == 1)
-                                                             .filter(result -> hasPersistUntilError(result.parsedIssueValue())
-                                                                                       || result.parsedIssueValue().dcvErrors().contains(DcvError.MULTIPLE_POLICY))
-                                                             .findFirst();
-        if (invalidPersistUntil.isPresent()) {
-            return invalidPersistUntil.get();
-        }
+        return selectMostValid(matchResults);
+    }
 
-        Optional<MatchResult> validAccountInvalidIssuer = matchResults.stream()
-                                                                   .filter(result -> hasInvalidIssuer(result.parsedIssueValue()) && !hasInvalidAccountUri(result.parsedIssueValue()))
-                                                                   .findFirst();
-        if (validAccountInvalidIssuer.isPresent()) {
-            return validAccountInvalidIssuer.get();
+    /**
+     * Picks the record whose errors are the most relevant to report, when none of the records is valid.
+     * Records are ranked from most to least valid (see {@link #rank}); records with the same rank keep their
+     * original order, so the earliest one wins.
+     *
+     * @param matchResults the evaluated records, in the order they were returned by DNS
+     * @return the most valid record, or {@code null} when the list is empty
+     */
+    static MatchResult selectMostValid(List<MatchResult> matchResults) {
+        MatchResult best = null;
+        int bestRank = Integer.MAX_VALUE;
+        for (MatchResult result : matchResults) {
+            int rank = rank(result);
+            if (rank < bestRank) {
+                best = result;
+                bestRank = rank;
+            }
         }
+        return best;
+    }
 
-        // A record whose accounturi is malformed (outside the configured prefixes, or an unsupported hash algorithm) is reported as malformed.
-        Optional<MatchResult> malformedAccountUri = matchResults.stream()
-                                                                  .filter(result -> hasMalformedAccountUri(result.parsedIssueValue()))
-                                                                  .findFirst();
-        if (malformedAccountUri.isPresent()) {
-            return malformedAccountUri.get();
+    /**
+     * Ranks a record from most (lowest number) to least valid:
+     * <ol start="0">
+     *     <li>no errors</li>
+     *     <li>the hash matched and the only problem is {@code persistUntil} or a repeated {@code policy}</li>
+     *     <li>the hash matched but the issuer is not allowed, e.g. a typo in the issuer name</li>
+     *     <li>the issuer is allowed but the {@code accounturi} is malformed</li>
+     *     <li>the issuer is allowed and the {@code accounturi} is well-formed but has the wrong hash</li>
+     *     <li>anything else, such as another CA's record that never matched</li>
+     * </ol>
+     */
+    private static int rank(MatchResult result) {
+        ParsedIssueValue issueValue = result.parsedIssueValue();
+        Set<DcvError> errors = issueValue.dcvErrors();
+        if (errors.isEmpty()) {
+            return 0;
         }
-
-        Optional<MatchResult> accountUriMismatchOnly = matchResults.stream()
-                                                                .filter(result -> result.parsedIssueValue().dcvErrors().size() == 1
-                                                                                           && result.parsedIssueValue().dcvErrors().contains(DcvError.ACCOUNT_URI_MISMATCH))
-                                                                .findFirst();
-        if (accountUriMismatchOnly.isPresent()) {
-            return accountUriMismatchOnly.get();
+        if (errors.size() == 1 && (hasPersistUntilError(issueValue) || errors.contains(DcvError.MULTIPLE_POLICY))) {
+            return 1;
         }
-
-        return matchResults.getFirst();
+        if (result.matchedCandidate() != null && hasInvalidIssuer(issueValue) && !hasInvalidAccountUri(issueValue)) {
+            return 2;
+        }
+        if (!hasInvalidIssuer(issueValue) && errors.contains(DcvError.INVALID_ISSUE_VALUE_FORMAT)) {
+            return 3;
+        }
+        if (errors.size() == 1 && errors.contains(DcvError.ACCOUNT_URI_MISMATCH)) {
+            return 4;
+        }
+        return 5;
     }
 
     /**

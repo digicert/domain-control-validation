@@ -706,6 +706,33 @@ class AcmePersistentValueHandlerTest {
     }
 
     @Test
+    void validate_anotherCasRecordAndOurWrongHash_reportsOurMismatch() {
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord otherCa = dnsRecord(RECORD_NAME, "other-ca.example; accounturi=https://other-ca.example/account-hash/sha-256/unrelated");
+        DnsRecord ours = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-256/wrongHash");
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(List.of(otherCa, ours)));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
+
+        assertTrue(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
+        assertFalse(exception.getErrors().contains(DcvError.ISSUER_DOMAIN_NAME_NOT_ALLOWED));
+        assertFalse(exception.getErrors().contains(DcvError.INVALID_ISSUE_VALUE_FORMAT));
+    }
+
+    @Test
+    void validate_issuerTypoWithValidHashAndOurWrongHash_reportsIssuerNotAllowed() {
+        AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
+        DnsRecord ours = dnsRecord(RECORD_NAME, "authority.example; accounturi=" + ACCOUNT_HASH_PREFIX + "sha-256/wrongHash");
+        DnsRecord typo = dnsRecord(RECORD_NAME, "authorty.example; accounturi=" + EXACT_HASH);
+        when(mpicDnsService.getPrimaryDnsDetails(RECORD_NAME, DnsType.TXT)).thenReturn(primaryDnsResponse(List.of(ours, typo)));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> handler.validate(request));
+
+        assertTrue(exception.getErrors().contains(DcvError.ISSUER_DOMAIN_NAME_NOT_ALLOWED));
+        assertFalse(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
+    }
+
+    @Test
     void validate_recordWithoutAccountUri_reportsAccountUriRequired() {
         AcmeDnsPersistValidationRequest request = acmeRequest(DcvMethod.BR_3_2_2_4_22, ACCOUNT_URI, List.of(ACTIVE_THUMBPRINT));
         DnsRecord record = dnsRecord(RECORD_NAME, "authority.example");
