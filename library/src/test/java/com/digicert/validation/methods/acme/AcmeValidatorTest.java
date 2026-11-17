@@ -13,6 +13,10 @@ import com.digicert.validation.methods.acme.prepare.AcmePreparationResponse;
 import com.digicert.validation.methods.acme.validate.AcmeValidationHandler;
 import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
 import com.digicert.validation.methods.acme.validate.AcmeValidationResponse;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmeDnsPersistValidationRequest;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmeDnsPersistValidationResponse;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmePersistentTxtResponse;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmePersistentValueHandler;
 import com.digicert.validation.mpic.MpicDetails;
 import com.digicert.validation.mpic.api.dns.DnssecDetails;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,16 +50,20 @@ class AcmeValidatorTest {
     @Mock
     AcmeValidationHandler acmeValidationHandler;
 
+    @Mock
+    AcmePersistentValueHandler acmePersistentValueHandler;
+
     AcmeValidator acmeValidator;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        // Use a spy to hand the AcmeValidator a mocked AcmeValidationHandler
+        // Use a spy to hand the AcmeValidator mocked handlers
         DcvContext dcvContext = spy(new DcvContext());
         doCallRealMethod().when(dcvContext).get(any());
         doReturn(acmeValidationHandler).when(dcvContext).get(AcmeValidationHandler.class);
+        doReturn(acmePersistentValueHandler).when(dcvContext).get(AcmePersistentValueHandler.class);
 
         acmeValidator = new AcmeValidator(dcvContext);
 
@@ -180,5 +188,66 @@ class AcmeValidatorTest {
                 3,
                 DnssecDetails.notChecked(),
                 Map.of("secondary-agent-id", true), null);
+    }
+
+    // ---- validatePersistentDns tests ----
+
+    @Test
+    void testAcmeValidator_validatePersistentDns_HappyPath() throws DcvException {
+        AcmeDnsPersistValidationRequest request = AcmeDnsPersistValidationRequest.builder()
+                .domain(domain)
+                .accountUri("https://ca.example/acct/123")
+                .accountThumbprints(java.util.List.of("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"))
+                .validationState(new ValidationState(domain, Instant.now(), DcvMethod.BR_3_2_2_4_22))
+                .build();
+        AcmePersistentTxtResponse txtResponse = AcmePersistentTxtResponse.builder()
+                .matchedThumbprint("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs")
+                .matchedIssuerDomain("authority.example")
+                .build();
+        AcmeDnsPersistValidationResponse response = new AcmeDnsPersistValidationResponse(getMpicDetails(), "_validation-persist." + domain, txtResponse);
+
+        when(acmePersistentValueHandler.validate(any(AcmeDnsPersistValidationRequest.class))).thenReturn(response);
+
+        DomainValidationEvidence evidence = acmeValidator.validatePersistentDns(request);
+
+        assertNotNull(evidence);
+        assertEquals(domain, evidence.getDomain());
+        assertEquals(DcvMethod.BR_3_2_2_4_22, evidence.getDcvMethod());
+        assertEquals(DnsType.TXT, evidence.getDnsType());
+        assertEquals("_validation-persist." + domain, evidence.getDnsRecordName());
+        assertNotNull(evidence.getValidationDate());
+        assertNotNull(evidence.getAcmePersistentTxtResponse());
+        assertEquals("authority.example", evidence.getAcmePersistentTxtResponse().matchedIssuerDomain());
+        verify(acmePersistentValueHandler, times(1)).validate(request);
+    }
+
+    @Test
+    void testAcmeValidator_validatePersistentDns_InvalidDomain_throws() {
+        AcmeDnsPersistValidationRequest request = AcmeDnsPersistValidationRequest.builder()
+                .domain("")
+                .accountUri("https://ca.example/acct/123")
+                .accountThumbprints(java.util.List.of("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"))
+                .validationState(new ValidationState("", Instant.now(), DcvMethod.BR_3_2_2_4_22))
+                .build();
+
+        DcvException exception = assertThrows(DcvException.class, () -> acmeValidator.validatePersistentDns(request));
+        assertTrue(exception.getErrors().contains(DcvError.DOMAIN_REQUIRED));
+        verifyNoInteractions(acmePersistentValueHandler);
+    }
+
+    @Test
+    void testAcmeValidator_validatePersistentDns_PropagatesHandlerValidationException() throws DcvException {
+        AcmeDnsPersistValidationRequest request = AcmeDnsPersistValidationRequest.builder()
+                .domain(domain)
+                .accountUri("https://ca.example/acct/123")
+                .accountThumbprints(java.util.List.of("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"))
+                .validationState(new ValidationState(domain, Instant.now(), DcvMethod.BR_3_2_2_4_22))
+                .build();
+
+        when(acmePersistentValueHandler.validate(any(AcmeDnsPersistValidationRequest.class)))
+                .thenThrow(new ValidationException(Set.of(DcvError.ACCOUNT_URI_MISMATCH)));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> acmeValidator.validatePersistentDns(request));
+        assertTrue(exception.getErrors().contains(DcvError.ACCOUNT_URI_MISMATCH));
     }
 }

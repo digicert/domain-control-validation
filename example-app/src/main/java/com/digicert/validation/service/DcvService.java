@@ -16,6 +16,7 @@ import com.digicert.validation.exceptions.*;
 import com.digicert.validation.methods.acme.prepare.AcmePreparation;
 import com.digicert.validation.methods.acme.prepare.AcmePreparationResponse;
 import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmeDnsPersistValidationRequest;
 import com.digicert.validation.methods.dns.prepare.DnsPreparation;
 import com.digicert.validation.methods.dns.prepare.DnsPreparationResponse;
 import com.digicert.validation.methods.dns.validate.DnsValidationRequest;
@@ -63,7 +64,7 @@ public class DcvService {
 
         try {
             switch (dcvRequest.dcvRequestType()) {
-                case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT -> createdEntity = submitDnsDomain(dcvRequest);
+                case DNS_TXT, DNS_CNAME, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT, ACME_DNS_PERSIST -> createdEntity = submitDnsDomain(dcvRequest);
                 case EMAIL_CONSTRUCTED, EMAIL_DNS_TXT, EMAIL_DNS_CAA -> createdEntity = submitEmailDomain(dcvRequest);
                 case FILE_VALIDATION, FILE_VALIDATION_TOKEN -> createdEntity = submitFileDomain(dcvRequest);
                 case ACME_DNS, ACME_HTTP -> createdEntity = submitAcmeDomain(dcvRequest);
@@ -89,6 +90,7 @@ public class DcvService {
             case FILE_VALIDATION, FILE_VALIDATION_TOKEN ->
                     validateFileDomain(accountId, validationState, validateRequest);
             case ACME_DNS, ACME_HTTP -> validateAcmeDomain(accountId, validationState, validateRequest);
+            case ACME_DNS_PERSIST -> validateAcmeDnsPersistDomain(validationState, validateRequest);
         };
 
         domainEntity.status = DcvRequestStatus.VALID.name();
@@ -260,7 +262,7 @@ public class DcvService {
                 }
             }
             case DNS_TXT_TOKEN, FILE_VALIDATION_TOKEN -> {} // No random value to check
-            case DNS_TXT_PERSISTENT -> {
+            case DNS_TXT_PERSISTENT, ACME_DNS_PERSIST -> {
                 if (!accountsRepository.existsByAccountIdAndAccountUri(domainEntity.accountId, validateRequest.accountUri)) {
                     throw new InvalidDcvRequestException("Supplied accountUri is not owned by account");
                 }
@@ -314,7 +316,8 @@ public class DcvService {
         return switch (dcvRequestType) {
             case FILE_VALIDATION, DNS_TXT, DNS_CNAME -> ChallengeType.RANDOM_VALUE;
             case FILE_VALIDATION_TOKEN, DNS_TXT_TOKEN -> ChallengeType.REQUEST_TOKEN;
-            case DNS_TXT_PERSISTENT -> ChallengeType.PERSISTENT_VALUE;
+            // ACME_DNS_PERSIST only uses this for DNS preparation (it creates the validation state)
+            case DNS_TXT_PERSISTENT, ACME_DNS_PERSIST -> ChallengeType.PERSISTENT_VALUE;
             default -> throw new IllegalStateException("Unexpected value: " + dcvRequestType);
         };
     }
@@ -383,6 +386,23 @@ public class DcvService {
         }
     }
 
+    private DomainValidationEvidence validateAcmeDnsPersistDomain(ValidationState validationState, ValidateRequest validateRequest)
+            throws DcvBaseException {
+
+        AcmeDnsPersistValidationRequest request = AcmeDnsPersistValidationRequest.builder()
+                .domain(validateRequest.domain)
+                .accountUri(validateRequest.accountUri)
+                .accountThumbprints(validateRequest.accountThumbprints)
+                .validationState(validationState)
+                .build();
+
+        try {
+            return dcvManager.getAcmeValidator().validatePersistentDns(request);
+        } catch (DcvException e) {
+            throw new ValidationFailedException(e.getMessage());
+        }
+    }
+
     private static AcmeType getAcmeType(ValidateRequest validateRequest) {
         return switch (validateRequest.dcvRequestType) {
             case ACME_DNS -> AcmeType.ACME_DNS_01;
@@ -403,7 +423,7 @@ public class DcvService {
 
     private DnsType mapToDnsType(DcvRequestType dcvRequestType) throws DcvBaseException {
         return switch (dcvRequestType) {
-            case DNS_TXT, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT -> DnsType.TXT;
+            case DNS_TXT, DNS_TXT_TOKEN, DNS_TXT_PERSISTENT, ACME_DNS_PERSIST -> DnsType.TXT;
             case DNS_CNAME -> DnsType.CNAME;
             default -> throw new InvalidDcvRequestException("Invalid dcvRequestType, must be one of the following"
                     + List.of(DcvRequestType.values()));

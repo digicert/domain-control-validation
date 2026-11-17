@@ -12,6 +12,9 @@ import com.digicert.validation.methods.acme.prepare.AcmePreparationResponse;
 import com.digicert.validation.methods.acme.validate.AcmeValidationHandler;
 import com.digicert.validation.methods.acme.validate.AcmeValidationRequest;
 import com.digicert.validation.methods.acme.validate.AcmeValidationResponse;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmeDnsPersistValidationRequest;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmeDnsPersistValidationResponse;
+import com.digicert.validation.methods.acme.validate.dnspersist.AcmePersistentValueHandler;
 import com.digicert.validation.random.RandomValueGenerator;
 import com.digicert.validation.random.RandomValueVerifier;
 import com.digicert.validation.utils.DomainNameUtils;
@@ -43,6 +46,9 @@ public class AcmeValidator {
     /** Handler for ACME Validation */
     private final AcmeValidationHandler acmeValidationHandler;
 
+    /** Handler for the ACME persistent-value DNS challenge ({@code acme-dns-persist-01}). */
+    private final AcmePersistentValueHandler acmePersistentValueHandler;
+
     /** Utility class for random value verification */
     private final RandomValueVerifier randomValueVerifier;
 
@@ -60,6 +66,7 @@ public class AcmeValidator {
     public AcmeValidator(DcvContext dcvContext) {
         this.randomValueGenerator = dcvContext.get(RandomValueGenerator.class);
         this.acmeValidationHandler = dcvContext.get(AcmeValidationHandler.class);
+        this.acmePersistentValueHandler = dcvContext.get(AcmePersistentValueHandler.class);
         this.randomValueVerifier = dcvContext.get(RandomValueVerifier.class);
         this.domainNameUtils = dcvContext.get(DomainNameUtils.class);
     }
@@ -148,6 +155,39 @@ public class AcmeValidator {
                 .randomValue(acmeValidationRequest.getRandomValue())
                 .acmeThumbprint(acmeValidationRequest.getAcmeThumbprint())
                 .build();
+    }
+
+    /**
+     * Validate a domain using the ACME {@code acme-dns-persist-01} persistent-value DNS challenge
+     * (BR 3.2.2.4.22 overlaid with IETF draft {@code draft-ietf-acme-dns-persist-02}).
+     * <p>
+     * Unlike {@link #validate(AcmeValidationRequest)}, this method does not require a random value and
+     * does not check a challenge lifetime: the persistent-value method is not ephemeral, so none of the
+     * {@code ACME_DNS_01}/{@code ACME_HTTP_01} random-value machinery applies here.
+     *
+     * @param request {@link AcmeDnsPersistValidationRequest} object containing the domain, account URI,
+     *                account-key thumbprints, and validation state
+     * @return {@link DomainValidationEvidence} object containing the domain validation evidence
+     * @throws ValidationException if the validation fails.
+     * @throws InputException      if the input parameters are invalid.
+     */
+    public DomainValidationEvidence validatePersistentDns(AcmeDnsPersistValidationRequest request) throws DcvException {
+        domainNameUtils.validateDomainName(request.getDomain());
+
+        AcmeDnsPersistValidationResponse response = acmePersistentValueHandler.validate(request);
+
+        Instant validationInstant = Instant.now();
+        log.info("event_id={} domain={}", LogEvents.ACME_VALIDATION_SUCCESSFUL, request.getDomain());
+
+        return DomainValidationEvidence.builder()
+                       .domain(request.getDomain())
+                       .dcvMethod(DcvMethod.BR_3_2_2_4_22)
+                       .validationDate(validationInstant)
+                       .mpicDetails(response.mpicDetails())
+                       .dnsType(DnsType.TXT)
+                       .dnsRecordName(response.dnsRecordName())
+                       .acmePersistentTxtResponse(response.acmePersistentTxtResponse())
+                       .build();
     }
 
     /**

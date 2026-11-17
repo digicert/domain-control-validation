@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,6 +15,8 @@ public class ValidateRequest {
     public String emailAddress;
     public String randomValue;
     public String accountUri;
+    /** Account-key thumbprints to try, most likely first. Only used for ACME_DNS_PERSIST. */
+    public List<String> accountThumbprints;
 
     public String tokenValue;
 

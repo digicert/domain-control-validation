@@ -136,6 +136,11 @@ public enum DcvError {
     MULTIPLE_PERSIST_UNTIL,
 
     /**
+     * Error indicating that multiple policy values were found in the issue-value of an ACME persistent DNS TXT record.
+     */
+    MULTIPLE_POLICY,
+
+    /**
      * Error indicating that the domain name is a top-level domain.
      * This error occurs when the domain name is a top-level domain (TLD), which is not allowed in
      * this context. TLDs are not specific enough for validation purposes, and a more specific domain
@@ -400,7 +405,13 @@ public enum DcvError {
     CHALLENGE_VALUE_IN_REQUEST_NOT_ALLOWED,
 
     /** Error indicating that the challenge type is invalid. */
-    INVALID_CHALLENGE_TYPE;
+    INVALID_CHALLENGE_TYPE,
+
+    /**
+     * Error indicating that a supplied account-key thumbprint is not a canonical RFC 7638 SHA-256 JWK
+     * Thumbprint: the unpadded base64url encoding of a 32-octet digest, 43 ASCII characters.
+     */
+    INVALID_ACCOUNT_THUMBPRINT;
 
 
     /**

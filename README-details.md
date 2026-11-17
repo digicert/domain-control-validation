@@ -263,7 +263,7 @@ This method validates a persistent TXT record at a fixed DNS label and uses expl
 - Corroborating secondary perspectives must also observe a valid record containing the same `accounturi`.
 
 #### Compliance boundary
-- BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling integration/client.
+- BR 3.2.2.4.22 10-day reuse enforcement is owned by the calling application.
 
 #### Persistent validation request example
 ```java
@@ -276,6 +276,50 @@ DnsValidationRequest request = DnsValidationRequest.builder()
         .build();
 
 DomainValidationEvidence evidence = dnsValidator.validate(request);
+```
+### BR 3.2.2.4.22 - ACME dns-persist-01 ([IETF draft `draft-ietf-acme-dns-persist-02`](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist-02))
+
+ACME `dns-persist-01` is a dedicated flow (`AcmeValidator.validatePersistentDns`), separate from the ACME `dns-01` and `http-01` methods that use temporary challenge values.
+
+#### AcmeDnsPersistValidationRequest
+| Field              | Type            | Description                                                                                           |
+|--------------------|-----------------|-------------------------------------------------------------------------------------------------------|
+| domain             | String          | The domain name to validate.                                                                          |
+| accountUri         | String          | The raw ACME account URL (RFC 8555). The library hashes it itself.                                    |
+| accountThumbprints | List<String>    | RFC 7638 account-key thumbprints (43 character unpadded base64url), most likely to match first.       |
+| validationState    | ValidationState | The state returned by the DNS preparation step.                                                       |
+
+#### Configuration
+- `DcvConfiguration.allowedIssuerDomains` and `DcvConfiguration.accountHashPrefixes` are both required.
+
+#### ACME persistent DNS behavior
+- The validate step checks a TXT record at `_validation-persist.<fqdn>`; no random value is required.
+- The request includes the raw ACME `accountUri` and one or more current or historical `accountThumbprints` (RFC 7638 SHA-256 JWK thumbprints), in the order they should be tried.
+- The library computes the hashed `accounturi` for both the exact domain and the domain-independent `*` form (which does not itself authorize wildcard issuance). A record matches when its single `accounturi` is `<accountHashPrefix>sha-256/<hash>`, using a prefix from `DcvConfiguration.accountHashPrefixes(...)`, where `<hash>` is `base64url(SHA-256(len(domain) || domain || thumbprint || accountUri))`.
+- The record must also include an allowed `issuer-domain-name`, exactly one well-formed `accounturi` (`<accountHashPrefix>sha-256/<hash>`), and at most one `persistUntil` and one `policy` parameter. The `persistUntil` parameter is optional; when present, it must be an unexpired Unix timestamp. `policy=wildcard` is surfaced in the response, but enforcement is owned by the calling application.
+
+#### Corroboration behavior
+- MPIC corroboration is required, and corroborating perspectives must observe the same `accounturi`.
+
+#### ACME response
+- `DomainValidationEvidence.acmePersistentTxtResponse` includes the matched thumbprint, whether the `*` form matched, the matched issuer, `policy=wildcard`, and `persistUntil`.
+
+#### Responsibilities of the calling application
+- Verify the ACME account and keys. The account URI and thumbprints are used as supplied.
+- Decide the authorization scope. `policy=wildcard` is reported but not acted on.
+- Enforce the BR 3.2.2.4.22 10-day reuse limit.
+- Record which method was used for the validation.
+
+#### Example
+```java
+AcmeDnsPersistValidationRequest request = AcmeDnsPersistValidationRequest.builder()
+        .domain("example.com")
+        .accountUri("https://ca.example/acct/123")
+        .accountThumbprints(List.of("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"))
+        .validationState(prepare.getValidationState())
+        .build();
+
+DomainValidationEvidence evidence = acmeValidator.validatePersistentDns(request);
 ```
 
 
